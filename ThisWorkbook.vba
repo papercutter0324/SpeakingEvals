@@ -1,4 +1,4 @@
-﻿Option Explicit
+Option Explicit
 
 Const printDebugMessages As Boolean = False
 Const isWordAppVisible As Boolean = True
@@ -294,7 +294,7 @@ Private Function SetSaveLocation(ByRef ws As Object) As String
             On Error GoTo 0
         End If
         
-        ' Sort out check if a directory exists on MaOS. Perhaps an AppleScript would be best?
+        ' Sort out checking if a directory exists on MaOS. Perhaps an AppleScript would be best?
         'If Dir(selectedPath, vbDirectory) = "" Then
         '    If printDebugMessages Then
         '       Debug.Print "Error creating directories. Please select one manually."
@@ -669,11 +669,17 @@ End Sub
 Private Sub ConvertOneDriveToLocalPath(ByRef selectedPath As String)
     Dim i As Integer
     
+    ' While mostly invisible to the user, cloud storage services like iCloud and OneDrive actually change
+    ' where files are stored. This is especially problematic with OneDrive, as it uses URIs (internet links)
+    ' instead of normal file paths. This examines the path of the file on the user's computer and converts it
+    ' back into a local path so that files can be opened and saved properly.
+    
     If Left(selectedPath, 23) = "https://d.docs.live.net" Or Left(selectedPath, 11) = "OneDrive://" Then
-        For i = 1 To 4 ' Strip the OneDrive URI part of the path (everything before the 4th '/')
+        For i = 1 To 4 ' Everything befor the 4th '/' is the OneDrive URI and needs to be removed.
             selectedPath = Mid(selectedPath, InStr(selectedPath, "/") + 1)
         Next
         
+        ' Append the local file directory to the beginning of the trimmed 'selectedPath' above.
         #If Mac Then
             selectedPath = "/Users/" & Environ("USER") & "/Library/CloudStorage/OneDrive-Personal/" & selectedPath
         #Else
@@ -681,16 +687,18 @@ Private Sub ConvertOneDriveToLocalPath(ByRef selectedPath As String)
             selectedPath = Environ$("OneDrive") & "\" & selectedPath
         #End If
     Else
-        ' Not working yet. Not sure why, but it's probably good to be aware of iCloud file paths?
+        ' This may not be needed, but is here just in case. After some more testing, this may either be expanded or removed.
         #If Mac Then
             If InStr(1, selectedPath, "iCloud Drive", vbTextCompare) > 0 Then
                 For i = 1 To 4 ' Strip away the iCloud part of the filepath (everything before the 6th '/')
                     selectedPath = Mid(selectedPath, InStr(selectedPath, "/") + 1)
                 Next
-                Debug.Print selectedPath
+                
+                If printDebugMessages Then
+                    Debug.Print "Trimmed iCloud file path: " & selectedPath
+                End If
+                
                 selectedPath = "/Users/" & Environ("USER") & "/Library/Mobile Documents/com~apple~CloudDocs/" & selectedPath
-            Else
-                ' Do I need to do anything if just stored locally?
             End If
         #End If
     End If
