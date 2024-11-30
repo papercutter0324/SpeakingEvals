@@ -1,5 +1,15 @@
-# SpeakingEvals
-This file is required for the Excel to be able to automatically generate the speaking evaulations on MacOS computers. However, because of Apple's security policies, the file needs to be installed in a directory that is usually hidden from most users. The good news, though, is that it is very easy to move the file into the correct directory.
+# Understanding What Is Happening
+Some users may be a little nervous about what is happening, especially after being asked to enable Macros and (for MacOS users) getting a bunch of file & folder permission pop-ups. For those who are curious, I have uploaded the source code here.
+
+ThisWorkbook.vba - This is the code that takes all the data you entered and generates unique PDFs for each student.
+Worksheet.vba - This is the code that automatically coverts numbers and lowercase letters into the expected letter grades
+SpeakingEvals.applescript - (Will be uploaded soon.) This is the code that extends what Excel can do on MacOS.
+
+Note that you do not need these files; the first two are embedded in the Excel file, and SpeakingEvals.applescript is converted into a format that MacOS will natively understand. These files are just here for your reference and curiousity.
+
+# SpeakingEvals.scpt
+This is an optional file that will extend what Excel can do when generating the reports. It will give various options such as loading 'Speaking Evaluation Template.docx' from a different location, saving the generated PDFs to a different folder, and other features to make the experience smoother for MacOS users. Again, it is completely optional.
+If you wish to install the file, it needs to be installed in a directory that is usually hidden from most users. The good news, though, is that it is very easy to move the file into the correct directory.
 
 ## DOWNLOADING & INSTALLATION
 ### Automated Method (Recommend)
