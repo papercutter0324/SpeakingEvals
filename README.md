@@ -1,9 +1,9 @@
 # Understanding What Is Happening
 Some users may be a little nervous about what is happening, especially after being asked to enable Macros and (for MacOS users) getting a bunch of file & folder permission pop-ups. For those who are curious, I have uploaded the source code here.
 
-  ThisWorkbook.vba - This is the code that takes all the data you entered and generates unique PDFs for each student.
-  Worksheet.vba - This is the code that automatically coverts numbers and lowercase letters into the expected letter grades
-  SpeakingEvals.applescript - (Will be uploaded soon.) This is the code that extends what Excel can do on MacOS.
+   ThisWorkbook.vba - This is the code that takes all the data you entered and generates unique PDFs for each student.
+   Worksheet.vba - This is the code that automatically coverts numbers and lowercase letters into the expected letter grades
+   SpeakingEvals.applescript - (Will be uploaded soon.) This is the code that extends what Excel can do on MacOS.
 
 Note that you do not need these files; the first two are embedded in the Excel file, and SpeakingEvals.applescript is converted into a format that MacOS will natively understand. These files are just here for your reference and curiousity.
 
