@@ -31,8 +31,31 @@ on DoesFolderExist(folderPath)
 	tell application "System Events" to return (exists disk item folderPath) and class of disk item folderPath = folder
 end DoesFolderExist
 
+on CreateFolder(folderPath)
+	try
+		do shell script "mkdir -p " & quoted form of folderPath
+		return true
+	on error
+		return false
+	end try
+end CreateFolder
+
+on FindSignature(signaturePath)
+	try
+		if DoesFileExist(signaturePath & "mySignature.png") then
+			return signaturePath & "mySignature.png"
+		else if DoesFileExist(signaturePath & "mySignature.jpg") then
+			return signaturePath & "mySignature.png"
+		else
+			return ""
+		end if
+	on error
+		return ""
+	end try
+end FindSignature
+
 on DownloadFile(paramString)
-	set {fileURL, savePath} to SplitString(paramString, ",")
+	set {savePath, fileURL} to SplitString(paramString, ",")
 	try
 		do shell script "curl -L -o " & (quoted form of savePath) & " " & quoted form of fileURL
 		return true
