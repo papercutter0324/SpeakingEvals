@@ -7,6 +7,30 @@ on OpenTemplate(initialDirectory)
 	end try
 end OpenTemplate
 
+on LoadApplication(appName)
+	try
+		tell application appName to activate
+		return ""
+	on error errMsg number errNum
+		return "Error loading " & appName & ": " & errNum & " - " & errMsg
+	end try
+end LoadApplication
+
+on IsAppLoaded(appName)
+	try
+		tell application "System Events"
+			if (name of every process) contains appName then
+				set loadResult to appName & " is now running."
+			else
+				set loadResult to "Error opening " & appName
+			end if
+		end tell
+		return loadResult
+	on error errMsg number errNum
+		return "Error loading " & appName & ": " & errNum & " - " & errMsg
+	end try
+end IsAppLoaded
+
 on CloseWord(paramString)
 	try
 		tell application "System Events"
@@ -115,5 +139,3 @@ on OKDialog(messageString)
 	display dialog messageString buttons {"OK"} default button "OK"
 	return 0
 end OKDialog
-
-
