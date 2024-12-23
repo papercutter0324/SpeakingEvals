@@ -3,13 +3,12 @@ Some users may be a little nervous about what is happening, especially after bei
 
    1. ThisWorkbook.vba - This is the code that takes all the data you entered and generates unique PDFs for each student.
    2. Worksheet.vba - This is the code that automatically coverts numbers and lowercase letters into the expected letter grades
-   3. SpeakingEvals.applescript - (Will be uploaded soon.) This is the code that extends what Excel can do on MacOS.
+   3. SpeakingEvals.applescript - This is the code that extends what Excel can do on MacOS.
 
-Note that you do not need these files; the first two are embedded in the Excel file, and SpeakingEvals.applescript is converted into a format that MacOS will natively understand. These files are just here for your reference and curiousity.
+Note that you do not need these files. The first two are embedded in the Excel file, and SpeakingEvals.applescript is converted into a format that MacOS will natively understand. These files are just here for your reference and curiousity. Additional comments will gradually be added to the code to make different steps and processes easier to understand. The goal is for you to feel safe about running the code, and if you are interested, hopefully learn a little about programming scripts for MS Office and/or MacOS.
 
 # SpeakingEvals.scpt
-This is an optional file that will extend what Excel can do when generating the reports. It will give various options such as loading 'Speaking Evaluation Template.docx' from a different location, saving the generated PDFs to a different folder, and other features to make the experience smoother for MacOS users. Again, it is completely optional.
-If you wish to install the file, it needs to be installed in a directory that is usually hidden from most users. The good news, though, is that it is very easy to move the file into the correct directory.
+This is an optional file that is STRONG RECOMMENDED and will extend what Excel can do when generating the reports. While not required, it offers some key improvements to make the process more efficient and avoids some quirks related to Apple's overly strict security policies. (I'm all for security, but some of their decisions make life difficult for developers.) If you wish to install the file (again, it is highly recommended that you do), it needs to be installed in a directory that is usually hidden from most users. The good news, though, is that it is very easy to move the file into the correct directory.
 
 ## DOWNLOADING & INSTALLATION
 ### Automated Method (Recommend)
