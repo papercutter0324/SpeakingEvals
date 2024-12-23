@@ -95,7 +95,7 @@ Private Function LoadWord(ByRef wordApp As Object, ByRef wordDoc As Object, ByVa
     #If Mac Then
         Dim appleScriptResult As String: appleScriptResult = "N/A"
         
-        ' Use AppleScript to load an instance of Word. This should hopefully reduce the intermitant errors.
+        ' Use AppleScript to load an instance of Word. This should hopefully reduce the intermittent errors.
         If isAppleScriptInstalled Then
             appleScriptResult = AppleScriptTask(appleScriptFile, "LoadApplication", "Microsoft Word")
             If printDebugMessages Then Debug.Print appleScriptResult
@@ -112,7 +112,7 @@ Private Function LoadWord(ByRef wordApp As Object, ByRef wordDoc As Object, ByVa
         Set wordApp = CreateObject("Word.Application")
     End If
     
-    ' A wait timer to help mitigate the intermitant object error
+    ' A wait timer to help mitigate the intermittent object error
     ' #If Mac Then
     '     WaitTimer 4
     ' #End If
@@ -133,10 +133,12 @@ ErrorHandler:
         Err.Clear
         Resume Next
     Else
-        MsgBox "An error occurred while trying to load Microsoft Word. This is usually a result of a quirk in MacOS. Try creating the reports again, and it should work fine." & vbNewLine & vbNewLine & _
-        "If the problem persists, please take a picture of the following error message and ask your team leader to send it to Warren at Bundang." & vbNewLine & vbNewLine & _
-        "VBA Error " & Err.Number & ": " & Err.Description & vbNewLine & _
-        "AppleScript Error: " & appleScriptResult, vbCritical, "Error Loading Word"
+        #If Mac Then
+            MsgBox "An error occurred while trying to load Microsoft Word. This is usually a result of a quirk in MacOS. Try creating the reports again, and it should work fine." & vbNewLine & vbNewLine & _
+            "If the problem persists, please take a picture of the following error message and ask your team leader to send it to Warren at Bundang." & vbNewLine & vbNewLine & _
+            "VBA Error " & Err.Number & ": " & Err.Description & vbNewLine & _
+            "AppleScript Error: " & appleScriptResult, vbCritical, "Error Loading Word"
+        #End If
         LoadWord = False
         If Not wordApp Is Nothing Then
             Set wordApp = Nothing
@@ -214,6 +216,11 @@ Private Function LoadTemplate() As String
     Dim selectedPath As String, templatePath As String
     Dim msgToDisplay As String, msgTitle As String
     Dim validTemplateFound As Boolean
+    
+    ' Update so that if a local version isn't found
+    '  - download to a temp dir
+    '  - work on the template in the temp dir
+    '  - make a copy in the working dir
     
     ' Load in the LOCAL path to be used
     selectedPath = ThisWorkbook.Path
@@ -374,7 +381,7 @@ Private Function VerifyTemplateHash(ByVal filePath As String) As Boolean
         ' Load the hash into memory and delete hash_result.txt
         Set fileSystem = CreateObject("Scripting.FileSystemObject")
         If fileSystem.fileExists(tempHashFile) Then
-            With fileSystem.OpenTextFile(tempFile, 1)
+            With fileSystem.OpenTextFile(tempHashFile, 1)
                 .ReadLine
                 generatedHash = Trim(LCase(.ReadLine))
                 .Close
@@ -408,7 +415,6 @@ ErrorHandler:
 End Function
 
 Private Function SetSaveLocation(ByRef ws As Object) As String
-    Dim msgToDisplay As String, msgTitle As String
     Dim selectedPath As String
     Dim scriptResult As Boolean
     
@@ -419,23 +425,47 @@ Private Function SetSaveLocation(ByRef ws As Object) As String
     If printDebugMessages Then Debug.Print "Saving reports in: " & vbNewLine & "    " & selectedPath; ""
     
     #If Mac Then
+        Dim folderAction As String
+        
         If isAppleScriptInstalled Then
             scriptResult = AppleScriptTask(appleScriptFile, "DoesFolderExist", selectedPath)
-         
-            If Not scriptResult Then
-                scriptResult = AppleScriptTask(appleScriptFile, "CreateFolder", selectedPath)
+            
+            ' If the folder exists, delete it to avoid confusion
+            If scriptResult Then
+                scriptResult = AppleScriptTask(appleScriptFile, "DeleteFolder", selectedPath)
             End If
             
+            scriptResult = AppleScriptTask(appleScriptFile, "CreateFolder", selectedPath)
             RequestAdditionalFileAndFolderAccess selectedPath
         End If
     #End If
     
     ' Handle Windows users and MacOS users who chose not to installed SpeakingEvals.scpt
     If Not isAppleScriptInstalled And Not scriptResult Then
-        If Dir(selectedPath, vbDirectory) = "" Then
+        If Dir(selectedPath, vbDirectory) <> "" Then
+            If printDebugMessages Then Debug.Print "Directory already exists. Clearing contents."
+            DeleteExistingFolder selectedPath
+        Else
             If printDebugMessages Then Debug.Print "Path not found. Attempting to create."
-            
-            On Error Resume Next
+        End If
+        
+        CreateSaveFolder selectedPath
+    End If
+    
+    ConvertOneDriveToLocalPath selectedPath 'This appears no longer necessary
+    SetSaveLocation = selectedPath
+End Function
+
+Private Sub CreateSaveFolder(ByRef selectedPath As String)
+    ' Maybe move this inside the Windows code?
+    If Right(selectedPath, 1) = Application.PathSeparator Then
+        selectedPath = Left(selectedPath, Len(selectedPath) - 1)
+    End If
+    
+    #If Mac Then
+        Dim msgToDisplay As String, msgTitle As String
+        
+        On Error Resume Next
             MkDir selectedPath
             If Err.Number <> 0 Then
                 If printDebugMessages Then Debug.Print "Error creating directory: " & Err.Description
@@ -447,16 +477,50 @@ Private Function SetSaveLocation(ByRef ws As Object) As String
             Else
                 If printDebugMessages Then Debug.Print "Directories successfully created. Continuing process."
                 
-                #If Mac Then
-                    RequestAdditionalFileAndFolderAccess selectedPath
-                #End If
+                RequestAdditionalFileAndFolderAccess selectedPath
             End If
         End If
+    #Else
+        Dim fso As Object
+        Set fso = CreateObject("Scripting.FileSystemObject")
+        fso.CreateFolder selectedPath
+        Set fso = Nothing
+    #End If
+    
+    If Right(selectedPath, 1) <> Application.PathSeparator Then
+        selectedPath = selectedPath & Application.PathSeparator
+    End If
+End Sub
+
+Private Sub DeleteExistingFolder(ByVal selectedPath As String)
+    ' To ensure RmDir is successful, selectedPath shouldn't end with a slash
+    If Right(selectedPath, 1) = Application.PathSeparator Then
+        selectedPath = Left(selectedPath, Len(selectedPath) - 1)
     End If
     
-    ConvertOneDriveToLocalPath selectedPath 'This appears no longer necessary
-    SetSaveLocation = selectedPath
-End Function
+    #If Mac Then
+        Dim fileToDelete As String
+        
+        On Error Resume Next
+        
+        ' Delete any files currently in the target directory
+        fileToDelete = Dir(selectedPath & Application.PathSeparator & "*.*")
+        Do While fileToDelete <> ""
+            Kill selectedPath & Application.PathSeparator & fileToDelete
+            fileToDelete = Dir
+        Loop
+        
+        ' Finish by deleting the target directory
+        RmDir selectedPath
+        
+        On Error GoTo 0
+    #Else
+        Dim fso As Object
+        Set fso = CreateObject("Scripting.FileSystemObject")
+        fso.DeleteFolder selectedPath, True
+        Set fso = Nothing
+    #End If
+End Sub
 
 Private Sub WriteReport(ByRef ws As Object, ByRef wordApp As Object, ByRef wordDoc As Object, ByVal currentRow As Integer, ByVal savePath As String, ByRef fileName As String, ByRef saveResult As Boolean)
     Dim nativeTeacher As String, koreanTeacher As String, classLevel As String, classTime As String, evalDate As String
