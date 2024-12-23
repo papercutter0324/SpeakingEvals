@@ -1,12 +1,3 @@
-on OpenTemplate(initialDirectory)
-	try
-		set evaluationTemplate to POSIX path of (choose file with prompt "Load the Speaking Evaluation Template" default location initialDirectory of type {"org.openxmlformats.wordprocessingml.document"})
-		return evaluationTemplate
-	on error
-		return ""
-	end try
-end OpenTemplate
-
 on LoadApplication(appName)
 	try
 		tell application appName to activate
@@ -47,6 +38,16 @@ on CloseWord(paramString)
 	end try
 end CloseWord
 
+on CopyFile(paramString)
+	set {tempTemplatePath, finalTemplatePath} to SplitString(paramString, ",")
+	try
+		do shell script "cp " & (quoted form of tempTemplatePath) & " " & (quoted form of finalTemplatePath)
+		return true
+	on error
+		return false
+	end try
+end CopyFile
+
 on DoesFileExist(filePath)
 	tell application "System Events" to return (exists disk item filePath) and class of disk item filePath = file
 end DoesFileExist
@@ -63,6 +64,15 @@ on CreateFolder(folderPath)
 		return false
 	end try
 end CreateFolder
+
+on ClearFolder(folderToEmpty)
+	try
+		do shell script "find " & quoted form of folderToEmpty & " -type f -name '*.pdf' -delete"
+		return true
+	on error
+		return false
+	end try
+end ClearFolder
 
 on FindSignature(signaturePath)
 	try
@@ -81,7 +91,7 @@ end FindSignature
 on DownloadFile(paramString)
 	set {savePath, fileURL} to SplitString(paramString, ",")
 	try
-		do shell script "curl -L -o " & (quoted form of savePath) & " " & quoted form of fileURL
+		do shell script "curl -L -o " & (quoted form of savePath) & " " & (quoted form of fileURL)
 		return true
 	on error
 		display dialog "Error downloading file: " & fileURL
