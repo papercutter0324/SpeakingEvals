@@ -1,4 +1,4 @@
-# Understanding What Is Happening
+# Understanding the Code
 Some users may be a little nervous about what is happening, especially after being asked to enable Macros and (for MacOS users) getting a bunch of file & folder permission pop-ups. For those who are curious, I have uploaded the source code here.
 
    1. ThisWorkbook.vba - This is the code that takes all the data you entered and generates unique PDFs for each student.
