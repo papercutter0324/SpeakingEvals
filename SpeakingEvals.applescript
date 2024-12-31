@@ -48,31 +48,29 @@ on CopyFile(paramString)
 	end try
 end CopyFile
 
+on DeleteFile(filePath)
+	try
+		do shell script "rm -f " & (quoted form of filePath)
+		return true
+	on error
+		return false
+	end try
+end DeleteFile
+
 on DoesFileExist(filePath)
 	tell application "System Events" to return (exists disk item filePath) and class of disk item filePath = file
 end DoesFileExist
 
-on DoesFolderExist(folderPath)
-	tell application "System Events" to return (exists disk item folderPath) and class of disk item folderPath = folder
-end DoesFolderExist
-
-on CreateFolder(folderPath)
+on DownloadFile(paramString)
+	set {savePath, fileURL} to SplitString(paramString, ",")
 	try
-		do shell script "mkdir -p " & quoted form of folderPath
+		do shell script "curl -L -o " & (quoted form of savePath) & " " & (quoted form of fileURL)
 		return true
 	on error
+		display dialog "Error downloading file: " & fileURL
 		return false
 	end try
-end CreateFolder
-
-on ClearFolder(folderToEmpty)
-	try
-		do shell script "find " & quoted form of folderToEmpty & " -type f -name '*.pdf' -delete"
-		return true
-	on error
-		return false
-	end try
-end ClearFolder
+end DownloadFile
 
 on FindSignature(signaturePath)
 	try
@@ -88,16 +86,36 @@ on FindSignature(signaturePath)
 	end try
 end FindSignature
 
-on DownloadFile(paramString)
-	set {savePath, fileURL} to SplitString(paramString, ",")
+on ClearFolder(folderToEmpty)
 	try
-		do shell script "curl -L -o " & (quoted form of savePath) & " " & (quoted form of fileURL)
+		do shell script "find " & (quoted form of folderToEmpty) & " -type f -name '*.pdf' -delete"
 		return true
 	on error
-		display dialog "Error downloading file: " & fileURL
 		return false
 	end try
-end DownloadFile
+end ClearFolder
+
+on CreateFolder(folderPath)
+	try
+		do shell script "mkdir -p " & (quoted form of folderPath)
+		return true
+	on error
+		return false
+	end try
+end CreateFolder
+
+on DeleteFolder(folderPath)
+	try
+		do shell script "rm -rf " & (quoted form of folderPath)
+		return true
+	on error
+		return false
+	end try
+end DeleteFolder
+
+on DoesFolderExist(folderPath)
+	tell application "System Events" to return (exists disk item folderPath) and class of disk item folderPath = folder
+end DoesFolderExist
 
 on CompareMD5Hashes(paramString)
 	set {filePath, validHash} to SplitString(paramString, ",")
