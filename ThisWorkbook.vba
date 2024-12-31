@@ -10,7 +10,7 @@ Sub PrintReports()
     Dim ws As Worksheet, wordApp As Object, wordDoc As Object
     Dim templatePath As String, savePath As String, fileName As String
     Dim resultMsg As String, msgToDisplay As String, msgTitle As String, msgType As Integer
-    Dim currentRow As Long, lastRow As Long
+    Dim currentRow As Long, lastRow As Long, firstStudentRecord As Integer
     Dim saveResult As Boolean
 
     Const ERR_INCOMPLETE_RECORDS As String = "incompleteRecords"
@@ -28,7 +28,7 @@ Sub PrintReports()
     Set ws = ActiveSheet
     If ws Is Nothing Then GoTo Cleanup
     
-    If Not VerifyRecordsAreComplete(ws, lastRow) Then
+    If Not VerifyRecordsAreComplete(ws, lastRow, firstStudentRecord) Then
         resultMsg = ERR_INCOMPLETE_RECORDS
         GoTo Cleanup
     End If
@@ -54,7 +54,7 @@ Sub PrintReports()
         GoTo Cleanup
     End If
     
-    For currentRow = 8 To lastRow
+    For currentRow = firstStudentRecord To lastRow
         ClearAllTextBoxes wordDoc
         WriteReport ws, wordApp, wordDoc, currentRow, savePath, fileName, saveResult
     Next currentRow
@@ -157,37 +157,57 @@ Private Sub KillWord(ByRef wordApp As Object, ByRef wordDoc As Object, ByRef ws 
     #End If
 End Sub
 
-Private Function VerifyRecordsAreComplete(ByRef ws As Worksheet, ByRef lastRow As Long) As Boolean
+Private Function VerifyRecordsAreComplete(ByRef ws As Worksheet, ByRef lastRow As Long, ByRef firstStudentRecord As Integer) As Boolean
     Dim currentRow As Integer, currentColumn As Integer
     Dim missingData As Boolean
     
+    Const CLASS_INFO_FIRST_ROW As Integer = 1
+    Const CLASS_INFO_LAST_ROW As Integer = 6
+    Const STUDENT_INFO_FIRST_ROW As Integer = 8
+    Const STUDENT_INFO_FIRST_COL As Integer = 2
+    Const STUDENT_INFO_LAST_COL As Integer = 10
+    
+    ' Set here are pass back to calling sub in order to keep declarations organized
+    firstStudentRecord = STUDENT_INFO_FIRST_ROW
+    
     On Error Resume Next
-    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).row
+    lastRow = ws.Cells(ws.Rows.Count, 2).End(xlUp).row
     On Error GoTo 0
     
-    If lastRow < 8 Then
+    If lastRow < STUDENT_INFO_FIRST_ROW Then
         MsgBox "No students were found!", vbExclamation, "Error!"
         VerifyRecordsAreComplete = False
         Exit Function
     End If
     
-    ' Skip row 7 as it contains no relevant information
-    For currentRow = 1 To lastRow
-        If currentRow < 7 Then
-            If PRINT_DEBUG_MESSAGES Then
-                Debug.Print ws.Cells(currentRow, 1).Value & " " & ws.Cells(currentRow, 2).Value
-            End If
-            missingData = IsEmpty(ws.Cells(currentRow, 2).Value)
-        ElseIf currentRow < 7 Then
-            For currentColumn = 1 To 9
-                If PRINT_DEBUG_MESSAGES Then
-                    Debug.Print ws.Cells(currentRow, 1).Value & "'s " & ws.Cells(7, currentColumn).Value & ": " & ws.Cells(currentRow, currentColumn).Value
-                End If
-                
-                missingData = IsEmpty(ws.Cells(currentRow, currentColumn).Value)
-                If missingData Then Exit For
-            Next currentColumn
+    ' Ensure class details are complete
+    For currentRow = CLASS_INFO_FIRST_ROW To CLASS_INFO_LAST_ROW
+        If PRINT_DEBUG_MESSAGES Then
+            Debug.Print ws.Cells(currentRow, 1).Value & " " & ws.Cells(currentRow, 3).Value
         End If
+        If IsEmpty(ws.Cells(currentRow, 3).Value) Then
+            missingData = True
+            Exit For
+        End If
+    Next currentRow
+    
+    If missingData Then
+        VerifyRecordsAreComplete = False
+        Exit Function
+    End If
+    
+    ' Ensure all student records are complete
+    For currentRow = STUDENT_INFO_FIRST_ROW To lastRow
+        For currentColumn = STUDENT_INFO_FIRST_COL To STUDENT_INFO_LAST_COL
+            If PRINT_DEBUG_MESSAGES Then
+                Debug.Print ws.Cells(currentRow, 2).Value & "'s " & ws.Cells(7, currentColumn).Value & ": " & ws.Cells(currentRow, currentColumn).Value
+            End If
+            
+            If IsEmpty(ws.Cells(currentRow, currentColumn).Value) Then
+                missingData = True
+                Exit For
+            End If
+        Next currentColumn
         If missingData Then Exit For
     Next currentRow
 
@@ -195,10 +215,11 @@ Private Function VerifyRecordsAreComplete(ByRef ws As Worksheet, ByRef lastRow A
 End Function
 
 Private Function LoadTemplate() As String
-    Const REPORT_TEMPLATE As String = "Speaking Evaluation Template.docx"
     Dim selectedPath As String, templatePath As String, tempTemplatePath As String, finalTemplatePath As String
     Dim msgToDisplay As String, msgTitle As String
     Dim validTemplateFound As Boolean
+    
+    Const REPORT_TEMPLATE As String = "Speaking Evaluation Template.docx"
     
     selectedPath = ThisWorkbook.Path
     ConvertOneDriveToLocalPath selectedPath
@@ -265,25 +286,24 @@ Private Sub DeleteTempTemplate(ByVal tempTemplatePath As String)
         Dim appleScriptResult As Boolean
         
         If isAppleScriptInstalled Then
-            ' Does this return a boolean result?
             appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFileExist", tempTemplatePath)
             
-            If appleScriptResult Then
-                ' Is there already a similar process?
+            If AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFileExist", tempTemplatePath) Then
                 appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DeleteFile", tempTemplatePath)
             End If
         Else
-            ' Will KILL work on MacOS?
-            ' Rename it as a backup until KILL can be tested
-            MoveFile tempTemplatePath, tempTemplatePath & ".bak"
+            Kill tempTemplatePath
         End If
     #Else
         Dim fso As Object
+        
         On Error Resume Next
         Set fso = CreateObject("Scripting.FileSystemObject")
         If fso.FileExists(tempTemplatePath) Then fso.DeleteFile tempTemplatePath, True
+        
         tempTemplatePath = Replace(tempTemplatePath, " ", "%20")
         If fso.FileExists(tempTemplatePath) Then fso.DeleteFile tempTemplatePath, True
+        
         Set fso = Nothing
         On Error GoTo 0
     #End If
@@ -377,8 +397,9 @@ Private Function DownloadReportTemplate(ByVal filepath As String) As Boolean
 End Function
 
 Private Function VerifyTemplateHash(ByVal filepath As String) As Boolean
-    Const TEMPLATE_HASH As String = "1D40D1790DCE2C5AA405A05BDA981517"
     Dim md5Command As String, generatedHash As String
+    
+    Const TEMPLATE_HASH As String = "1D40D1790DCE2C5AA405A05BDA981517"
     
     #If Mac Then
         If Not isAppleScriptInstalled Then
@@ -486,22 +507,22 @@ End Function
 Private Function GenerateSaveFolderName(ByRef ws As Worksheet) As String
     Dim classIdentifier As String
     
-    Select Case ws.Cells(4, 2).Value
+    Select Case ws.Cells(4, 3).Value
         Case "MonWed"
-            classIdentifier = "MW - " & ws.Cells(5, 2).Value
+            classIdentifier = "MW - " & ws.Cells(5, 3).Value
         Case "MonFri"
-            classIdentifier = "MF - " & ws.Cells(5, 2).Value
+            classIdentifier = "MF - " & ws.Cells(5, 3).Value
         Case "WedFri"
-            classIdentifier = "WF - " & ws.Cells(5, 2).Value
+            classIdentifier = "WF - " & ws.Cells(5, 3).Value
         Case "TTh"
-            classIdentifier = "TTh - " & ws.Cells(5, 2).Value
+            classIdentifier = "TTh - " & ws.Cells(5, 3).Value
         Case "MWF (Class 1)": classIdentifier = "MWF-1"
         Case "MWF (Class 2)": classIdentifier = "MWF-2"
         Case "TTh (Class 1)": classIdentifier = "TTh-1"
         Case "TTh (Class 2)": classIdentifier = "TTh-2"
     End Select
     
-    GenerateSaveFolderName = ws.Cells(3, 2).Value & " (" & classIdentifier & ")"
+    GenerateSaveFolderName = ws.Cells(3, 3).Value & " (" & classIdentifier & ")"
 End Function
 
 Private Sub CreateSaveFolder(ByRef selectedPath As String)
@@ -580,23 +601,23 @@ Private Sub WriteReport(ByRef ws As Object, ByRef wordApp As Object, ByRef wordD
     Dim signatureAdded As Boolean
     
     ' Data applicable to all reports
-    nativeTeacher = ws.Cells(1, 2).Value
-    koreanTeacher = ws.Cells(2, 2).Value
-    classLevel = ws.Cells(3, 2).Value
-    classTime = ws.Cells(4, 2).Value & "-" & ws.Cells(5, 2).Value
-    evalDate = ws.Cells(6, 2).Value
+    nativeTeacher = ws.Cells(1, 3).Value
+    koreanTeacher = ws.Cells(2, 3).Value
+    classLevel = ws.Cells(3, 3).Value
+    classTime = ws.Cells(4, 3).Value & "-" & ws.Cells(5, 3).Value
+    evalDate = ws.Cells(6, 3).Value
     evalDate = Format(Date, "MMM. YYYY")
     
     ' Data specific to each student
-    englishName = ws.Cells(currentRow, 1).Value
-    koreanName = ws.Cells(currentRow, 2).Value
-    grammarScore = ws.Cells(currentRow, 3).Value
-    pronunciationScore = ws.Cells(currentRow, 4).Value
-    fluencyScore = ws.Cells(currentRow, 5).Value
-    mannerScore = ws.Cells(currentRow, 6).Value
-    contentScore = ws.Cells(currentRow, 7).Value
-    effortScore = ws.Cells(currentRow, 8).Value
-    commentText = ws.Cells(currentRow, 9).Value
+    englishName = ws.Cells(currentRow, 2).Value
+    koreanName = ws.Cells(currentRow, 3).Value
+    grammarScore = ws.Cells(currentRow, 4).Value
+    pronunciationScore = ws.Cells(currentRow, 5).Value
+    fluencyScore = ws.Cells(currentRow, 6).Value
+    mannerScore = ws.Cells(currentRow, 7).Value
+    contentScore = ws.Cells(currentRow, 8).Value
+    effortScore = ws.Cells(currentRow, 9).Value
+    commentText = ws.Cells(currentRow, 10).Value
     overallGrade = CalculateOverallGrade(ws, currentRow)
     
     fileName = koreanTeacher & "(" & classTime & ")" & " - " & koreanName & "(" & englishName & ")"
@@ -630,7 +651,7 @@ Private Sub WriteReport(ByRef ws As Object, ByRef wordApp As Object, ByRef wordD
     signatureAdded = (Not wordDoc.Shapes("Signature") Is Nothing)
     On Error GoTo 0
     
-    If signatureAdded = False Then InsertSignature wordDoc
+    If Not signatureAdded Then InsertSignature wordDoc
     
     On Error Resume Next
     #If Mac Then
@@ -654,9 +675,10 @@ End Sub
 
 Private Function CalculateOverallGrade(ByRef ws As Worksheet, ByVal currentRow As Integer) As String
     Dim scoreRange As Range, gradeCell As Range
-    Dim totalScore As Integer, avgScore As Integer, numericScore As Integer
+    Dim totalScore As Double, avgScore As Double
+    Dim roundedScore As Integer, numericScore As Integer
     
-    Set scoreRange = ws.Range("C" & currentRow & ":H" & currentRow)
+    Set scoreRange = ws.Range("D" & currentRow & ":I" & currentRow)
     totalScore = 0
     
     For Each gradeCell In scoreRange
@@ -670,7 +692,13 @@ Private Function CalculateOverallGrade(ByRef ws As Worksheet, ByVal currentRow A
         totalScore = totalScore + numericScore
     Next gradeCell
     
-    avgScore = Int(totalScore / 6)
+    ' Be a little generous with the score rounding. They're young afterall.
+    avgScore = totalScore / 6
+    If avgScore - Int(avgScore) >= 0.4 Then
+        roundedScore = Int(avgScore) + 1
+    Else
+        roundedScore = Int(avgScore)
+    End If
     
     Select Case avgScore
         Case 5: CalculateOverallGrade = "A+"
@@ -688,6 +716,9 @@ Private Sub InsertSignature(ByRef wordDoc As Object)
     Dim signatureFound As Boolean
     
     Const SIGNATURE_SHAPE_NAME As String = "mySignature"
+    Const SIGNATURE_PNG_FILENAME As String = "mySignature.png"
+    Const SIGNATURE_JPG_FILENAME As String = "mySignature.jpg"
+    
     ' These numbers make no sense, but they work.
     Const ABSOLUTE_LEFT As Double = 332.4
     Const ABSOLUTE_TOP As Double = 684
@@ -711,22 +742,19 @@ Private Sub InsertSignature(ByRef wordDoc As Object)
     If newImagePath = "" Then
         If useEmbeddedSignature Then
             SaveSignature SIGNATURE_SHAPE_NAME, newImagePath
-        Else
+        ElseIf isAppleScriptInstalled Then
             #If Mac Then
                 newImagePath = AppleScriptTask(APPLE_SCRIPT_FILE, "FindSignature", signaturePath)
                 If newImagePath = "" Then Exit Sub
                 signatureFound = True
             #End If
-            
-            ' Handle Windows users and MacOS users without SpeakingEvals.scpt
-            If Not isAppleScriptInstalled And Not signatureFound Then
-                If Dir(signaturePath & "mySignature.png") <> "" Then
-                    newImagePath = signaturePath & "mySignature.png"
-                ElseIf Dir(signaturePath & "mySignature.jpg") <> "" Then
-                    newImagePath = signaturePath & "mySignature.jpg"
-                Else
-                    Exit Sub
-                End If
+        ElseIf Not signatureFound Then
+            If Dir(signaturePath & SIGNATURE_PNG_FILENAME) <> "" Then
+                newImagePath = signaturePath & SIGNATURE_PNG_FILENAME
+            ElseIf Dir(signaturePath & SIGNATURE_JPG_FILENAME) <> "" Then
+                newImagePath = signaturePath & SIGNATURE_JPG_FILENAME
+            Else
+                Exit Sub
             End If
         End If
     End If
@@ -861,35 +889,30 @@ End Sub
 Private Sub ConvertOneDriveToLocalPath(ByRef selectedPath As String)
     Dim i As Integer
     
-    ' Cloud storage apps like OneDrive and iCloud like to complicate where files are stored. This will
-    ' examine the path and ensure a valid local path is used.
+    ' Cloud storage apps like OneDrive sometimes complicate where/how files are saved. Below is a reference
+    ' to track and help add support foradditionalcloud storage providers.
+    ' OneDrive
+        ' Local Paths:      "/Users/" & Environ("USER") & "/Library/CloudStorage/OneDrive-Personal/"
+        ' Returned Paths:   https://d.docs.live.net  AND  OneDrive://
+        ' Procedure:        Trim everything before the 4th '/'
+    ' iCloud
+        ' Local Paths:      "/Users/" & Environ("USER") & "/Library/Mobile Documents/com~apple~CloudDocs/"
+        ' Returned Paths:   N/A
+        ' Procedure:        No trim required. ThisWorkbook.Path returns full local path
+    ' Google Drive
+        ' Local Paths:      "/Users/" & Environ("USER") & "/Library/CloudStorage/GoogleDrive-[user]@gmail.com/"
+        ' Returned Paths:   N/A
+        ' Procedure:        No trim required. ThisWorkbook.Path returns full local path
     
-    ' Look into if code is needed to handle Google Drive, especially on MacOS
-    
-    ' Everything before the 4th '/' is the OneDrive URI and needs to be removed.
     If Left(selectedPath, 23) = "https://d.docs.live.net" Or Left(selectedPath, 11) = "OneDrive://" Then
         For i = 1 To 4
             selectedPath = Mid(selectedPath, InStr(selectedPath, "/") + 1)
         Next
         
-        ' Append the local file directory to the beginning of the trimmed 'selectedPath'.
         #If Mac Then
             selectedPath = "/Users/" & Environ("USER") & "/Library/CloudStorage/OneDrive-Personal/" & selectedPath
         #Else
             selectedPath = Environ$("OneDrive") & "\" & Replace(selectedPath, "/", "\")
-        #End If
-    Else
-        #If Mac Then
-            ' Strip away the iCloud part of the filepath (everything before the 6th '/')
-            If InStr(1, selectedPath, "iCloud Drive", vbTextCompare) > 0 Then
-                For i = 1 To 6
-                    selectedPath = Mid(selectedPath, InStr(selectedPath, "/") + 1)
-                Next
-                
-                If PRINT_DEBUG_MESSAGES Then Debug.Print "Trimmed iCloud file path: " & selectedPath
-                
-                selectedPath = "/Users/" & Environ("USER") & "/Library/Mobile Documents/com~apple~CloudDocs/" & selectedPath
-            End If
         #End If
     End If
 End Sub
