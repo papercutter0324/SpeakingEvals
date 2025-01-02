@@ -121,18 +121,13 @@ on CompareMD5Hashes(paramString)
 	set {filePath, validHash} to SplitString(paramString, ",")
 	
 	if not DoesFileExist(filePath) then
-		display dialog "File does not exist: " & filePath
 		return false
 	end if
 	
 	try
-		if (do shell script "md5 -q " & quoted form of filePath) is validHash then
-			return true
-		else
-			return false
-		end if
+		set checkResult to (do shell script "md5 -q " & quoted form of filePath)
+		return checkResult is validHash
 	on error
-		display dialog "Error generating hash of " & filePath
 		return false
 	end try
 end CompareMD5Hashes
