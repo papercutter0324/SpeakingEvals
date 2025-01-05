@@ -4,7 +4,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     Application.EnableEvents = False
     
     ' Monitor the six letter grade columns
-	Set validRange = Union(Me.Range("D8:D32"), Me.Range("E8:E32"), _
+    Set validRange = Union(Me.Range("D8:D32"), Me.Range("E8:E32"), _
                            Me.Range("F8:F32"), Me.Range("G8:G32"), _
                            Me.Range("H8:H32"), Me.Range("I8:I32"))
     
@@ -12,7 +12,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         For Each changedCell In Target
             If IsNumeric(changedCell.Value) Then
                 ' Convert numbers into letter grades
-				Select Case changedCell.Value
+		Select Case changedCell.Value
                     Case 1: changedCell.Value = "C"
                     Case 2: changedCell.Value = "B"
                     Case 3: changedCell.Value = "B+"
@@ -20,7 +20,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
                     Case 5: changedCell.Value = "A+"
                 End Select
             ElseIf VarType(changedCell.Value) = vbString Then
-				' Ensure letter grades are capitalized
+		' Ensure letter grades are capitalized
                 Select Case LCase(changedCell.Value)
                     Case "c": changedCell.Value = "C"
                     Case "b": changedCell.Value = "B"
