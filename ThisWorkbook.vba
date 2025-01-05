@@ -1,44 +1,43 @@
 Option Explicit
-
-Const PRINT_DEBUG_MESSAGES As Boolean = True
+#Const PRINT_DEBUG_MESSAGES = True
 Const APPLE_SCRIPT_FILE As String = "SpeakingEvals.scpt"
-Const IS_WORD_VISIBLE As Boolean = True
-Const SHOW_WORD_SCREEN_UPDATING As Boolean = True
 Dim isAppleScriptInstalled As Boolean
 
 Sub PrintReports()
-    Dim ws As Worksheet, wordApp As Object, wordDoc As Object
-    Dim templatePath As String, savePath As String, fileName As String
-    Dim resultMsg As String, msgToDisplay As String, msgTitle As String, msgType As Integer
-    Dim currentRow As Long, lastRow As Long, firstStudentRecord As Integer
-    Dim saveResult As Boolean
-
+    Const REPORT_TEMPLATE As String = "Speaking Evaluation Template.docx"
     Const ERR_INCOMPLETE_RECORDS As String = "incompleteRecords"
     Const ERR_LOADING_WORD As String = "loadingWord"
     Const ERR_LOADING_TEMPLATE As String = "loadingTemplate"
     Const ERR_MISSING_SHAPES As String = "missingTemplateShapes"
     Const MSG_SUCCESS As String = "exportSuccessful"
     Const MSG_FAILED As String = "exportFailed"
-    
+
+    Dim ws As Worksheet, wordApp As Object, wordDoc As Object
+    Dim templatePath As String, savePath As String, fileName As String
+    Dim resultMsg As String, msgToDisplay As String, msgTitle As String, msgType As Integer
+    Dim currentRow As Long, lastRow As Long, firstStudentRecord As Integer
+    Dim preexistingWordInstance As Boolean, saveResult As Boolean
+
+    Set ws = ActiveSheet
+
     #If Mac Then
         RequestInitialFileAndFolderAccess
         isAppleScriptInstalled = CheckForAppleScript()
     #End If
-    
-    Set ws = ActiveSheet
-    If ws Is Nothing Then GoTo Cleanup
-    
+
+    If IsTemplateAlreadyOpen(REPORT_TEMPLATE, preexistingWordInstance) Then Exit Sub
+
     If Not VerifyRecordsAreComplete(ws, lastRow, firstStudentRecord) Then
         resultMsg = ERR_INCOMPLETE_RECORDS
         GoTo Cleanup
     End If
-    
-    templatePath = LoadTemplate()
+
+    templatePath = LoadTemplate(REPORT_TEMPLATE)
     If templatePath = "" Then GoTo Cleanup
-    
+
     savePath = SetSaveLocation(ws)
     If savePath = "" Then GoTo Cleanup
-    
+
     If Not LoadWord(wordApp, wordDoc, templatePath) Then
         resultMsg = ERR_LOADING_WORD
         GoTo Cleanup
@@ -87,20 +86,21 @@ Cleanup:
     End Select
     
     If resultMsg <> "" Then MsgBox msgToDisplay, msgType, msgTitle
-    KillWord wordApp, wordDoc, ws
+    KillWord wordApp, wordDoc, preexistingWordInstance
+    Set ws = Nothing
 End Sub
 
 Private Function VerifyRecordsAreComplete(ByRef ws As Worksheet, ByRef lastRow As Long, ByRef firstStudentRecord As Integer) As Boolean
-    Dim currentRow As Long, currentColumn As Long
-    Dim validationMessage As String
-    
     Const CLASS_INFO_FIRST_ROW As Integer = 1
     Const CLASS_INFO_LAST_ROW As Integer = 6
     Const STUDENT_INFO_FIRST_ROW As Integer = 8
     Const STUDENT_INFO_FIRST_COL As Integer = 2
     Const STUDENT_INFO_LAST_COL As Integer = 10
     
-    ' Set here and pass back to calling sub in order to keep declarations organized
+    Dim currentRow As Long, currentColumn As Long
+    Dim validationMessage As String
+    
+    ' Set here and passed back to keep declarations organized
     firstStudentRecord = STUDENT_INFO_FIRST_ROW
     
     On Error Resume Next
@@ -141,7 +141,7 @@ Private Function VerifyRecordsAreComplete(ByRef ws As Worksheet, ByRef lastRow A
                 Exit Function
             End If
             
-            If currentColumn > 3 Then
+            If currentColumn >= 4 Then
                 If Not ValidateData(ws.Cells(currentRow, currentColumn), ws.Cells(7, currentColumn).Value) Then
                     If currentColumn <> 10 Then
                         validationMessage = "Invalid value entered for " & ws.Cells(currentRow, 2).Value & "'s " & LCase(ws.Cells(7, currentColumn).Value) & " score."
@@ -162,18 +162,20 @@ Private Function VerifyRecordsAreComplete(ByRef ws As Worksheet, ByRef lastRow A
 End Function
 
 Private Function ValidateData(ByRef currentCell As Range, ByVal dataType As String) As Boolean
-    Dim validLevels As Variant, validDays As Variant, validTimes As Variant, gradeMapping As Variant
+    Static validLevels As Variant, validDays As Variant, validTimes As Variant, gradeMapping As Variant, isDeclared As Boolean
     Dim dataValue As String
     
-    ' Perhaps make these static?
+    If Not isDeclared Then
+        validLevels = Array("Theseus", "Perseus", "Odysseus", "Hercules", "Artemis", "Hermes", "Apollo", _
+                           "Zeus", "E5 Athena", "Helios", "Poseidon", "Gaia", "Hera", "E6 Song's")
+        validDays = Array("MonWed", "MonFri", "WedFri", "MWF", "TTh", "MWF (Class 1)", "MWF (Class 2)", _
+                         "TTh (Class 1)", "TTh (Class 2)")
+        validTimes = Array("4pm", "5pm", "530pm", "6pm", "7pm", "8pm", "830pm", "9pm")
+        gradeMapping = Array("C", "B", "B+", "A", "A+")
+        isDeclared = True
+    End If
     
-    validLevels = Array("Theseus", "Perseus", "Odysseus", "Hercules", "Artemis", "Hermes", "Apollo", _
-                       "Zeus", "E5 Athena", "Helios", "Poseidon", "Gaia", "Hera", "E6 Song's")
-    validDays = Array("MonWed", "MonFri", "WedFri", "MWF", "TTh", "MWF (Class 1)", "MWF (Class 2)", _
-                     "TTh (Class 1)", "TTh (Class 2)")
-    validTimes = Array("4pm", "5pm", "530pm", "6pm", "7pm", "8pm", "830pm", "9pm")
-    gradeMapping = Array("C", "B", "B+", "A", "A+")
-    
+    Application.EnableEvents = False
     dataValue = Trim(currentCell.Value)
     
     Select Case dataType
@@ -186,14 +188,10 @@ Private Function ValidateData(ByRef currentCell As Range, ByVal dataType As Stri
         Case "Grammar", "Pronunciation", "Fluency", "Manner", "Content", "Overall Effort"
             dataValue = UCase(dataValue)
             If IsValueValid(gradeMapping, dataValue) Then
-                Application.EnableEvents = False
                 currentCell.Value = dataValue
-                Application.EnableEvents = True
                 ValidateData = True
             ElseIf IsNumeric(dataValue) And Val(dataValue) >= 1 And Val(dataValue) <= 5 Then
-                Application.EnableEvents = False
                 currentCell.Value = gradeMapping(Val(dataValue) - 1)
-                Application.EnableEvents = True
                 ValidateData = True
             Else
                 ValidateData = False
@@ -203,6 +201,7 @@ Private Function ValidateData(ByRef currentCell As Range, ByVal dataType As Stri
         Case Else
             ValidateData = False
     End Select
+    Application.EnableEvents = True
 End Function
 
 Private Function IsValueValid(ByRef dataArray As Variant, ByVal dataValue As String) As Boolean
@@ -216,20 +215,17 @@ Private Function IsValueValid(ByRef dataArray As Variant, ByVal dataValue As Str
     IsValueValid = False
 End Function
 
-Private Function LoadTemplate() As String
+Private Function LoadTemplate(ByVal REPORT_TEMPLATE As String) As String
     Dim templatePath As String, tempTemplatePath As String, destinationPath As String
     Dim msgToDisplay As String, msgTitle As String
     Dim validTemplateFound As Boolean
-    
-    Const REPORT_TEMPLATE As String = "Speaking Evaluation Template.docx"
     
     templatePath = ThisWorkbook.Path & Application.PathSeparator & REPORT_TEMPLATE
     ConvertOneDriveToLocalPath templatePath
     destinationPath = templatePath
     tempTemplatePath = GetTempFilePath(REPORT_TEMPLATE)
     
-    ' Removing existing file to avoid problems overwriting
-    DeleteFile tempTemplatePath
+    DeleteFile tempTemplatePath ' Removing existing file to avoid problems overwriting
     
     If Not IsTemplateValid(templatePath, tempTemplatePath) Then
         MsgBox "No template was found. Process canceled.", vbExclamation, "Template Not Found"
@@ -245,7 +241,9 @@ Private Function LoadTemplate() As String
         End If
     End If
     
-    If PRINT_DEBUG_MESSAGES Then Debug.Print "Template successfully loaded."
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Template successfully loaded."
+    #End If
     
     LoadTemplate = templatePath
 End Function
@@ -255,12 +253,11 @@ Private Function IsTemplateValid(ByRef templatePath As String, ByVal tempTemplat
         Dim userResponse As Integer
         
         If Not isAppleScriptInstalled Then
-            If Dir(templatePath) <> "" Then
+            IsTemplateValid = (Dir(templatePath) <> "")
+            If IsTemplateValid Then
                 userResponse = MsgBox("A template file was found, but its validity cannot be confirmed without SpeakingEvals.scpt. " & _
                                       "Proceed anyway?", vbYesNo, "Warning!")
                 IsTemplateValid = (userResponse = vbYes)
-            Else
-                IsTemplateValid = False
             End If
             Exit Function
         End If
@@ -276,19 +273,15 @@ Private Function IsTemplateValid(ByRef templatePath As String, ByVal tempTemplat
         End If
     #End If
     
-    ' Delete invalid local copy. This also handles cases where template appears but is stored in the cloud
+    ' Delete invalid and/or non-local copies and grab a fresh copy
     DeleteFile templatePath
-    
-    ' Download fresh copy
     templatePath = tempTemplatePath
     IsTemplateValid = DownloadReportTemplate(templatePath)
 End Function
 
 Private Function DownloadReportTemplate(ByVal templatePath As String) As Boolean
-    Dim downloadResult As Boolean
     Const REPORT_TEMPLATE_URL As String = "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Speaking%20Evaluation%20Template.docx"
-    
-    downloadResult = False
+    Dim downloadResult As Boolean
     
     #If Mac Then
         If isAppleScriptInstalled Then
@@ -296,7 +289,9 @@ Private Function DownloadReportTemplate(ByVal templatePath As String) As Boolean
             downloadResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DownloadFile", templatePath & "," & REPORT_TEMPLATE_URL)
             
             If downloadResult Then RequestAdditionalFileAndFolderAccess templatePath
-            If PRINT_DEBUG_MESSAGES Then Debug.Print IIf(Err.Number = 0, "Download successful.", "Error: " & Err.Description)
+            #If PRINT_DEBUG_MESSAGES Then
+                Debug.Print IIf(Err.Number = 0, "Download successful.", "Error: " & Err.Description)
+            #End If
             On Error GoTo 0
         End If
     #Else
@@ -304,6 +299,8 @@ Private Function DownloadReportTemplate(ByVal templatePath As String) As Boolean
             downloadResult = DownloadUsingCurl(templatePath, REPORT_TEMPLATE_URL)
         ElseIf CheckForDotNet35() Then
             downloadResult = DownloadUsingDotNet35(templatePath, REPORT_TEMPLATE_URL)
+        Else
+            downloadResult = False
         End If
     #End If
     
@@ -315,7 +312,6 @@ Private Function DownloadReportTemplate(ByVal templatePath As String) As Boolean
 End Function
 
 Private Function VerifyTemplateHash(ByVal filePath As String) As Boolean
-    Dim md5Command As String, generatedHash As String
     Const TEMPLATE_HASH As String = "1D40D1790DCE2C5AA405A05BDA981517"
     
     #If Mac Then
@@ -330,47 +326,25 @@ Private Function VerifyTemplateHash(ByVal filePath As String) As Boolean
         VerifyTemplateHash = AppleScriptTask(APPLE_SCRIPT_FILE, "CompareMD5Hashes", filePath & "," & TEMPLATE_HASH)
         Exit Function
     #Else
-        Dim objShell As Object, fso As Object
-        Dim tempHashFile As String
-    
+        Dim objShell As Object, shellOutput As String
+        
         On Error GoTo ErrorHandler
         Set objShell = CreateObject("WScript.Shell")
-        Set fso = CreateObject("Scripting.FileSystemObject")
-        
-        tempHashFile = Environ("TEMP") & "\hash_result.txt"
-        md5Command = "cmd /c certutil -hashfile """ & filePath & """ MD5 > """ & tempHashFile & """"
-        
-        objShell.Run md5Command, 0, True
-        
-        If fso.FileExists(tempHashFile) Then
-            With fso.OpenTextFile(tempHashFile, 1)
-                .ReadLine
-                generatedHash = Trim(LCase(.ReadLine))
-                .Close
-            End With
-            fso.DeleteFile tempHashFile
-        Else
-            VerifyTemplateHash = False
-            Exit Function
-        End If
-        On Error GoTo 0
-        
-        Set objShell = Nothing
-        Set fso = Nothing
-        
-        VerifyTemplateHash = (LCase(TEMPLATE_HASH) = generatedHash)
-        Exit Function
+        shellOutput = objShell.Exec("cmd /c certutil -hashfile """ & filePath & """ MD5").StdOut.ReadAll
+        VerifyTemplateHash = (LCase(TEMPLATE_HASH) = LCase(Trim(Split(shellOutput, vbCrLf)(1))))
     #End If
-ErrorHandler:
-    If PRINT_DEBUG_MESSAGES Then Debug.Print "Error: " & Err.Number & " - " & Err.Description
-    
-    VerifyTemplateHash = False
-    
+Cleanup:
     #If Mac Then
     #Else
-        If Not objShell Is Nothing Then Set objShell = Nothing
-        If Not fso Is Nothing Then Set fso = Nothing
+        Set objShell = Nothing
     #End If
+    Exit Function
+ErrorHandler:
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Error: " & Err.Number & " - " & Err.Description
+    #End If
+    VerifyTemplateHash = False
+    Resume Cleanup
 End Function
 
 Private Function SetSaveLocation(ByRef ws As Object) As String
@@ -380,16 +354,16 @@ Private Function SetSaveLocation(ByRef ws As Object) As String
     selectedPath = ThisWorkbook.Path & Application.PathSeparator & GenerateSaveFolderName(ws) & Application.PathSeparator
     ConvertOneDriveToLocalPath selectedPath
     
-    If PRINT_DEBUG_MESSAGES Then Debug.Print "Saving reports in: " & vbNewLine & "    " & selectedPath; ""
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Saving reports in: " & vbNewLine & "    " & selectedPath; ""
+    #End If
     
     #If Mac Then
-        Dim folderAction As String
-        
         If isAppleScriptInstalled Then
-            If AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFolderExist", selectedPath) Then
-                ' Clear out the folder to prevent user confusion.
-                scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "ClearFolder", selectedPath)
-            End If
+            scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFolderExist", selectedPath)
+            
+            ' Delete existing files to prevent user confusion.
+            If scriptResult Then scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "ClearFolder", selectedPath)
             
             scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "CreateFolder", selectedPath)
             RequestAdditionalFileAndFolderAccess selectedPath
@@ -399,16 +373,20 @@ Private Function SetSaveLocation(ByRef ws As Object) As String
     ' Handle Windows users and MacOS users who chose not to installed SpeakingEvals.scpt
     If Not isAppleScriptInstalled And Not scriptResult Then
         If Dir(selectedPath, vbDirectory) <> "" Then
-            If PRINT_DEBUG_MESSAGES Then Debug.Print "Directory already exists. Clearing contents."
+            #If PRINT_DEBUG_MESSAGES Then
+                Debug.Print "Directory already exists. Clearing contents."
+            #End If
             DeleteExistingFolder selectedPath
         Else
-            If PRINT_DEBUG_MESSAGES Then Debug.Print "Path not found. Attempting to create."
+            #If PRINT_DEBUG_MESSAGES Then
+                Debug.Print "Path not found. Attempting to create."
+            #End If
         End If
         
         CreateSaveFolder selectedPath
     End If
     
-    ConvertOneDriveToLocalPath selectedPath 'This appears no longer necessary
+    ConvertOneDriveToLocalPath selectedPath
     SetSaveLocation = selectedPath
 End Function
 
@@ -438,10 +416,10 @@ Private Sub CreateSaveFolder(ByRef selectedPath As String)
         selectedPath = Left(selectedPath, Len(selectedPath) - 1)
     End If
     
+    On Error Resume Next
     #If Mac Then
         Dim msgToDisplay As String, msgTitle As String
         
-        On Error Resume Next
         If Dir(selectedPath, vbDirectory) = "" Then MkDir selectedPath
           
         If Not isAppleScriptInstalled And Dir(selectedPath & "/*") <> "" Then
@@ -458,59 +436,99 @@ Private Sub CreateSaveFolder(ByRef selectedPath As String)
         fso.CreateFolder selectedPath
         Set fso = Nothing
     #End If
+    On Error GoTo 0
     
     If Right(selectedPath, 1) <> Application.PathSeparator Then
         selectedPath = selectedPath & Application.PathSeparator
     End If
 End Sub
 
-Private Function LoadWord(ByRef wordApp As Object, ByRef wordDoc As Object, ByVal templatePath As String) As Boolean
-    ' Check for an open instance of Word
+Private Function IsTemplateAlreadyOpen(ByVal REPORT_TEMPLATE As String, ByRef preexistingWordInstance As Boolean) As Boolean
+    Dim wordApp As Object, wordDoc As Object
+    Dim templatePath As String, templateIsOpen As Boolean
+    Dim warningMsg As String
+    
     On Error Resume Next
     Set wordApp = GetObject(, "Word.Application")
+    Err.Clear
+    
+    If Not wordApp Is Nothing Then
+        preexistingWordInstance = True
+    
+        If Left(ThisWorkbook.Path, 23) = "https://d.docs.live.net" Or Left(ThisWorkbook.Path, 11) = "OneDrive://" Then
+            templatePath = ThisWorkbook.Path & "/" & REPORT_TEMPLATE
+        Else
+            templatePath = ThisWorkbook.Path & Application.PathSeparator & REPORT_TEMPLATE
+        End If
+        
+        For Each wordDoc In wordApp.Documents
+            If StrComp(wordDoc.FullName, templatePath, vbTextCompare) = 0 Then
+                templateIsOpen = True
+                Exit For
+            End If
+        Next wordDoc
+    End If
+    
+    If templateIsOpen Then
+        warningMsg = "An open instance of MS Word has been detected. Please save any open files before continuing." & vbNewLine & vbNewLine & _
+                     "Click OK to automatically close Word and continue. Or, click Cancel to finish and save your work."
+        If (MsgBox(warningMsg, vbOKCancel, "Warning!") = vbOK) Then
+            wordDoc.Close SaveChanges:=False
+            templateIsOpen = False
+        End If
+    End If
+    On Error GoTo 0
+    
+    Set wordDoc = Nothing
+    Set wordApp = Nothing
+    IsTemplateAlreadyOpen = templateIsOpen
+End Function
+
+Private Function LoadWord(ByRef wordApp As Object, ByRef wordDoc As Object, ByVal templatePath As String) As Boolean
+    On Error Resume Next
+    Set wordApp = GetObject(, "Word.Application")
+    Err.Clear
     On Error GoTo ErrorHandler
     
-    ' Open a new one if not found
+    ' Open a new instance of Word if needed
     #If Mac Then
-        Dim appleScriptResult As String
-        appleScriptResult = "N/A"
+        Dim appleScriptResult As String, errorMsg As String
         
         If isAppleScriptInstalled Then
             appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "LoadApplication", "Microsoft Word")
-            If PRINT_DEBUG_MESSAGES Then Debug.Print appleScriptResult
+            
+            #If PRINT_DEBUG_MESSAGES Then
+                If appleScriptResult <> "" Then Debug.Print appleScriptResult
+            #End If
             
             appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "IsAppLoaded", "Microsoft Word")
-            If PRINT_DEBUG_MESSAGES Then Debug.Print appleScriptResult
+            
+            #If PRINT_DEBUG_MESSAGES Then
+                Debug.Print appleScriptResult
+            #End If
             
             Set wordApp = GetObject(, "Word.Application")
         End If
     #End If
-    
-    'For Windows users and MacOS users without SpeakingEvals.scpt
     If wordApp Is Nothing Then Set wordApp = CreateObject("Word.Application")
     
     ' Make the process visible so users understand their computer isn't frozen
-    wordApp.Visible = IS_WORD_VISIBLE
-    wordApp.ScreenUpdating = SHOW_WORD_SCREEN_UPDATING
+    wordApp.Visible = True
+    wordApp.ScreenUpdating = True
     
     If Not wordApp Is Nothing Then Set wordDoc = wordApp.Documents.Open(templatePath)
     LoadWord = (Not wordApp Is Nothing)
     Exit Function
 ErrorHandler:
-    If Err.Number = 0 Then
-        Err.Clear
-        Resume Next
-    Else
-        #If Mac Then
-            MsgBox "An error occurred while trying to load Microsoft Word. This is usually a result of a quirk in MacOS. Try creating the reports again, and it should work fine." & vbNewLine & vbNewLine & _
-            "If the problem persists, please take a picture of the following error message and ask your team leader to send it to Warren at Bundang." & vbNewLine & vbNewLine & _
-            "VBA Error " & Err.Number & ": " & Err.Description & vbNewLine & _
-            "AppleScript Error: " & appleScriptResult, vbCritical, "Error Loading Word"
-        #End If
+    #If Mac Then
+        errorMsg = "An error occurred while trying to load Microsoft Word. This is usually a result of a quirk in MacOS. Try creating the reports again, and it should work fine." & vbNewLine & vbNewLine & _
+        "If the problem persists, please take a picture of the following error message and ask your team leader to send it to Warren at Bundang." & vbNewLine & vbNewLine & _
+        "VBA Error " & Err.Number & ": " & Err.Description
         
-        LoadWord = False
-        If Not wordApp Is Nothing Then Set wordApp = Nothing
-    End If
+        If isAppleScriptInstalled Then errorMsg = errorMsg & vbNewLine & "AppleScript Error: " & appleScriptResult
+        MsgBox errorMsg, vbCritical, "Error Loading Word"
+    #End If
+    LoadWord = False
 End Function
 
 Private Function VerifyAllDocShapesExist(ByRef wordDoc As Object) As Boolean
@@ -528,7 +546,10 @@ Private Function VerifyAllDocShapesExist(ByRef wordDoc As Object) As Boolean
                        
     For i = LBound(shapeNames) To UBound(shapeNames)
         If Not WordDocShapeExists(wordDoc, shapeNames(i)) Then
-            If PRINT_DEBUG_MESSAGES Then Debug.Print "Missing shape: " & shapeNames(i)
+            #If PRINT_DEBUG_MESSAGES Then
+                Debug.Print "Missing shape: " & shapeNames(i)
+            #End If
+            
             msgToDisplay = "There is a critical error with the template. Please redownload a copy of the original and try again."
             MsgBox msgToDisplay, vbExclamation, "Error!"
             VerifyAllDocShapesExist = False
@@ -542,7 +563,9 @@ End Function
 Private Function WordDocShapeExists(ByRef wordDoc As Object, ByVal shapeName As String) As Boolean
     Dim shp As Object, grpItem As Object
     
-    If PRINT_DEBUG_MESSAGES Then Debug.Print "Search for shape: " & shapeName
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Search for shape: " & shapeName
+    #End If
     
     On Error Resume Next
     For Each shp In wordDoc.Shapes
@@ -557,7 +580,9 @@ Private Function WordDocShapeExists(ByRef wordDoc As Object, ByVal shapeName As 
     Next shp
     On Error GoTo 0
     
-    If PRINT_DEBUG_MESSAGES Then Debug.Print "Unable to find shape: " & shapeName
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Unable to find shape: " & shapeName
+    #End If
     
     WordDocShapeExists = False
 End Function
@@ -581,8 +606,6 @@ Private Sub WriteReport(ByRef ws As Object, ByRef wordApp As Object, ByRef wordD
     Dim englishName As String, koreanName As String, grammarScore As String, pronunciationScore As String, fluencyScore As String
     Dim mannerScore As String, contentScore As String, effortScore As String, commentText As String, overallGrade As String
     
-    Static signatureAdded As Boolean
-    
     ' Data applicable to all reports
     nativeTeacher = ws.Cells(1, 3).Value
     koreanTeacher = ws.Cells(2, 3).Value
@@ -605,37 +628,30 @@ Private Sub WriteReport(ByRef ws As Object, ByRef wordApp As Object, ByRef wordD
     
     fileName = koreanTeacher & "(" & classTime & ")" & " - " & koreanName & "(" & englishName & ")"
     
-    If PRINT_DEBUG_MESSAGES Then Debug.Print "Saving to: " & savePath & vbNewLine & "Saving as: " & fileName
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Saving to: " & savePath & vbNewLine & "Saving as: " & fileName
+    #End If
     
     With wordDoc
-        ' Populate the report's header
         .Shapes("Report_Header").GroupItems("English_Name").TextFrame.TextRange.Text = englishName
         .Shapes("Report_Header").GroupItems("Korean_Name").TextFrame.TextRange.Text = koreanName
         .Shapes("Report_Header").GroupItems("Grade").TextFrame.TextRange.Text = classLevel
         .Shapes("Report_Header").GroupItems("Native_Teacher").TextFrame.TextRange.Text = nativeTeacher
         .Shapes("Report_Header").GroupItems("Korean_Teacher").TextFrame.TextRange.Text = koreanTeacher
         .Shapes("Report_Header").GroupItems("Date").TextFrame.TextRange.Text = evalDate
-        
-        ' Populate the scores
         .Shapes("Grammar_Scores").GroupItems("Grammar_" & grammarScore).TextFrame.TextRange.Text = grammarScore
         .Shapes("Pronunciation_Scores").GroupItems("Pronunciation_" & pronunciationScore).TextFrame.TextRange.Text = pronunciationScore
         .Shapes("Fluency_Scores").GroupItems("Fluency_" & fluencyScore).TextFrame.TextRange.Text = fluencyScore
         .Shapes("Manner_Scores").GroupItems("Manner_" & mannerScore).TextFrame.TextRange.Text = mannerScore
         .Shapes("Content_Scores").GroupItems("Content_" & contentScore).TextFrame.TextRange.Text = contentScore
         .Shapes("Effort_Scores").GroupItems("Effort_" & effortScore).TextFrame.TextRange.Text = effortScore
-        
-        ' Populate the comment and overall grade
         .Shapes("Report_Footer").GroupItems("Comments").TextFrame.TextRange.Text = commentText
         .Shapes("Report_Footer").GroupItems("Overall_Grade").TextFrame.TextRange.Text = overallGrade
     End With
     
-    ' Quick check to make sure the teacher's signature is only added once
-    If Not signatureAdded Then
-        InsertSignature wordDoc
-        signatureAdded = True
-    End If
-    
     On Error Resume Next
+    If wordDoc.Shapes("Signature") Is Nothing Then InsertSignature wordDoc
+    
     #If Mac Then
         ' Export to PDF is a bit flaky on MacOS, so we need to do a full SaveAs2. Only results in a minimal time loss.
         wordDoc.SaveAs2 fileName:=(savePath & fileName & ".pdf"), FileFormat:=17, AddtoRecentFiles:=False, EmbedTrueTypeFonts:=True
@@ -645,13 +661,13 @@ Private Sub WriteReport(ByRef ws As Object, ByRef wordApp As Object, ByRef wordD
     
     saveResult = (Err.Number = 0)
     
-    If PRINT_DEBUG_MESSAGES Then
+    #If PRINT_DEBUG_MESSAGES Then
         If saveResult Then
             Debug.Print "Successfully saved: " & fileName
         Else
             Debug.Print "Failed to save." & "Error Number: " & Err.Number & vbNewLine & "Error Description: " & Err.Description
         End If
-    End If
+    #End If
     On Error GoTo 0
 End Sub
 
@@ -716,7 +732,6 @@ Private Sub InsertSignature(ByRef wordDoc As Object)
         ConvertOneDriveToLocalPath signaturePath
     End If
     
-    ' Only add if not already present.
     On Error Resume Next
     useEmbeddedSignature = (Not ThisWorkbook.Sheets("Instructions").Shapes("mySignature") Is Nothing)
     On Error GoTo 0
@@ -762,9 +777,6 @@ Private Sub InsertSignature(ByRef wordDoc As Object)
         .Left = ABSOLUTE_LEFT
         .Top = ABSOLUTE_TOP
         .Width = imageWidth
-        .Height = imageHeight
-        
-        ' Ensure positioning relative to the page
         .RelativeHorizontalPosition = 1
         .RelativeVerticalPosition = 1
     End With
@@ -799,26 +811,29 @@ Private Sub SaveSignature(ByVal SIGNATURE_SHAPE_NAME As String, ByRef savePath A
     On Error GoTo 0
 End Sub
 
-Private Sub KillWord(ByRef wordApp As Object, ByRef wordDoc As Object, ByRef ws As Worksheet)
+Private Sub KillWord(ByRef wordApp As Object, ByRef wordDoc As Object, ByVal preexistingWordInstance As Boolean)
     On Error Resume Next
-    If Not wordDoc Is Nothing Then wordDoc.Close SaveChanges:=False
-    If Not wordApp Is Nothing Then wordApp.Quit
+    If Not wordDoc Is Nothing Then
+        wordDoc.Close SaveChanges:=False
+        Set wordDoc = Nothing
+    End If
     
-    Set wordDoc = Nothing
-    Set wordApp = Nothing
-    Set ws = Nothing
+    If Not preexistingWordInstance Then
+        If Not wordApp Is Nothing Then wordApp.Quit
+        Set wordApp = Nothing
     
-    Err.Clear
+        #If Mac Then
+            Dim closeResult As String
+            
+            If isAppleScriptInstalled Then
+                closeResult = AppleScriptTask(APPLE_SCRIPT_FILE, "CloseWord", closeResult)
+                #If PRINT_DEBUG_MESSAGES Then
+                    Debug.Print closeResult
+                #End If
+            End If
+        #End If
+    End If
     On Error GoTo 0
-    
-    #If Mac Then
-        Dim closeResult As String
-        
-        If isAppleScriptInstalled Then
-            closeResult = AppleScriptTask(APPLE_SCRIPT_FILE, "CloseWord", closeResult)
-            If PRINT_DEBUG_MESSAGES Then Debug.Print closeResult
-        End If
-    #End If
 End Sub
 
 #If Mac Then
@@ -827,13 +842,17 @@ Private Function CheckForAppleScript() As Boolean
     
     appleScriptPath = "/Users/" & Environ("USER") & "/Library/Application Scripts/com.microsoft.Excel/" & APPLE_SCRIPT_FILE
     
-    If PRINT_DEBUG_MESSAGES Then Debug.Print "Locating " & APPLE_SCRIPT_FILE & vbNewLine & "Searching: " & appleScriptPath
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Locating " & APPLE_SCRIPT_FILE & vbNewLine & "Searching: " & appleScriptPath
+    #End If
     
     On Error Resume Next
     CheckForAppleScript = (Dir(appleScriptPath, vbDirectory) = APPLE_SCRIPT_FILE)
     On Error GoTo 0
     
-    If PRINT_DEBUG_MESSAGES Then Debug.Print "Found: " & CheckForAppleScript
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Found: " & CheckForAppleScript
+    #End If
 End Function
 
 Private Sub RequestInitialFileAndFolderAccess()
@@ -847,16 +866,18 @@ Private Sub RequestInitialFileAndFolderAccess()
     ConvertOneDriveToLocalPath workingFolder
     ConvertOneDriveToLocalPath tempFolder
     
-    If PRINT_DEBUG_MESSAGES Then
+    #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "Requesting access to: " & vbNewLine & _
                     "    " & workingFolder & vbNewLine & _
                     "    " & tempFolder
-    End If
+    #End If
     
     filePermissionCandidates = Array(workingFolder, tempFolder)
     fileAccessGranted = GrantAccessToMultipleFiles(filePermissionCandidates)
     
-    If PRINT_DEBUG_MESSAGES Then Debug.Print "Access granted: " & fileAccessGranted
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Access granted: " & fileAccessGranted
+    #End If
 End Sub
 
 Private Sub RequestAdditionalFileAndFolderAccess(ByVal newPath As String)
@@ -874,10 +895,12 @@ Private Function CheckForCurl() As Boolean
     Dim output As String
     
     On Error GoTo ErrorHandler
-    If PRINT_DEBUG_MESSAGES Then Debug.Print "Checking if curl.exe is installed."
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Checking if curl.exe is installed."
+    #End If
     
     Set objShell = CreateObject("WScript.Shell")
-    Set objExec = objShell.exec("cmd /c curl.exe --version")
+    Set objExec = objShell.Exec("cmd /c curl.exe --version")
     
     If Not objExec Is Nothing Then
         Do While Not objExec.StdOut.AtEndOfStream
@@ -886,7 +909,9 @@ Private Function CheckForCurl() As Boolean
         checkResult = ((InStr(output, "curl")) > 0)
     End If
     
-    If PRINT_DEBUG_MESSAGES Then Debug.Print IIf(checkResult, "   Installed.", "   Not installed. Falling back to .Net.")
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print IIf(checkResult, "   Installed.", "   Not installed. Falling back to .Net.")
+    #End If
     
     CheckForCurl = checkResult
 Cleanup:
@@ -894,7 +919,9 @@ Cleanup:
     If Not objShell Is Nothing Then Set objShell = Nothing
     Exit Function
 ErrorHandler:
-    If PRINT_DEBUG_MESSAGES Then Debug.Print "Error while checking for curl.exe: " & Err.Description
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Error while checking for curl.exe: " & Err.Description
+    #End If
     CheckForCurl = False
     Resume Cleanup
 End Function
@@ -911,7 +938,9 @@ Private Function DownloadUsingCurl(ByVal templatePath As String, ByVal REPORT_TE
     objShell.Run downloadCommand, 0, True
     DownloadUsingCurl = fso.FileExists(templatePath)
     
-    If PRINT_DEBUG_MESSAGES And Not DownloadUsingCurl Then Debug.Print "curl download failed for " & REPORT_TEMPLATE_URL
+    #If PRINT_DEBUG_MESSAGES Then
+        If Not DownloadUsingCurl Then Debug.Print "curl download failed for " & REPORT_TEMPLATE_URL
+    #End If
     
     Set objShell = Nothing
     Set fso = Nothing
@@ -921,20 +950,24 @@ End Function
 Private Function CheckForDotNet35() As Boolean
     Dim frameworkPath As String
     
-    On Error GoTo ErrorHandler
-    If PRINT_DEBUG_MESSAGES Then Debug.Print "Verifying that Microsoft DotNet 3.5 is installed."
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Verifying that Microsoft DotNet 3.5 is installed."
+    #End If
     
+    On Error GoTo ErrorHandler
     frameworkPath = Environ$("systemroot") & "\Microsoft.NET\Framework\v3.5"
     CheckForDotNet35 = Dir$(frameworkPath, vbDirectory) <> vbNullString
     
-    If PRINT_DEBUG_MESSAGES Then
+    #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "   Checking path: " & frameworkPath & vbNewLine & _
                     "   Installed: " & CheckForDotNet35
-    End If
+    #End If
     
     Exit Function
 ErrorHandler:
-    If PRINT_DEBUG_MESSAGES Then Debug.Print "Error while checking for .NET 3.5: " & Err.Description
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Error while checking for .NET 3.5: " & Err.Description
+    #End If
     CheckForDotNet35 = False
 End Function
 
@@ -956,7 +989,9 @@ Private Function DownloadUsingDotNet35(ByVal templatePath As String, ByVal REPOR
         fileStream.Close
         DownloadUsingDotNet35 = True
     Else
-        If PRINT_DEBUG_MESSAGES Then Debug.Print "HTTP request failed. Status: " & xmlHTTP.Status & " - " & xmlHTTP.StatusText
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "HTTP request failed. Status: " & xmlHTTP.Status & " - " & xmlHTTP.StatusText
+        #End If
         DownloadUsingDotNet35 = False
     End If
     
@@ -1019,17 +1054,17 @@ Private Function MoveFile(ByVal initialPath As String, ByVal destinationPath As 
     #Else
         Dim fso As Object
         Set fso = CreateObject("Scripting.FileSystemObject")
-        
         fso.CopyFile initialPath, destinationPath
         moveSuccessful = (Err.Number = 0)
-        
         Set fso = Nothing
     #End If
     
-    If PRINT_DEBUG_MESSAGES And Not moveSuccessful Then
-        Debug.Print "Failed to move template to " & destinationPath
-        If Not isAppleScriptInstalled Then Debug.Print Err.Number & " - " & Err.Description
-    End If
+    #If PRINT_DEBUG_MESSAGES Then
+        If Not moveSuccessful Then
+            Debug.Print "Failed to move template to " & destinationPath
+            If Not isAppleScriptInstalled Then Debug.Print Err.Number & " - " & Err.Description
+        End If
+    #End If
     
     Err.Clear
     On Error GoTo 0
@@ -1042,9 +1077,7 @@ Private Sub DeleteFile(ByVal filePath As String)
         
         If isAppleScriptInstalled Then
             appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFileExist", filePath)
-            If appleScriptResult Then
-                appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DeleteFile", filePath)
-            End If
+            If appleScriptResult Then appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DeleteFile", filePath)
         Else
             Kill filePath
         End If
