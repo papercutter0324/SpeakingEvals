@@ -48,6 +48,16 @@ on CopyFile(paramString)
     end try
 end CopyFile
 
+on CreateZipFile(paramString)
+    set {savePath, zipPath} to SplitString(paramString, ",")
+    try
+        do shell script "cd " & quoted form of savePath & " && /usr/bin/zip -j " & quoted form of zipPath & " *.pdf"
+        return "Success"
+    on error
+        return errMsg
+    end try
+end CreateZipFile
+
 on DeleteFile(filePath)
     try
         do shell script "rm -f " & (quoted form of filePath)
@@ -89,6 +99,13 @@ end FindSignature
 on ClearFolder(folderToEmpty)
     try
         do shell script "find " & (quoted form of folderToEmpty) & " -type f -name '*.pdf' -delete"
+        do shell script "find " & (quoted form of folderToEmpty) & " -type f -name '*.zip' -delete"
+        set folderToEmpty to folderToEmpty & "Proofs/"
+        if DoesFolderExist(folderToEmpty) then
+            do shell script "find " & (quoted form of folderToEmpty) & " -type f -name '*.docx' -delete"
+            set folderContents to list folder folderToEmpty without invisibles
+            if (count of folderContents) is 0 then DeleteFolder(folderToEmpty)
+        end if
         return true
     on error
         return false
