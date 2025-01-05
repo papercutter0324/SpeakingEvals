@@ -9,16 +9,30 @@ Sub PrintReports()
     Const ERR_LOADING_WORD As String = "loadingWord"
     Const ERR_LOADING_TEMPLATE As String = "loadingTemplate"
     Const ERR_MISSING_SHAPES As String = "missingTemplateShapes"
+    Const MSG_SAVE_FAILED As String = "exportFailed"
+    Const MSG_ZIP_FAILED As String = "zipFailed"
     Const MSG_SUCCESS As String = "exportSuccessful"
-    Const MSG_FAILED As String = "exportFailed"
 
     Dim ws As Worksheet, wordApp As Object, wordDoc As Object
     Dim templatePath As String, savePath As String, fileName As String
     Dim resultMsg As String, msgToDisplay As String, msgTitle As String, msgType As Integer
     Dim currentRow As Long, lastRow As Long, firstStudentRecord As Integer
-    Dim preexistingWordInstance As Boolean, saveResult As Boolean
+    Dim generateProcess As String, preexistingWordInstance As Boolean, saveResult As Boolean
 
     Set ws = ActiveSheet
+    
+    generateProcess = Application.Caller
+    'generateProcess = "Button_GenerateProofs"
+    If generateProcess = "Button_GenerateReports" Then
+        generateProcess = "FinalReports"
+    ElseIf generateProcess = "Button_GenerateProofs" Then
+        generateProcess = "Proofs"
+    Else
+        msgToDisplay = "You have clicked an invalid option for creating the reports. Unless you have altered parts of the file, this is probably " & _
+                       "the result of data corruption. Please download a new copy of this Excel file, copy over all of the students' records, and try again."
+        MsgBox msgToDisplay, vbExclamation, "Invalid Selection!"
+        Exit Sub
+    End If
 
     #If Mac Then
         RequestInitialFileAndFolderAccess
@@ -35,7 +49,7 @@ Sub PrintReports()
     templatePath = LoadTemplate(REPORT_TEMPLATE)
     If templatePath = "" Then GoTo Cleanup
 
-    savePath = SetSaveLocation(ws)
+    savePath = SetSaveLocation(ws, generateProcess)
     If savePath = "" Then GoTo Cleanup
 
     If Not LoadWord(wordApp, wordDoc, templatePath) Then
@@ -55,11 +69,28 @@ Sub PrintReports()
     
     For currentRow = firstStudentRecord To lastRow
         ClearAllTextBoxes wordDoc
-        WriteReport ws, wordApp, wordDoc, currentRow, savePath, fileName, saveResult
+        WriteReport ws, wordApp, wordDoc, generateProcess, currentRow, savePath, fileName, saveResult
     Next currentRow
     
     ws.Activate ' Ensure the right worksheet is being shown when finished.
-    resultMsg = IIf(saveResult, MSG_SUCCESS, MSG_FAILED)
+    
+    If Not saveResult Then
+        resultMsg = MSG_SAVE_FAILED
+        GoTo Cleanup
+    End If
+    
+    #If Mac Then
+        If Not isAppleScriptInstalled Then
+            resultMsg = MSG_SUCCESS
+            GoTo Cleanup
+        End If
+    #End If
+    
+    If generateProcess = "FinalReports" Then
+        KillWord wordApp, wordDoc, preexistingWordInstance
+        ZipReports ws, savePath, saveResult
+        resultMsg = IIf(saveResult, MSG_SUCCESS, MSG_ZIP_FAILED)
+    End If
     
 Cleanup:
     Select Case resultMsg
@@ -75,13 +106,17 @@ Cleanup:
             msgToDisplay = "There is a error with the template. Please redownload a copy of the original and try again."
             msgTitle = "Error!"
             msgType = vbExclamation
+        Case MSG_SAVE_FAILED
+            msgToDisplay = "Export failed. Please ensure all data was entered correctly and try saving to a different folder."
+            msgTitle = "Process failed!"
+            msgType = vbInformation
+        Case MSG_ZIP_FAILED
+            msgToDisplay = "The reports were successfully created, but there was an error when trying to add them into a zip file."
+            msgTitle = "Error!"
+            msgType = vbInformation
         Case MSG_SUCCESS
             msgToDisplay = "Export complete!"
             msgTitle = "Process complete!"
-            msgType = vbInformation
-        Case MSG_FAILED
-            msgToDisplay = "Export failed. Please ensure all data was entered correctly and try saving to a different folder."
-            msgTitle = "Process failed!"
             msgType = vbInformation
     End Select
     
@@ -347,47 +382,27 @@ ErrorHandler:
     Resume Cleanup
 End Function
 
-Private Function SetSaveLocation(ByRef ws As Object) As String
-    Dim selectedPath As String
-    Dim scriptResult As Boolean
+Private Function SetSaveLocation(ByRef ws As Object, ByVal saveRoutine As String) As String
+    Dim filePath As String
+
+    filePath = ThisWorkbook.Path & Application.PathSeparator & GenerateSaveFolderName(ws) & Application.PathSeparator
+    ConvertOneDriveToLocalPath filePath
+
+    ' Check if folder already exists. If yes, delete for user simplicity
+    If DoesFolderExist(filePath) Then DeleteExistingFolder filePath
+    CreateSaveFolder filePath
     
-    selectedPath = ThisWorkbook.Path & Application.PathSeparator & GenerateSaveFolderName(ws) & Application.PathSeparator
-    ConvertOneDriveToLocalPath selectedPath
-    
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "Saving reports in: " & vbNewLine & "    " & selectedPath; ""
-    #End If
-    
-    #If Mac Then
-        If isAppleScriptInstalled Then
-            scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFolderExist", selectedPath)
-            
-            ' Delete existing files to prevent user confusion.
-            If scriptResult Then scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "ClearFolder", selectedPath)
-            
-            scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "CreateFolder", selectedPath)
-            RequestAdditionalFileAndFolderAccess selectedPath
-        End If
-    #End If
-    
-    ' Handle Windows users and MacOS users who chose not to installed SpeakingEvals.scpt
-    If Not isAppleScriptInstalled And Not scriptResult Then
-        If Dir(selectedPath, vbDirectory) <> "" Then
-            #If PRINT_DEBUG_MESSAGES Then
-                Debug.Print "Directory already exists. Clearing contents."
-            #End If
-            DeleteExistingFolder selectedPath
-        Else
-            #If PRINT_DEBUG_MESSAGES Then
-                Debug.Print "Path not found. Attempting to create."
-            #End If
-        End If
-        
-        CreateSaveFolder selectedPath
+    If saveRoutine = "Proofs" Then
+        filePath = filePath & "Proofs"
+        If DoesFolderExist(filePath) Then DeleteExistingFolder filePath
+        CreateSaveFolder filePath
     End If
     
-    ConvertOneDriveToLocalPath selectedPath
-    SetSaveLocation = selectedPath
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Saving reports in: " & vbNewLine & "    " & filePath; ""
+    #End If
+    
+    SetSaveLocation = filePath
 End Function
 
 Private Function GenerateSaveFolderName(ByRef ws As Worksheet) As String
@@ -400,6 +415,8 @@ Private Function GenerateSaveFolderName(ByRef ws As Worksheet) As String
             classIdentifier = "MF - " & ws.Cells(5, 3).Value
         Case "WedFri"
             classIdentifier = "WF - " & ws.Cells(5, 3).Value
+        Case "MWF"
+            classIdentifier = "MWF - " & ws.Cells(5, 3).Value
         Case "TTh"
             classIdentifier = "TTh - " & ws.Cells(5, 3).Value
         Case "MWF (Class 1)": classIdentifier = "MWF-1"
@@ -411,35 +428,50 @@ Private Function GenerateSaveFolderName(ByRef ws As Worksheet) As String
     GenerateSaveFolderName = ws.Cells(3, 3).Value & " (" & classIdentifier & ")"
 End Function
 
-Private Sub CreateSaveFolder(ByRef selectedPath As String)
-    If Right(selectedPath, 1) = Application.PathSeparator Then
-        selectedPath = Left(selectedPath, Len(selectedPath) - 1)
+Private Function DoesFolderExist(ByVal filePath As String) As Boolean
+    #If Mac Then
+        If isAppleScriptInstalled Then
+            DoesFolderExist = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFolderExist", filePath)
+            Exit Function
+        End If
+    #End If
+
+    DoesFolderExist = (Dir(filePath, vbDirectory) <> "")
+End Function
+
+Private Sub CreateSaveFolder(ByRef filePath As String)
+    If Right(filePath, 1) = Application.PathSeparator Then
+        filePath = Left(filePath, Len(filePath) - 1)
     End If
-    
+
     On Error Resume Next
     #If Mac Then
         Dim msgToDisplay As String, msgTitle As String
-        
-        If Dir(selectedPath, vbDirectory) = "" Then MkDir selectedPath
-          
-        If Not isAppleScriptInstalled And Dir(selectedPath & "/*") <> "" Then
-            msgToDisplay = "It appears some files still exist in """ & selectedPath & """. " & vbNewLine & vbNewLine & "The new reports will be generated, but " & _
-                           "any existing files with the same filenames will be overwritten, and any existing files will be mixed in with the newly generated ones."
-            msgTitle = "Notice"
-            MsgBox msgToDisplay, vbExclamation, msgTitle
+        Dim scriptResult As Boolean
+
+        If isAppleScriptInstalled Then
+            scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "CreateFolder", filePath)
+        Else
+            If Dir(filePath, vbDirectory) = "" Then MkDir filePath
+            If Dir(filePath & "/*") <> "" Then
+                msgToDisplay = "It appears some files still exist in """ & filePath & """. " & vbNewLine & vbNewLine & "The new reports will be generated, but " & _
+                              "any existing files with the same filenames will be overwritten, and any existing files will be mixed in with the newly generated ones."
+                msgTitle = "Notice"
+                MsgBox msgToDisplay, vbExclamation, msgTitle
+            End If
         End If
-                
-        RequestAdditionalFileAndFolderAccess selectedPath
+
+        RequestAdditionalFileAndFolderAccess filePath
     #Else
         Dim fso As Object
         Set fso = CreateObject("Scripting.FileSystemObject")
-        fso.CreateFolder selectedPath
+        fso.CreateFolder filePath
         Set fso = Nothing
     #End If
     On Error GoTo 0
-    
-    If Right(selectedPath, 1) <> Application.PathSeparator Then
-        selectedPath = selectedPath & Application.PathSeparator
+
+    If Right(filePath, 1) <> Application.PathSeparator Then
+        filePath = filePath & Application.PathSeparator
     End If
 End Sub
 
@@ -601,7 +633,7 @@ Private Sub ClearAllTextBoxes(wordDoc As Object)
     Next shp
 End Sub
 
-Private Sub WriteReport(ByRef ws As Object, ByRef wordApp As Object, ByRef wordDoc As Object, ByVal currentRow As Integer, ByVal savePath As String, ByRef fileName As String, ByRef saveResult As Boolean)
+Private Sub WriteReport(ByRef ws As Object, ByRef wordApp As Object, ByRef wordDoc As Object, ByVal generateProcess As String, ByVal currentRow As Integer, ByVal savePath As String, ByRef fileName As String, ByRef saveResult As Boolean)
     Dim nativeTeacher As String, koreanTeacher As String, classLevel As String, classTime As String, evalDate As String
     Dim englishName As String, koreanName As String, grammarScore As String, pronunciationScore As String, fluencyScore As String
     Dim mannerScore As String, contentScore As String, effortScore As String, commentText As String, overallGrade As String
@@ -611,8 +643,7 @@ Private Sub WriteReport(ByRef ws As Object, ByRef wordApp As Object, ByRef wordD
     koreanTeacher = ws.Cells(2, 3).Value
     classLevel = ws.Cells(3, 3).Value
     classTime = ws.Cells(4, 3).Value & "-" & ws.Cells(5, 3).Value
-    evalDate = ws.Cells(6, 3).Value
-    evalDate = Format(Date, "MMM. YYYY")
+    evalDate = Format(ws.Cells(6, 3).Value, "MMM. YYYY")
     
     ' Data specific to each student
     englishName = ws.Cells(currentRow, 2).Value
@@ -651,25 +682,33 @@ Private Sub WriteReport(ByRef ws As Object, ByRef wordApp As Object, ByRef wordD
     
     On Error Resume Next
     If wordDoc.Shapes("Signature") Is Nothing Then InsertSignature wordDoc
-    
-    #If Mac Then
-        ' Export to PDF is a bit flaky on MacOS, so we need to do a full SaveAs2. Only results in a minimal time loss.
-        wordDoc.SaveAs2 fileName:=(savePath & fileName & ".pdf"), FileFormat:=17, AddtoRecentFiles:=False, EmbedTrueTypeFonts:=True
-    #Else
-        wordDoc.ExportAsFixedFormat OutputFileName:=(savePath & fileName & ".pdf"), ExportFormat:=17, BitmapMissingFonts:=True
-    #End If
-    
-    saveResult = (Err.Number = 0)
+    saveResult = SaveToFile(wordDoc, generateProcess, savePath, fileName)
+End Sub
+
+Private Function SaveToFile(ByRef wordDoc As Object, ByVal saveRoutine As String, ByVal savePath As String, ByVal fileName As String) As Boolean
+    On Error Resume Next
+    If saveRoutine = "Proofs" Then
+        wordDoc.SaveAs2 fileName:=(savePath & fileName & ".docx"), FileFormat:=16, AddtoRecentFiles:=False, EmbedTrueTypeFonts:=True
+    Else
+        #If Mac Then
+            ' Export to PDF is a bit flaky on MacOS, so we need to do a full SaveAs2. Only results in a minimal time loss.
+            wordDoc.SaveAs2 fileName:=(savePath & fileName & ".pdf"), FileFormat:=17, AddtoRecentFiles:=False, EmbedTrueTypeFonts:=True
+        #Else
+            wordDoc.ExportAsFixedFormat OutputFileName:=(savePath & fileName & ".pdf"), ExportFormat:=17, BitmapMissingFonts:=True
+        #End If
+    End If
     
     #If PRINT_DEBUG_MESSAGES Then
-        If saveResult Then
+        If Err.Number = 0 Then
             Debug.Print "Successfully saved: " & fileName
         Else
             Debug.Print "Failed to save." & "Error Number: " & Err.Number & vbNewLine & "Error Description: " & Err.Description
         End If
     #End If
+    
+    SaveToFile = (Err.Number = 0)
     On Error GoTo 0
-End Sub
+End Function
 
 Private Function CalculateOverallGrade(ByRef ws As Worksheet, ByVal currentRow As Integer) As String
     Dim scoreRange As Range, gradeCell As Range
@@ -808,6 +847,65 @@ Private Sub SaveSignature(ByVal SIGNATURE_SHAPE_NAME As String, ByRef savePath A
     End With
     tempSheet.Delete
     Application.DisplayAlerts = True
+    On Error GoTo 0
+End Sub
+
+Private Sub ZipReports(ByRef ws As Worksheet, ByVal savePath As String, ByRef saveResult As Boolean)
+    Dim zipPath As Variant, zipName As Variant, pdfPath As Variant
+    Dim errDescription As String
+    
+    On Error Resume Next
+    If Right(savePath, 1) <> Application.PathSeparator Then savePath = savePath & Application.PathSeparator
+    
+    zipName = ws.Cells(3, 3).Value & " (" & ws.Cells(2, 3).Value & " " & ws.Cells(4, 3).Value & ").zip"
+    zipPath = savePath & zipName
+    
+    #If Mac Then
+        Dim scriptResult As String
+        
+        If Not isAppleScriptInstalled Then
+            saveResult = False
+            Exit Sub
+        End If
+        
+        scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "CreateZipFile", savePath & "," & zipPath)
+        
+        If scriptResult <> "Success" Then
+            errDescription = scriptResult
+            saveResult = False
+        Else
+            saveResult = True
+        End If
+    #Else
+        Dim shellApp As Object
+        
+        ' Create an empty ZIP file
+        If Len(Dir(zipPath)) > 0 Then Kill zipPath
+        Open zipPath For Output As #1
+        Print #1, "PK" & Chr(5) & Chr(6) & String(18, vbNullChar)
+        Close #1
+        
+        Set shellApp = CreateObject("Shell.Application")
+        pdfPath = Dir(savePath & "*.pdf") ' Only target PDF files
+        
+        Do While pdfPath <> ""
+            shellApp.Namespace(zipPath).CopyHere savePath & pdfPath
+            Application.Wait Now + TimeValue("0:00:01") ' Delay to allow compression
+            pdfPath = Dir ' Get the next PDF file
+        Loop
+        
+        Set shellApp = Nothing
+        If Err.Number <> 0 Then errDescription = Err.Description
+        saveResult = (Err.Number = 0)
+    #End If
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        If saveResult Then
+            Debug.Print "Zip file successfully created."
+        Else
+            Debug.Print "There was an error creating the Zip file." & vbNewLine & "Error: " & errDescription
+        End If
+    #End If
     On Error GoTo 0
 End Sub
 
@@ -1096,23 +1194,28 @@ Private Sub DeleteFile(ByVal filePath As String)
     #End If
 End Sub
 
-Private Sub DeleteExistingFolder(ByVal selectedPath As String)
+Private Sub DeleteExistingFolder(ByVal filePath As String)
     #If Mac Then
         Dim msgToDisplay As String, msgTitle As String
-        
-        msgToDisplay = "Because " & APPLE_SCRIPT_FILE & " is not installed, Excel is unable to delete any existing reports for this class. It is recommended to delete them before continuing." & _
-                       vbNewLine & vbNewLine & "You can safely delete any .pdf files in """ & selectedPath & """ now and then click 'Okay' to continue."
-        msgTitle = "Notice"
-        MsgBox msgToDisplay, vbExclamation, msgTitle
+        Dim scriptResult As Boolean
+
+        If isAppleScriptInstalled Then
+            scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "ClearFolder", filePath)
+        Else
+            msgToDisplay = "Because " & APPLE_SCRIPT_FILE & " is not installed, Excel is unable to delete any existing reports for this class. It is recommended to delete them before continuing." & _
+                       vbNewLine & vbNewLine & "You can safely delete any files in """ & filePath & """ now and then click 'Okay' to continue."
+            msgTitle = "Notice"
+            MsgBox msgToDisplay, vbExclamation, msgTitle
+        End If
     #Else
         Dim fso As Object
         Set fso = CreateObject("Scripting.FileSystemObject")
-        
-        If Right(selectedPath, 1) = Application.PathSeparator Then
-            selectedPath = Left(selectedPath, Len(selectedPath) - 1)
+
+        If Right(filePath, 1) = Application.PathSeparator Then
+            filePath = Left(filePath, Len(filePath) - 1)
         End If
-        
-        fso.DeleteFolder selectedPath, True
+
+        fso.DeleteFolder filePath, True
         Set fso = Nothing
     #End If
 End Sub
