@@ -22,7 +22,6 @@ Sub PrintReports()
     Set ws = ActiveSheet
     
     generateProcess = Application.Caller
-    'generateProcess = "Button_GenerateProofs"
     If generateProcess = "Button_GenerateReports" Then
         generateProcess = "FinalReports"
     ElseIf generateProcess = "Button_GenerateProofs" Then
