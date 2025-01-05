@@ -1,5 +1,5 @@
 Option Explicit
-#Const PRINT_DEBUG_MESSAGES = True
+#Const PRINT_DEBUG_MESSAGES = False
 Const APPLE_SCRIPT_FILE As String = "SpeakingEvals.scpt"
 Dim isAppleScriptInstalled As Boolean
 
