@@ -3,6 +3,20 @@ Option Explicit
 Const APPLE_SCRIPT_FILE As String = "SpeakingEvals.scpt"
 Dim isAppleScriptInstalled As Boolean
 
+Private Sub Workbook_Open()
+    Const CURL_COMMAND_TEXT As String = "curl -L -o ~/Library/Application\ Scripts/com.microsoft.Excel/SpeakingEvals.scpt https://github.com/papercutter0324/SpeakingEvals/raw/main/SpeakingEvals.scpt"
+    ActiveWorkbook.Worksheets("Instructions").Shapes("cURL_Command").TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
+End Sub
+
+Private Sub Workbook_SheetActivate(ByVal Sh As Object)
+    Const CURL_COMMAND_TEXT As String = "curl -L -o ~/Library/Application\ Scripts/com.microsoft.Excel/SpeakingEvals.scpt https://github.com/papercutter0324/SpeakingEvals/raw/main/SpeakingEvals.scpt"
+    If Sh.Name = "Instructions" Then
+        On Error Resume Next
+        Sh.Shapes("cURL_Command").TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
+        On Error GoTo 0
+    End If
+End Sub
+
 Sub PrintReports()
     Const REPORT_TEMPLATE As String = "Speaking Evaluation Template.docx"
     Const ERR_INCOMPLETE_RECORDS As String = "incompleteRecords"
@@ -85,10 +99,12 @@ Sub PrintReports()
         End If
     #End If
     
+    KillWord wordApp, wordDoc, preexistingWordInstance
+    resultMsg = MSG_SUCCESS
+    
     If generateProcess = "FinalReports" Then
-        KillWord wordApp, wordDoc, preexistingWordInstance
         ZipReports ws, savePath, saveResult
-        resultMsg = IIf(saveResult, MSG_SUCCESS, MSG_ZIP_FAILED)
+        If Not saveResult Then resultMsg = MSG_ZIP_FAILED
     End If
     
 Cleanup:
@@ -132,65 +148,38 @@ Private Function VerifyRecordsAreComplete(ByRef ws As Worksheet, ByRef lastRow A
     Const STUDENT_INFO_LAST_COL As Integer = 10
     
     Dim currentRow As Long, currentColumn As Long
-    Dim validationMessage As String
+    Dim errorMessage As String, msgType As Integer, msgTitle As String
     
     ' Set here and passed back to keep declarations organized
     firstStudentRecord = STUDENT_INFO_FIRST_ROW
     
     On Error Resume Next
-    lastRow = ws.Cells(ws.Rows.Count, 2).End(xlUp).row
+    lastRow = ws.Cells(ws.Rows.Count, STUDENT_INFO_FIRST_COL).End(xlUp).row
     On Error GoTo 0
     
     If lastRow < STUDENT_INFO_FIRST_ROW Then
-        MsgBox "No students were found!", vbExclamation, "Error!"
+        errorMessage = "No students were found!"
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print errorMessage
+        #End If
+        MsgBox errorMessage, vbExclamation, "Error!"
         VerifyRecordsAreComplete = False
         Exit Function
     End If
     
-    ' Validate class information
-    For currentRow = CLASS_INFO_FIRST_ROW To CLASS_INFO_LAST_ROW
-        If IsEmpty(ws.Cells(currentRow, 3).Value) Then
-            MsgBox "Missing value for: " & ws.Cells(currentRow, 1), vbExclamation, "Error!"
-            VerifyRecordsAreComplete = False
-            Exit Function
-        End If
-        
-        If currentRow > 2 And currentRow < 6 Then
-            If Not ValidateData(ws.Cells(currentRow, 3), ws.Cells(currentRow, 1).Value) Then
-                validationMessage = "Invalid value entered for """ & ws.Cells(currentRow, 1).Value & """." & vbNewLine & vbNewLine & "Would you like to ignore and continue?"
-                If MsgBox(validationMessage, vbYesNo, "Error!") = vbNo Then
-                    VerifyRecordsAreComplete = False
-                    Exit Function
-                End If
-            End If
-        End If
-    Next currentRow
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Student records found: " & (lastRow - STUDENT_INFO_FIRST_ROW + 1) & vbNewLine & "Beginning validation of entered records."
+    #End If
     
-    ' Validate student records
-    For currentRow = STUDENT_INFO_FIRST_ROW To lastRow
-        For currentColumn = STUDENT_INFO_FIRST_COL To STUDENT_INFO_LAST_COL
-            If IsEmpty(ws.Cells(currentRow, currentColumn).Value) Then
-                MsgBox "Missing data for student in row " & currentRow & ", column " & currentColumn, vbExclamation, "Error!"
-                VerifyRecordsAreComplete = False
-                Exit Function
-            End If
-            
-            If currentColumn >= 4 Then
-                If Not ValidateData(ws.Cells(currentRow, currentColumn), ws.Cells(7, currentColumn).Value) Then
-                    If currentColumn <> 10 Then
-                        validationMessage = "Invalid value entered for " & ws.Cells(currentRow, 2).Value & "'s " & LCase(ws.Cells(7, currentColumn).Value) & " score."
-                    Else
-                        validationMessage = "The comment for " & ws.Cells(currentRow, 2).Value & " is too long. Please try to shorten it by " & _
-                                            Len(ws.Cells(currentRow, currentColumn).Value) - 315 & " or more characters."
-                    End If
-                    
-                    MsgBox validationMessage, vbExclamation, "Error!"
-                    VerifyRecordsAreComplete = False
-                    Exit Function
-                End If
-            End If
-        Next currentColumn
-    Next currentRow
+    If Not ValidateClassInfo(ws, CLASS_INFO_FIRST_ROW, CLASS_INFO_LAST_ROW) Then
+        VerifyRecordsAreComplete = False
+        Exit Function
+    End If
+    
+    If Not ValidateStudentInfo(ws, STUDENT_INFO_FIRST_ROW, lastRow, STUDENT_INFO_FIRST_COL, STUDENT_INFO_LAST_COL) Then
+        VerifyRecordsAreComplete = False
+        Exit Function
+    End If
 
     VerifyRecordsAreComplete = True
 End Function
@@ -247,6 +236,75 @@ Private Function IsValueValid(ByRef dataArray As Variant, ByVal dataValue As Str
         End If
     Next i
     IsValueValid = False
+End Function
+
+Private Function ValidateClassInfo(ByRef ws As Worksheet, ByVal firstRow As Integer, ByVal lastRow As Integer) As Boolean
+    Dim currentRow As Integer, errorMessage As String
+
+    For currentRow = firstRow To lastRow
+        If IsEmpty(ws.Cells(currentRow, 3).Value) Then
+            errorMessage = "Class information incomplete." & vbNewLine & "Missing: " & ws.Cells(currentRow, 1).Value
+            #If PRINT_DEBUG_MESSAGES Then
+                Debug.Print errorMessage
+            #End If
+            MsgBox errorMessage, vbExclamation, "Error!"
+            ValidateClassInfo = False
+            Exit Function
+        End If
+
+        If currentRow >= 3 And currentRow <= 5 Then
+            If Not ValidateData(ws.Cells(currentRow, 3), ws.Cells(currentRow, 1).Value) Then
+                errorMessage = "Invalid value for """ & ws.Cells(currentRow, 1).Value & """." & vbNewLine & _
+                               "Would you like to ignore and continue?"
+                If MsgBox(errorMessage, vbYesNo, "Error!") = vbNo Then
+                    #If PRINT_DEBUG_MESSAGES Then
+                        Debug.Print errorMessage
+                    #End If
+                    ValidateClassInfo = False
+                    Exit Function
+                End If
+            End If
+        End If
+    Next currentRow
+
+    ValidateClassInfo = True
+End Function
+
+Private Function ValidateStudentInfo(ByRef ws As Worksheet, ByVal firstRow As Integer, ByVal lastRow As Integer, ByVal firstCol As Integer, ByVal lastCol As Integer) As Boolean
+    Dim currentRow As Integer, currentColumn As Integer
+    Dim errorMessage As String
+    
+    For currentRow = firstRow To lastRow
+        For currentColumn = firstCol To lastCol
+            If IsEmpty(ws.Cells(currentRow, currentColumn).Value) Then
+                errorMessage = "Student information incomplete." & vbNewLine & "Missing data for student " & ws.Cells(currentRow, 1).Value & "'s " & _
+                                ws.Cells(7, currentColumn).Value & "."
+                GoTo ErrorHandler
+            End If
+            
+            If currentColumn >= 4 Then
+                If Not ValidateData(ws.Cells(currentRow, currentColumn), ws.Cells(7, currentColumn).Value) Then
+                    If currentColumn <> 10 Then
+                        errorMessage = "Invalid value entered for " & ws.Cells(currentRow, 2).Value & "'s " & LCase(ws.Cells(7, currentColumn).Value) & " score."
+                    Else
+                        errorMessage = "The comment for " & ws.Cells(currentRow, 2).Value & " is too long. Please try to shorten it by " & _
+                                        Len(ws.Cells(currentRow, currentColumn).Value) - 315 & " or more characters."
+                    End If
+                    GoTo ErrorHandler
+                End If
+            End If
+        Next currentColumn
+    Next currentRow
+    
+    ValidateStudentInfo = True
+    Exit Function
+    
+ErrorHandler:
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print errorMessage
+    #End If
+    MsgBox errorMessage, vbExclamation, "Error!"
+    ValidateStudentInfo = False
 End Function
 
 Private Function LoadTemplate(ByVal REPORT_TEMPLATE As String) As String
@@ -460,7 +518,7 @@ Private Sub CreateSaveFolder(ByRef filePath As String)
             End If
         End If
 
-        RequestAdditionalFileAndFolderAccess filePath
+        RequestAdditionalFileAndFolderAccess filePath & Application.PathSeparator
     #Else
         Dim fso As Object
         Set fso = CreateObject("Scripting.FileSystemObject")
@@ -935,7 +993,7 @@ End Sub
 
 #If Mac Then
 Private Function CheckForAppleScript() As Boolean
-    Dim appleScriptPath As String
+    Dim appleScriptPath As String, appleScriptResult As Boolean
     
     appleScriptPath = "/Users/" & Environ("USER") & "/Library/Application Scripts/com.microsoft.Excel/" & APPLE_SCRIPT_FILE
     
@@ -944,13 +1002,93 @@ Private Function CheckForAppleScript() As Boolean
     #End If
     
     On Error Resume Next
-    CheckForAppleScript = (Dir(appleScriptPath, vbDirectory) = APPLE_SCRIPT_FILE)
+    appleScriptResult = (Dir(appleScriptPath, vbDirectory) = APPLE_SCRIPT_FILE)
     On Error GoTo 0
     
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "Found: " & CheckForAppleScript
+        Debug.Print "Found: " & appleScriptResult
     #End If
+    
+    If appleScriptResult Then CheckForAppleScriptUpdate
+    
+    CheckForAppleScript = appleScriptResult
 End Function
+
+Private Sub CheckForAppleScriptUpdate()
+    Dim scriptFolder As String, destinationPath As String
+    Dim currentScriptVersion As Long, downloadedScriptVersion As Long
+    Dim appleScriptResult As Boolean
+    
+    Const APPLE_SCRIPT_URL As String = "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/SpeakingEvals.scpt"
+    Const TEMP_APPLE_SCRIPT As String = "SpeakingEvals-Temp.scpt"
+    Const OLD_APPLE_SCRIPT As String = "SpeakingEvals-Old.scpt"
+    
+    scriptFolder = "/Users/" & Environ("USER") & "/Library/Application Scripts/com.microsoft.Excel/"
+    destinationPath = scriptFolder & TEMP_APPLE_SCRIPT
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Checking if an update is available."
+    #End If
+    
+    On Error GoTo ErrorHandler
+    
+    appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DownloadFile", destinationPath & "," & APPLE_SCRIPT_URL)
+    If Not appleScriptResult Then
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "Unable to download new " & APPLE_SCRIPT_FILE
+        #End If
+        GoTo ErrorHandler
+    End If
+    
+    currentScriptVersion = AppleScriptTask(APPLE_SCRIPT_FILE, "GetScriptVersionNumber", "")
+    downloadedScriptVersion = AppleScriptTask(TEMP_APPLE_SCRIPT, "GetScriptVersionNumber", "")
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Installed Version: " & currentScriptVersion
+        Debug.Print "Latest Version: " & downloadedScriptVersion
+    #End If
+    
+    If downloadedScriptVersion <= currentScriptVersion Then
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "Installed version is up-to-date."
+        #End If
+        GoTo Cleanup
+    End If
+    
+    appleScriptResult = AppleScriptTask(TEMP_APPLE_SCRIPT, "RenameFile", scriptFolder & APPLE_SCRIPT_FILE & "," & scriptFolder & OLD_APPLE_SCRIPT)
+    If appleScriptResult Then appleScriptResult = AppleScriptTask(OLD_APPLE_SCRIPT, "RenameFile", scriptFolder & TEMP_APPLE_SCRIPT & "," & scriptFolder & APPLE_SCRIPT_FILE)
+    If appleScriptResult Then appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DeleteFile", scriptFolder & OLD_APPLE_SCRIPT)
+    If Not appleScriptResult Then GoTo ErrorHandler
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        If appleScriptResult Then Debug.Print "Update complete."
+    #End If
+    
+Cleanup:
+    #If PRINT_DEBUG_MESSAGES Then
+        If appleScriptResult Then Debug.Print "Beginning clean up process."
+    #End If
+    
+    On Error Resume Next
+    appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFileExist", scriptFolder & TEMP_APPLE_SCRIPT)
+    If appleScriptResult Then appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DeleteFile", scriptFolder & TEMP_APPLE_SCRIPT)
+    
+    appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFileExist", scriptFolder & OLD_APPLE_SCRIPT)
+    If appleScriptResult Then appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DeleteFile", scriptFolder & OLD_APPLE_SCRIPT)
+    On Error GoTo 0
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Finished clean up."
+    #End If
+    Exit Sub
+    
+ErrorHandler:
+    #If PRINT_DEBUG_MESSAGES Then
+        If Err.Number <> 0 Then Debug.Print "Error during the update process."
+        If Err.Description <> "" Then Debug.Print "Error: " & Err.Description
+    #End If
+    Resume Cleanup
+End Sub
 
 Private Sub RequestInitialFileAndFolderAccess()
     Dim workingFolder As String, tempFolder As String
@@ -982,8 +1120,17 @@ Private Sub RequestAdditionalFileAndFolderAccess(ByVal newPath As String)
     Dim fileAccessGranted As Boolean
      
     ConvertOneDriveToLocalPath newPath
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Requesting file & folder access to: " & newPath
+    #End If
+    
     filePermissionCandidates = Array(newPath)
     fileAccessGranted = GrantAccessToMultipleFiles(filePermissionCandidates)
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Accress granted: " & fileAccessGranted
+    #End If
 End Sub
 #Else
 Private Function CheckForCurl() As Boolean
