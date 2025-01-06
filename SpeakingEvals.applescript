@@ -1,180 +1,263 @@
+(*
+Helper Scripts for the DYB Speaking Evaluations Excel spreadsheet
+
+Version: 20250107
+Warren Feltmate
+© 2025
+*)
+
+-- Environment Variables
+
+on GetScriptVersionNumber(paramString)
+	return 20250107
+end GetScriptVersionNumber
+
+-- Parameter Manipulation
+
+on SplitString(passedParamString, parameterSeparator)
+	tell AppleScript
+		set oldTextItemsDelimiters to text item delimiters
+		set text item delimiters to parameterSeparator
+		set separatedParameters to text items of passedParamString
+		set text item delimiters to oldTextItemsDelimiters
+	end tell
+	return separatedParameters
+end SplitString
+
+-- Application Manipulations
+
 on LoadApplication(appName)
-    try
-        tell application appName to activate
-        return ""
-    on error errMsg number errNum
-        return "Error loading " & appName & ": " & errNum & " - " & errMsg
-    end try
+	try
+		tell application appName to activate
+		return ""
+	on error errMsg number errNum
+		return "Error loading " & appName & ": " & errNum & " - " & errMsg
+	end try
 end LoadApplication
 
 on IsAppLoaded(appName)
-    try
-        tell application "System Events"
-            if (name of every process) contains appName then
-                set loadResult to appName & " is now running."
-            else
-                set loadResult to "Error opening " & appName
-            end if
-        end tell
-        return loadResult
-    on error errMsg number errNum
-        return "Error loading " & appName & ": " & errNum & " - " & errMsg
-    end try
+	try
+		tell application "System Events"
+			if (name of every process) contains appName then
+				set loadResult to appName & " is now running."
+			else
+				set loadResult to "Error opening " & appName
+			end if
+		end tell
+		return loadResult
+	on error errMsg number errNum
+		return "Error loading " & appName & ": " & errNum & " - " & errMsg
+	end try
 end IsAppLoaded
 
 on CloseWord(paramString)
-    try
-        tell application "System Events"
-            if (name of every process) contains "Microsoft Word" then
-                tell application "Microsoft Word" to quit
-                set closeResult to "Word has successfully been closed."
-            else
-                set closeResult to "Word is not currently running."
-            end if
-            return closeResult
-        end tell
-    on error
-        return "There was an error trying to close Word."
-    end try
+	try
+		tell application "System Events"
+			if (name of every process) contains "Microsoft Word" then
+				tell application "Microsoft Word" to quit
+				set closeResult to "Word has successfully been closed."
+			else
+				set closeResult to "Word is not currently running."
+			end if
+			return closeResult
+		end tell
+	on error
+		return "There was an error trying to close Word."
+	end try
 end CloseWord
 
+-- File Manipulation
+
+on CompareMD5Hashes(paramString)
+	set {filePath, validHash} to SplitString(paramString, ",")
+	
+	if not DoesFileExist(filePath) then
+		return false
+	end if
+	
+	try
+		set checkResult to (do shell script "md5 -q " & quoted form of filePath)
+		return checkResult is validHash
+	on error
+		return false
+	end try
+end CompareMD5Hashes
+
 on CopyFile(paramString)
-    set {tempTemplatePath, finalTemplatePath} to SplitString(paramString, ",")
-    try
-        do shell script "cp " & (quoted form of tempTemplatePath) & " " & (quoted form of finalTemplatePath)
-        return true
-    on error
-        return false
-    end try
+	set {tempTemplatePath, finalTemplatePath} to SplitString(paramString, ",")
+	try
+		do shell script "cp " & (quoted form of tempTemplatePath) & " " & (quoted form of finalTemplatePath)
+		return true
+	on error
+		return false
+	end try
 end CopyFile
 
 on CreateZipFile(paramString)
-    set {savePath, zipPath} to SplitString(paramString, ",")
-    try
-        do shell script "cd " & quoted form of savePath & " && /usr/bin/zip -j " & quoted form of zipPath & " *.pdf"
-        return "Success"
-    on error
-        return errMsg
-    end try
+	set {savePath, zipPath} to SplitString(paramString, ",")
+	try
+		do shell script "cd " & quoted form of savePath & " && /usr/bin/zip -j " & quoted form of zipPath & " *.pdf"
+		return "Success"
+	on error
+		return errMsg
+	end try
 end CreateZipFile
 
 on DeleteFile(filePath)
-    try
-        do shell script "rm -f " & (quoted form of filePath)
-        return true
-    on error
-        return false
-    end try
+	try
+		do shell script "rm -f " & (quoted form of filePath)
+		return true
+	on error
+		return false
+	end try
 end DeleteFile
 
 on DoesFileExist(filePath)
-    tell application "System Events" to return (exists disk item filePath) and class of disk item filePath = file
+	tell application "System Events" to return (exists disk item filePath) and class of disk item filePath = file
 end DoesFileExist
 
 on DownloadFile(paramString)
-    set {savePath, fileURL} to SplitString(paramString, ",")
-    try
-        do shell script "curl -L -o " & (quoted form of savePath) & " " & (quoted form of fileURL)
-        return true
-    on error
-        display dialog "Error downloading file: " & fileURL
-        return false
-    end try
+	set {destinationPath, fileURL} to SplitString(paramString, ",")
+	try
+		do shell script "curl -L -o " & (quoted form of destinationPath) & " " & (quoted form of fileURL)
+		return true
+	on error
+		display dialog "Error downloading file: " & fileURL
+		return false
+	end try
 end DownloadFile
 
 on FindSignature(signaturePath)
-    try
-        if DoesFileExist(signaturePath & "mySignature.png") then
-            return signaturePath & "mySignature.png"
-        else if DoesFileExist(signaturePath & "mySignature.jpg") then
-            return signaturePath & "mySignature.png"
-        else
-            return ""
-        end if
-    on error
-        return ""
-    end try
+	try
+		if DoesFileExist(signaturePath & "mySignature.png") then
+			return signaturePath & "mySignature.png"
+		else if DoesFileExist(signaturePath & "mySignature.jpg") then
+			return signaturePath & "mySignature.png"
+		else
+			return ""
+		end if
+	on error
+		return ""
+	end try
 end FindSignature
 
+on RenameFile(paramString)
+	set {targetFile, newFilename} to SplitString(paramString, ",")
+	set targetFile to quoted form of POSIX path of targetFile
+	set newFilename to quoted form of POSIX path of newFilename
+	try
+		do shell script "mv " & targetFile & space & newFilename
+		return true
+	on error
+		return false
+	end try
+end RenameFile
+
+-- Folder Manipulation
+
 on ClearFolder(folderToEmpty)
-    try
-        do shell script "find " & (quoted form of folderToEmpty) & " -type f -name '*.pdf' -delete"
-        do shell script "find " & (quoted form of folderToEmpty) & " -type f -name '*.zip' -delete"
-        set folderToEmpty to folderToEmpty & "Proofs/"
-        if DoesFolderExist(folderToEmpty) then
-            do shell script "find " & (quoted form of folderToEmpty) & " -type f -name '*.docx' -delete"
-            set folderContents to list folder folderToEmpty without invisibles
-            if (count of folderContents) is 0 then DeleteFolder(folderToEmpty)
-        end if
-        return true
-    on error
-        return false
-    end try
+	try
+		do shell script "find " & (quoted form of folderToEmpty) & " -type f -name '*.pdf' -delete"
+		do shell script "find " & (quoted form of folderToEmpty) & " -type f -name '*.zip' -delete"
+		set folderToEmpty to folderToEmpty & "Proofs/"
+		if DoesFolderExist(folderToEmpty) then
+			do shell script "find " & (quoted form of folderToEmpty) & " -type f -name '*.docx' -delete"
+			set folderContents to list folder folderToEmpty without invisibles
+			if (count of folderContents) is 0 then DeleteFolder(folderToEmpty)
+		end if
+		return true
+	on error
+		return false
+	end try
 end ClearFolder
 
 on CreateFolder(folderPath)
-    try
-        do shell script "mkdir -p " & (quoted form of folderPath)
-        return true
-    on error
-        return false
-    end try
+	try
+		do shell script "mkdir -p " & (quoted form of folderPath)
+		return true
+	on error
+		return false
+	end try
 end CreateFolder
 
 on DeleteFolder(folderPath)
-    try
-        do shell script "rm -rf " & (quoted form of folderPath)
-        return true
-    on error
-        return false
-    end try
+	try
+		do shell script "rm -rf " & (quoted form of folderPath)
+		return true
+	on error
+		return false
+	end try
 end DeleteFolder
 
 on DoesFolderExist(folderPath)
-    tell application "System Events" to return (exists disk item folderPath) and class of disk item folderPath = folder
+	tell application "System Events" to return (exists disk item folderPath) and class of disk item folderPath = folder
 end DoesFolderExist
 
-on CompareMD5Hashes(paramString)
-    set {filePath, validHash} to SplitString(paramString, ",")
-    if not DoesFileExist(filePath) then
-        return false
-    end if
+(*
+The following are not yet used by the Speaking Evals spreadsheet
+but are here in anticipation of future improvements.
+*)
 
-    try
-        set checkResult to (do shell script "md5 -q " & quoted form of filePath)
-        return checkResult is validHash
-    on error
-        return false
-    end try
-end CompareMD5Hashes
-
-on SplitString(passedParamString, parameterSeparator)
-    tell AppleScript
-        set oldTextItemsDelimiters to text item delimiters
-        set text item delimiters to parameterSeparator
-        set separatedParameters to text items of passedParamString
-        set text item delimiters to oldTextItemsDelimiters
-    end tell
-    return separatedParameters
-end SplitString
+-- Dialog Boxes
 
 on YesNoDialog(messageString)
-    if button returned of (display dialog messageString buttons {"Yes", "No"} default button "No") is "Yes" then
-        return 6
-    else
-    return 7
-    end if
+	if button returned of (display dialog messageString buttons {"Yes", "No"} default button "No") is "Yes" then
+		return 6
+	else
+		return 7
+	end if
 end YesNoDialog
 
 on OkCancelDialog(messageString)
-    if button returned of (display dialog messageString buttons {"Ok", "Cancel"} default button "Cancel") is "Ok" then
-        return 1
-    else
-        return 2
-    end if
+	if button returned of (display dialog messageString buttons {"Ok", "Cancel"} default button "Cancel") is "Ok" then
+		return 1
+	else
+		return 2
+	end if
 end OkCancelDialog
 
 on OKDialog(messageString)
-    display dialog messageString buttons {"OK"} default button "OK"
-    return 0
+	display dialog messageString buttons {"OK"} default button "OK"
+	return 0
 end OKDialog
+
+-- Environment Variables
+
+on GetMacOSVersion(paramString)
+	try
+		set osVersion to do shell script "sw_vers -productVersion"
+		return osVersion
+	end try
+end GetMacOSVersion
+
+on SetConfigDirectory(paramString)
+	try
+		set osVersion to GetMacOSVersion("")
+		
+		if osVersion starts with "10.1" or osVersion starts with "11." or osVersion starts with "12." then
+			set configFolder to POSIX path of (path to documents folder) & "DYB"
+		else if osVersion starts with "13." or osVersion starts with "14." or osVersion starts with "15." then
+			set configFolder to POSIX path of (path to home folder) & "Documents/DYB"
+		else
+			return "unsupported"
+		end if
+		
+		if not ExistsFolder(configFolder) then
+			do shell script "mkdir -p " & quoted form of configFolder
+		end if
+		
+		set configFolder to configFolder & "/AngryBirdsTrivia"
+		if not ExistsFolder(configFolder) then
+			do shell script "mkdir -p " & quoted form of configFolder
+		end if
+		
+		return configFolder
+	on error
+		display dialog "Error: " & errMsg buttons {"OK"} default button "OK"
+		return ""
+	end try
+end SetConfigDirectory
+
+on SetTempDirectory(paramString)
+	return POSIX path of (path to temporary items)
+end SetTempDirectory
