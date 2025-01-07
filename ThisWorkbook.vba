@@ -1,20 +1,61 @@
 Option Explicit
-#Const PRINT_DEBUG_MESSAGES = False
+#Const PRINT_DEBUG_MESSAGES = True
 Const APPLE_SCRIPT_FILE As String = "SpeakingEvals.scpt"
 Dim isAppleScriptInstalled As Boolean
 
 Private Sub Workbook_Open()
     Const CURL_COMMAND_TEXT As String = "curl -L -o ~/Library/Application\ Scripts/com.microsoft.Excel/SpeakingEvals.scpt https://github.com/papercutter0324/SpeakingEvals/raw/main/SpeakingEvals.scpt"
-    ActiveWorkbook.Worksheets("Instructions").Shapes("cURL_Command").TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
+    Const CURL_COMMAND_SHAPE As String = "cURL_Command"
+    Const WS_INSTRUCTIONS As String = "Instructions"
+
+    Dim ws As Worksheet
+    
+    Set ws = ActiveWorkbook.Worksheets(WS_INSTRUCTIONS)
+    ws.Shapes(CURL_COMMAND_SHAPE).TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
+    SetShapePositions ws
 End Sub
 
-Private Sub Workbook_SheetActivate(ByVal Sh As Object)
+Private Sub Workbook_SheetActivate(ByVal ws As Object)
     Const CURL_COMMAND_TEXT As String = "curl -L -o ~/Library/Application\ Scripts/com.microsoft.Excel/SpeakingEvals.scpt https://github.com/papercutter0324/SpeakingEvals/raw/main/SpeakingEvals.scpt"
-    If Sh.Name = "Instructions" Then
+    Const CURL_COMMAND_SHAPE As String = "cURL_Command"
+    Const WS_INSTRUCTIONS As String = "Instructions"
+    
+    If ws.Name = WS_INSTRUCTIONS Then
         On Error Resume Next
-        Sh.Shapes("cURL_Command").TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
+        ws.Shapes(CURL_COMMAND_SHAPE).TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
         On Error GoTo 0
+        SetShapePositions ws
     End If
+End Sub
+
+Private Sub SetShapePositions(ByRef ws As Worksheet)
+    Dim shp1 As Shape, shp2 As Shape
+    Dim shpNamesArray As Variant
+    Dim i As Integer
+    
+    shpNamesArray = Array("Signature_PlaceHolder", "mySignature", "Download Buttons", "MacOS_Command")
+
+    On Error Resume Next
+    For i = LBound(shpNamesArray) To UBound(shpNamesArray)
+        Set shp1 = ws.Shapes(shpNamesArray(i))
+        If Not shp1 Is Nothing Then
+            Select Case shp1.Name
+                Case "Signature_Placeholder", "mySignature"
+                    Set shp2 = ws.Shapes("TS Message")
+                    shp1.Top = shp2.Top + ((shp2.Height - shp1.Height) / 2)
+                Case "Download Buttons"
+                    Set shp2 = ws.Shapes("Seeing the Code")
+                    shp1.Top = shp2.Top
+                Case "MacOS_Command"
+                    Set shp2 = ws.Shapes("MacOS Users")
+                    shp1.Top = shp2.Top
+            End Select
+            shp1.Left = shp2.Left + ((shp2.Width - shp1.Width) / 2)
+            Set shp2 = Nothing
+        End If
+        Set shp1 = Nothing
+    Next i
+    On Error GoTo 0
 End Sub
 
 Sub PrintReports()
