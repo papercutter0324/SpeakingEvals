@@ -13,6 +13,7 @@ Private Sub Workbook_Open()
     Set ws = ActiveWorkbook.Worksheets(WS_INSTRUCTIONS)
     ws.Shapes(CURL_COMMAND_SHAPE).TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
     SetShapePositions ws
+    AutoPopulateEvaluationDateValues
 End Sub
 
 Private Sub Workbook_SheetActivate(ByVal ws As Object)
@@ -58,6 +59,81 @@ Private Sub SetShapePositions(ByRef ws As Worksheet)
     On Error GoTo 0
 End Sub
 
+Private Sub AutoPopulateEvaluationDateValues()
+    Dim ws As Worksheet, dateValue As Range
+    Dim i As Long, lastRow As Long
+    
+    On Error Resume Next
+    Application.EnableEvents = False
+    For i = 1 To ThisWorkbook.Worksheets.Count
+        Set ws = ThisWorkbook.Worksheets(i)
+        lastRow = ws.Cells(ws.Rows.Count, 2).End(xlUp).row
+        If ws.Range("A6").Value = "Evaluation Date:" Then
+            SetCorrectDateValidationMessage ws
+            
+            Set dateValue = ws.Range("C6")
+            
+            If lastRow < 8 Then
+                ' Always refresh the date if not data entered yet
+                dateValue.Value = Date
+            ElseIf IsEmpty(dateValue) Then
+                ' Add a date if student records are present
+                dateValue.Value = Date
+            ElseIf IsDate(dateValue.Value) And dateValue.Value < Date - 45 Then
+                ' Update the date if the current value is over 45 days ago
+                dateValue.Value = Date
+            ElseIf Not IsDate(dateValue.Value) Then
+                ' Display an error message if an invalid date is found
+                MsgBox "An invalid date has been found on worksheet """ & ws.Name & """." & vbNewLine & "Please enter a valid date.", vbInformation, "Invalid Date!"
+            End If
+        End If
+    Next i
+    Application.EnableEvents = True
+    On Error GoTo 0
+End Sub
+
+Private Sub SetCorrectDateValidationMessage(ByRef ws As Worksheet)
+    Const dayFirstFormat As Date = "01/02/2025"     '02 Jan 2025
+    Const monthFirstFormat As Date = "02/01/2025"   '01 Feb 2025
+    
+    Dim dateFormatStyle As String
+    Dim dateFormatMessage As String
+    Dim dateFormula1 As String
+    
+    ' This can probably be simplified to:
+    ' Select Case Application.International(xlDateOrder)
+    '    Case 0
+    '        dateFormatStyle = "MM/DD/YYYY
+    '        dateFormula1 = "1/1/2025"
+    '    Case 1
+    '        dateFormatStyle = "DD/MM/YYYY
+    '        dateFormula1 = ""1/1/2025"
+    '    Case 2
+    '        dateFormatStyle = "YYYY/MM/DD
+    '        dateFormula1 = "2025/1/1"
+    ' End Select
+    dateFormatStyle = IIf(dayFirstFormat < monthFirstFormat, "MM/DD/YYYY", "DD/MM/YYYY")
+    dateFormula1 = "1/1/2025"
+    dateFormatMessage = "Format:" & vbNewLine & "    " & dateFormatStyle & vbNewLine & vbNewLine & "Only the month and year are displayed, but Excel also needs the day."
+    
+    On Error Resume Next
+    ws.Unprotect
+    With ws.Cells(6, 3).Validation
+        .Delete ' Clear current validation
+        .Add Type:=xlValidateDate, _
+             AlertStyle:=xlValidAlertStop, _
+             Operator:=xlGreater, _
+             Formula1:=dateFormula1
+        .InputTitle = "Evaluation Date"
+        .InputMessage = dateFormatMessage
+        .ErrorTitle = "Invalid Entry"
+        .errorMessage = "Please enter a valid date."
+    End With
+    ws.Protect
+    ws.EnableSelection = xlUnlockedCells
+    On Error GoTo 0
+End Sub
+
 Sub PrintReports()
     Const REPORT_TEMPLATE As String = "Speaking Evaluation Template.docx"
     Const ERR_INCOMPLETE_RECORDS As String = "incompleteRecords"
@@ -82,8 +158,8 @@ Sub PrintReports()
     ElseIf generateProcess = "Button_GenerateProofs" Then
         generateProcess = "Proofs"
     Else
-        msgToDisplay = "You have clicked an invalid option for creating the reports. Unless you have altered parts of the file, this is probably " & _
-                       "the result of data corruption. Please download a new copy of this Excel file, copy over all of the students' records, and try again."
+        msgToDisplay = "You have clicked an invalid option for creating the reports. This shouldn't be possible unless this file has been altered " & _
+                       "in an unintended manner. Please download a new copy of this Excel file, copy over all of the students' records, and try again."
         MsgBox msgToDisplay, vbExclamation, "Invalid Selection!"
         Exit Sub
     End If
@@ -449,9 +525,8 @@ Private Function VerifyTemplateHash(ByVal filePath As String) As Boolean
     
     #If Mac Then
         If Not isAppleScriptInstalled Then
-            MsgBox "SpeakingEvals.scpt has not been installed, so the report template's file integrity cannot be validated." & vbNewLine & vbNewLine & _
-                   "The reports will still be created, but please check that everything looks okay or download the template manually." & vbNewLine & _
-                   vbNewLine & Space(40) & "Press Ok to continue."
+            MsgBox "SpeakingEvals.scpt has not been installed, so the report template's file integrity cannot be validated. The reports will " & _
+                   "still be created, but please check that everything looks okay."
             VerifyTemplateHash = True
             Exit Function
         End If
@@ -553,7 +628,7 @@ Private Sub CreateSaveFolder(ByRef filePath As String)
             If Dir(filePath, vbDirectory) = "" Then MkDir filePath
             If Dir(filePath & "/*") <> "" Then
                 msgToDisplay = "It appears some files still exist in """ & filePath & """. " & vbNewLine & vbNewLine & "The new reports will be generated, but " & _
-                              "any existing files with the same filenames will be overwritten, and any existing files will be mixed in with the newly generated ones."
+                               "the old files will not be deleted and may be overwritten."
                 msgTitle = "Notice"
                 MsgBox msgToDisplay, vbExclamation, msgTitle
             End If
