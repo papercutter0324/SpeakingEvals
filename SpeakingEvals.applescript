@@ -6,6 +6,11 @@ Warren Feltmate
 © 2025
 *)
 
+-- Dialog Toolkit Plus.scptd should be in ~/Library/Script Libraries
+use AppleScript version "2.4" -- Yosemite (10.10) or later
+use scripting additions
+use script "Dialog Toolkit Plus" version "1.1.3"
+
 -- Environment Variables
 
 on GetScriptVersionNumber(paramString)
@@ -200,26 +205,53 @@ but are here in anticipation of future improvements.
 
 -- Dialog Boxes
 
-on YesNoDialog(messageString)
-	if button returned of (display dialog messageString buttons {"Yes", "No"} default button "No") is "Yes" then
+DisplayDialog("Hello,Test,YesNo")
+
+on DisplayDialog(messageString)
+	set {dialogMessage, dialogTitle, dialogType} to SplitString(messageString, ",")
+	
+	-- Select button type
+	if dialogType is "OkCancel" then
+		set displayedButtons to {"Cancel", "OK"}
+		set buttonKeys to {"", "2", "1", ""}
+		set defaultButton to 2
+	else if dialogType is "YesNo" then
+		set displayedButtons to {"No", "Yes"}
+		set buttonKeys to {"", "2", "1", ""}
+		set defaultButton to 2
+	else if dialogType is "OkOnly" then
+		set displayedButtons to {"OK"}
+		set buttonKeys to {"", "1", ""}
+		set defaultButton to 1
+	end if
+	
+	-- Create a Dialog Toolkit dialog window
+	set accViewWidth to 300
+	set theTop to 10
+	set {theButtons, minWidth} to create buttons displayedButtons button keys buttonKeys default button defaultButton
+	if minWidth > accViewWidth then set accViewWidth to minWidth
+	
+	-- Create label for the message
+	set {messageLabel, theTop} to create label dialogMessage bottom 0 max width accViewWidth control size regular size
+	
+	-- Display the dialog window
+	set {buttonName, controlsResults} to display enhanced window dialogTitle ¬
+		acc view width accViewWidth ¬
+		acc view height theTop ¬
+		acc view controls {messageLabel} ¬
+		buttons theButtons
+	
+	-- Set return values
+	if buttonName is "Ok" then
+		return 1
+	else if buttonName is "Cancel" then
+		return 2
+	else if buttonName is "Yes" then
 		return 6
-	else
+	else if buttonName is "No" then
 		return 7
 	end if
-end YesNoDialog
-
-on OkCancelDialog(messageString)
-	if button returned of (display dialog messageString buttons {"Ok", "Cancel"} default button "Cancel") is "Ok" then
-		return 1
-	else
-		return 2
-	end if
-end OkCancelDialog
-
-on OKDialog(messageString)
-	display dialog messageString buttons {"OK"} default button "OK"
-	return 0
-end OKDialog
+end DisplayDialog
 
 -- Environment Variables
 
