@@ -10,6 +10,7 @@ Warren Feltmate
 use AppleScript version "2.4" -- Yosemite (10.10) or later
 use scripting additions
 use script "Dialog Toolkit Plus" version "1.1.3"
+-- Add code to install this automatically
 
 -- Environment Variables
 
