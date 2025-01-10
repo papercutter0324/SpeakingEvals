@@ -521,7 +521,7 @@ Private Function DownloadReportTemplate(ByVal templatePath As String) As Boolean
 End Function
 
 Private Function VerifyTemplateHash(ByVal filePath As String) As Boolean
-    Const TEMPLATE_HASH As String = "1D40D1790DCE2C5AA405A05BDA981517"
+    Const TEMPLATE_HASH As String = "C0343895A881DF739B2B974635A100A6"
     
     #If Mac Then
         If Not isAppleScriptInstalled Then
