@@ -1,26 +1,35 @@
 (*
 Helper Scripts for the DYB Speaking Evaluations Excel spreadsheet
 
-Version: 20250107
+Version: 20250112
 Warren Feltmate
 © 2025
 *)
 
--- Dialog Toolkit Plus.scptd should be in ~/Library/Script Libraries
+-- Requirements and Dependencies
 use AppleScript version "2.4" -- Yosemite (10.10) or later
 use scripting additions
 use script "Dialog Toolkit Plus" version "1.1.3"
--- Add code to install this automatically
 
 -- Environment Variables
 
 on GetScriptVersionNumber(paramString)
-	return 20250107
+	-- Used to determine if an update is available
+	return 20250112
 end GetScriptVersionNumber
+
+on GetMacOSVersion(paramString)
+	-- Not currently used, but could be helpful if there are issues with older versions of MacOS
+	try
+		set osVersion to do shell script "sw_vers -productVersion"
+		return osVersion
+	end try
+end GetMacOSVersion
 
 -- Parameter Manipulation
 
 on SplitString(passedParamString, parameterSeparator)
+	-- Excel can only pass on parameter to this file. This makes it possible to split one into many.
 	tell AppleScript
 		set oldTextItemsDelimiters to text item delimiters
 		set text item delimiters to parameterSeparator
@@ -33,6 +42,7 @@ end SplitString
 -- Application Manipulations
 
 on LoadApplication(appName)
+	-- A simple function to tell the needed program to open.
 	try
 		tell application appName to activate
 		return ""
@@ -42,6 +52,7 @@ on LoadApplication(appName)
 end LoadApplication
 
 on IsAppLoaded(appName)
+	-- This lets Excel check that the other program is open before continuing.
 	try
 		tell application "System Events"
 			if (name of every process) contains appName then
@@ -57,6 +68,7 @@ on IsAppLoaded(appName)
 end IsAppLoaded
 
 on CloseWord(paramString)
+	-- This will completely close MS Word, even from the Dock. This reduces the chances of errors on subsequent runs.
 	try
 		tell application "System Events"
 			if (name of every process) contains "Microsoft Word" then
@@ -75,7 +87,8 @@ end CloseWord
 -- File Manipulation
 
 on CompareMD5Hashes(paramString)
-	set {filePath, validHash} to SplitString(paramString, ",")
+	-- This will check the file integrity of the downloaded template against the known good value.
+	set {filePath, validHash} to SplitString(paramString, "-,-")
 	
 	if not DoesFileExist(filePath) then
 		return false
@@ -90,7 +103,8 @@ on CompareMD5Hashes(paramString)
 end CompareMD5Hashes
 
 on CopyFile(paramString)
-	set {tempTemplatePath, finalTemplatePath} to SplitString(paramString, ",")
+	-- Self-explanatory. Copy file from place A to place B. The original file will still exist.
+	set {tempTemplatePath, finalTemplatePath} to SplitString(paramString, "-,-")
 	try
 		do shell script "cp " & (quoted form of tempTemplatePath) & " " & (quoted form of finalTemplatePath)
 		return true
@@ -100,7 +114,8 @@ on CopyFile(paramString)
 end CopyFile
 
 on CreateZipFile(paramString)
-	set {savePath, zipPath} to SplitString(paramString, ",")
+	-- Create a ZIP file of all the PDFs in the target folder. Makes it simpler for you to send them to your KTs.
+	set {savePath, zipPath} to SplitString(paramString, "-,-")
 	try
 		do shell script "cd " & quoted form of savePath & " && /usr/bin/zip -j " & quoted form of zipPath & " *.pdf"
 		return "Success"
@@ -110,6 +125,11 @@ on CreateZipFile(paramString)
 end CreateZipFile
 
 on DeleteFile(filePath)
+	--Self-explanatory. This will delete the target file, skipping the Trash.
+	(* The value of filePath passed to this function is always carefully considered
+	(and limited), but at a future point, I will likely add in some safety checks for extra security
+	to prevent a dangerous value accidentally being sent to this function.
+	*)
 	try
 		do shell script "rm -f " & (quoted form of filePath)
 		return true
@@ -118,12 +138,19 @@ on DeleteFile(filePath)
 	end try
 end DeleteFile
 
+on DoesBundleExist(bundlePath)
+	-- Used to check if the Dialog Toolkit Plus script bundle exists
+	tell application "System Events" to return (exists disk item bundlePath)
+end DoesBundleExist
+
 on DoesFileExist(filePath)
+	-- Self-explanatory
 	tell application "System Events" to return (exists disk item filePath) and class of disk item filePath = file
 end DoesFileExist
 
 on DownloadFile(paramString)
-	set {destinationPath, fileURL} to SplitString(paramString, ",")
+	-- Self-explanatory. The value of fileURL is the internet address to the desired file.
+	set {destinationPath, fileURL} to SplitString(paramString, "-,-")
 	try
 		do shell script "curl -L -o " & (quoted form of destinationPath) & " " & (quoted form of fileURL)
 		return true
@@ -134,6 +161,7 @@ on DownloadFile(paramString)
 end DownloadFile
 
 on FindSignature(signaturePath)
+	-- If your signature isn't embedded in the Excel file, it will try to find an external JPG or PNG version
 	try
 		if DoesFileExist(signaturePath & "mySignature.png") then
 			return signaturePath & "mySignature.png"
@@ -148,7 +176,8 @@ on FindSignature(signaturePath)
 end FindSignature
 
 on RenameFile(paramString)
-	set {targetFile, newFilename} to SplitString(paramString, ",")
+	-- This pulls double duty for renaming a file or moving it to a new location. (It's the same process to the computer.)
+	set {targetFile, newFilename} to SplitString(paramString, "-,-")
 	set targetFile to quoted form of POSIX path of targetFile
 	set newFilename to quoted form of POSIX path of newFilename
 	try
@@ -162,13 +191,16 @@ end RenameFile
 -- Folder Manipulation
 
 on ClearFolder(folderToEmpty)
+	-- Empties the target folder, but only of PDF and ZIP files. This folder will not be deleted.
 	try
 		do shell script "find " & (quoted form of folderToEmpty) & " -type f -name '*.pdf' -delete"
 		do shell script "find " & (quoted form of folderToEmpty) & " -type f -name '*.zip' -delete"
+		-- It then checks for a Proofs folder and clears it of DOCX files.
 		set folderToEmpty to folderToEmpty & "Proofs/"
 		if DoesFolderExist(folderToEmpty) then
 			do shell script "find " & (quoted form of folderToEmpty) & " -type f -name '*.docx' -delete"
 			set folderContents to list folder folderToEmpty without invisibles
+			-- If found and empty, it then deletes the Proofs folder
 			if (count of folderContents) is 0 then DeleteFolder(folderToEmpty)
 		end if
 		return true
@@ -178,6 +210,7 @@ on ClearFolder(folderToEmpty)
 end ClearFolder
 
 on CreateFolder(folderPath)
+	-- Self-explanatory. Needed for creating the folder for where the reports will be saved.
 	try
 		do shell script "mkdir -p " & (quoted form of folderPath)
 		return true
@@ -187,6 +220,7 @@ on CreateFolder(folderPath)
 end CreateFolder
 
 on DeleteFolder(folderPath)
+	-- Self-explanatory. Same as with DeleteFile, extra security checks will likely be added later.
 	try
 		do shell script "rm -rf " & (quoted form of folderPath)
 		return true
@@ -196,20 +230,16 @@ on DeleteFolder(folderPath)
 end DeleteFolder
 
 on DoesFolderExist(folderPath)
+	-- Self-explanatory
 	tell application "System Events" to return (exists disk item folderPath) and class of disk item folderPath = folder
 end DoesFolderExist
 
-(*
-The following are not yet used by the Speaking Evals spreadsheet
-but are here in anticipation of future improvements.
-*)
-
 -- Dialog Boxes
 
-DisplayDialog("Hello,Test,YesNo")
-
 on DisplayDialog(messageString)
-	set {dialogMessage, dialogTitle, dialogType} to SplitString(messageString, ",")
+	-- This will display the nicer looking messages. A great improvement over the default version.
+	-- Finer window sizing to be added in soon.
+	set {dialogMessage, dialogType, dialogTitle} to SplitString(messageString, "-,-")
 	
 	-- Select button type
 	if dialogType is "OkCancel" then
@@ -220,14 +250,14 @@ on DisplayDialog(messageString)
 		set displayedButtons to {"No", "Yes"}
 		set buttonKeys to {"", "2", "1", ""}
 		set defaultButton to 2
-	else if dialogType is "OkOnly" then
+	else
 		set displayedButtons to {"OK"}
 		set buttonKeys to {"", "1", ""}
 		set defaultButton to 1
 	end if
 	
 	-- Create a Dialog Toolkit dialog window
-	set accViewWidth to 300
+	set accViewWidth to 500
 	set theTop to 10
 	set {theButtons, minWidth} to create buttons displayedButtons button keys buttonKeys default button defaultButton
 	if minWidth > accViewWidth then set accViewWidth to minWidth
@@ -254,43 +284,51 @@ on DisplayDialog(messageString)
 	end if
 end DisplayDialog
 
--- Environment Variables
-
-on GetMacOSVersion(paramString)
+on installDialogToolkitPlus(paramString)
+	set scriptLibrariesFolder to POSIX path of (path to home folder) & "Library/Script Libraries"
+	set dialogToolkitPlusBundle to scriptLibrariesFolder & "/Dialog Toolkit Plus.scptd"
+	set downloadDestination to POSIX path of (path to downloads folder)
+	set zipFilePath to downloadDestination & "Dialog_Toolkit.zip"
+	set zipExtractionPath to downloadDestination & "dialogToolkitTemp"
+	set downloadURL to "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Dialog_Toolkit.zip"
+	
+	-- Check if Dialog Toolkit is already installed
+	if DoesBundleExist(dialogToolkitPlusBundle) then
+		return true
+		-- If not installed, ensure the required folder exists
+	else if not DoesFolderExist(scriptLibrariesFolder) then
+		try
+			-- ~/Library is typically a read-only folder, so I need to requst your password to create the need folder
+			do shell script "mkdir -p " & quoted form of scriptLibrariesFolder with administrator privileges
+		on error
+			-- If the folder cannot be created, tell the VBA script to use the default MsgBox command
+			return false
+		end try
+	end if
+	
+	-- Ensure old versions of the file are not present in the Downloads folder
+	if DoesFileExist(zipFilePath) then
+		DeleteFile(zipFilePath)
+	end if
+	
+	if DoesFolderExist(zipExtractionPath) then
+		DeleteFolder(zipExtractionPath)
+	end if
+	
+	-- Download, extract, and copy the script bundle to the required folder
+	if DownloadFile(zipFilePath & "-,-" & downloadURL) then
+		try
+			do shell script "unzip -o " & quoted form of zipFilePath & " -d " & quoted form of (downloadDestination & "dialogToolkitTemp")
+			RenameFile(zipExtractionPath & "/Dialog_Toolkit/Dialog Toolkit Plus.scptd" & "-,-" & dialogToolkitPlusBundle)
+		end try
+	end if
+	
+	-- Remove unneeded files and folders created during this process
 	try
-		set osVersion to do shell script "sw_vers -productVersion"
-		return osVersion
+		DeleteFile(zipFilePath)
+		DeleteFolder(zipExtractionPath)
 	end try
-end GetMacOSVersion
-
-on SetConfigDirectory(paramString)
-	try
-		set osVersion to GetMacOSVersion("")
-		
-		if osVersion starts with "10.1" or osVersion starts with "11." or osVersion starts with "12." then
-			set configFolder to POSIX path of (path to documents folder) & "DYB"
-		else if osVersion starts with "13." or osVersion starts with "14." or osVersion starts with "15." then
-			set configFolder to POSIX path of (path to home folder) & "Documents/DYB"
-		else
-			return "unsupported"
-		end if
-		
-		if not ExistsFolder(configFolder) then
-			do shell script "mkdir -p " & quoted form of configFolder
-		end if
-		
-		set configFolder to configFolder & "/AngryBirdsTrivia"
-		if not ExistsFolder(configFolder) then
-			do shell script "mkdir -p " & quoted form of configFolder
-		end if
-		
-		return configFolder
-	on error
-		display dialog "Error: " & errMsg buttons {"OK"} default button "OK"
-		return ""
-	end try
-end SetConfigDirectory
-
-on SetTempDirectory(paramString)
-	return POSIX path of (path to temporary items)
-end SetTempDirectory
+	
+	-- One final check to verify installation was successful and return true if it was
+	return DoesBundleExist(dialogToolkitPlusBundle)
+end installDialogToolkitPlus
