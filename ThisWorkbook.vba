@@ -1506,13 +1506,6 @@ Private Sub DeleteExistingFolder(ByVal filePath As String)
     #End If
 End Sub
 
-Private Sub TestDisplayMsg()
-    Dim msgToDisplay As String, msgResult As Variant
-    isDialogToolkitInstalled = True
-    msgToDisplay = "Because " & APPLE_SCRIPT_FILE & " is not installed, Excel is unable to delete any existing reports for this class. It is recommended to delete them before continuing."
-    msgResult = DisplayMessage(msgToDisplay, vbExclamation, "Notice")
-End Sub
-
 Private Function DisplayMessage(ByVal messageText As String, ByVal messageType As Integer, ByVal messageTitle As String, Optional ByVal dialogWidth As Integer = 250) As Variant
     On Error Resume Next
     #If Mac Then
