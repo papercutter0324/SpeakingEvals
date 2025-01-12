@@ -1,7 +1,8 @@
 (*
 Helper Scripts for the DYB Speaking Evaluations Excel spreadsheet
 
-Version: 20250112
+Version: 1.0.0
+Build:   20250113
 Warren Feltmate
 © 2025
 *)
@@ -14,8 +15,8 @@ use script "Dialog Toolkit Plus" version "1.1.3"
 -- Environment Variables
 
 on GetScriptVersionNumber(paramString)
-    -- Used to determine if an update is available
-    return 20250112
+    -- Use build number to determine if an update is available
+    return 20250113
 end GetScriptVersionNumber
 
 on GetMacOSVersion(paramString)
@@ -238,26 +239,32 @@ end DoesFolderExist
 
 on DisplayDialog(messageString)
     -- This will display the nicer looking messages. A great improvement over the default version.
-    -- Finer window sizing to be added in soon.
-    set {dialogMessage, dialogType, dialogTitle} to SplitString(messageString, "-,-")
+    set {dialogMessage, dialogType, dialogTitle, accViewWidth} to SplitString(messageString, "-,-")
 
     -- Select button type
-    if dialogType is "OkCancel" then
+    set defaultButton to 1 -- Set default unless overridden below
+    if dialogType is "OkOnly" then
+        set displayedButtons to {"OK"}
+        set buttonKeys to {"", "1", ""}
+    else if dialogType is "OkCancel" then
         set displayedButtons to {"Cancel", "OK"}
         set buttonKeys to {"", "2", "1", ""}
-        set defaultButton to 2
     else if dialogType is "YesNo" then
         set displayedButtons to {"No", "Yes"}
         set buttonKeys to {"", "2", "1", ""}
-        set defaultButton to 2
+    else if dialogType is "RetryCancel" then
+        set displayedButtons to {"Cancel", "Retry"}
+        set buttonKeys to {"", "2", "1", ""}
+    else if dialogType is "YesNoCancel" then
+        set displayedButtons to {"Cancel", "No", "Yes"}
+        set buttonKeys to {"", "3", "2", "1", ""}
     else
         set displayedButtons to {"OK"}
         set buttonKeys to {"", "1", ""}
-        set defaultButton to 1
     end if
 	
     -- Create a Dialog Toolkit dialog window
-    set accViewWidth to 500
+    -- set accViewWidth to 250 -- This is passed in by the VBA code but kept here in case of future updates.
     set theTop to 10
     set {theButtons, minWidth} to create buttons displayedButtons button keys buttonKeys default button defaultButton
     if minWidth > accViewWidth then set accViewWidth to minWidth
