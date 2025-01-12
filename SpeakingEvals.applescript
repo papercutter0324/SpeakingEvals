@@ -290,7 +290,7 @@ on DisplayDialog(messageString)
     end if
 end DisplayDialog
 
-on installDialogToolkitPlus(paramString)
+on InstallDialogToolkitPlus(paramString)
     set scriptLibrariesFolder to POSIX path of (path to home folder) & "Library/Script Libraries"
     set dialogToolkitPlusBundle to scriptLibrariesFolder & "/Dialog Toolkit Plus.scptd"
     set downloadDestination to POSIX path of (path to downloads folder)
@@ -337,4 +337,4 @@ on installDialogToolkitPlus(paramString)
 
     -- One final check to verify installation was successful and return true if it was
     return DoesBundleExist(dialogToolkitPlusBundle)
-end installDialogToolkitPlus
+end InstallDialogToolkitPlus
