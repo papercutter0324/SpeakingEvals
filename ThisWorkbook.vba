@@ -110,7 +110,7 @@ Private Sub SetCorrectDateValidationMessage(ByRef ws As Worksheet)
     '    Case 1
     '        dateFormatStyle = "DD/MM/YYYY
     '        dateFormula1 = ""1/1/2025"
-    '    Case 2
+    '    Case 2 ' Check this at home
     '        dateFormatStyle = "YYYY/MM/DD
     '        dateFormula1 = "2025/1/1"
     ' End Select
@@ -148,7 +148,7 @@ Sub PrintReports()
 
     Dim ws As Worksheet, wordApp As Object, wordDoc As Object
     Dim templatePath As String, savePath As String, fileName As String
-    Dim resultMsg As String, msgToDisplay As String, msgTitle As String, msgType As Integer, msgResult As Variant
+    Dim resultMsg As String, msgToDisplay As String, msgTitle As String, msgType As Integer, msgResult As Variant, dialogSize As Integer
     Dim currentRow As Long, lastRow As Long, firstStudentRecord As Integer
     Dim generateProcess As String, preexistingWordInstance As Boolean, saveResult As Boolean
 
@@ -170,6 +170,7 @@ Sub PrintReports()
         RequestInitialFileAndFolderAccess
         isAppleScriptInstalled = CheckForAppleScript()
         If isAppleScriptInstalled Then isDialogToolkitInstalled = CheckForDialogToolkit()
+        If isDialogToolkitInstalled Then isDialogToolkitInstalled = CheckForDialogDisplayScript()
     #End If
 
     If IsTemplateAlreadyOpen(REPORT_TEMPLATE, preexistingWordInstance) Then Exit Sub
@@ -233,30 +234,38 @@ Cleanup:
             msgToDisplay = "One or more fields for missing. Please complete all fields and try again."
             msgTitle = "Missing Data!"
             msgType = vbExclamation
+            dialogSize = 230
         Case ERR_LOADING_WORD, ERR_LOADING_TEMPLATE
             msgToDisplay = "There was an error opening MS Word and/or the template. This is sometimes normal MS Office behaviour, so please wait a couple seconds and try again."
             msgTitle = "Error!"
             msgType = vbExclamation
+            dialogSize = 360
         Case ERR_MISSING_SHAPES
             msgToDisplay = "There is a error with the template. Please redownload a copy of the original and try again."
             msgTitle = "Error!"
             msgType = vbExclamation
+            dialogSize = 210
         Case MSG_SAVE_FAILED
             msgToDisplay = "Export failed. Please ensure all data was entered correctly and try saving to a different folder."
             msgTitle = "Process failed!"
             msgType = vbInformation
+            dialogSize = 230
         Case MSG_ZIP_FAILED
             msgToDisplay = "The reports were successfully created, but there was an error when trying to add them into a zip file."
             msgTitle = "Error!"
             msgType = vbInformation
+            dialogSize = 270
         Case MSG_SUCCESS
             msgToDisplay = "Export complete!"
             msgTitle = "Process complete!"
             msgType = vbInformation
+            dialogSize = 110
     End Select
     
-    If resultMsg <> "" Then msgResult = DisplayMessage(msgToDisplay, msgType, msgTitle)
+    If dialogSize = 0 Then dialogSize = 250
+    If resultMsg <> "" Then msgResult = DisplayMessage(msgToDisplay, msgType, msgTitle, dialogSize)
     KillWord wordApp, wordDoc, preexistingWordInstance
+    If isDialogToolkitInstalled Then RemoveDialogToolKit
     Set ws = Nothing
 End Sub
 
@@ -282,7 +291,7 @@ Private Function VerifyRecordsAreComplete(ByRef ws As Worksheet, ByRef lastRow A
         #If PRINT_DEBUG_MESSAGES Then
             Debug.Print errorMessage
         #End If
-        msgResult = DisplayMessage(errorMessage, vbOKOnly, "Error!")
+        msgResult = DisplayMessage(errorMessage, vbOKOnly, "Error!", 160)
         VerifyRecordsAreComplete = False
         Exit Function
     End If
@@ -363,20 +372,20 @@ Private Function ValidateClassInfo(ByRef ws As Worksheet, ByVal firstRow As Inte
 
     For currentRow = firstRow To lastRow
         If IsEmpty(ws.Cells(currentRow, 3).Value) Then
-            errorMessage = "Class information incomplete." & vbNewLine & "Missing: " & Left(ws.Cells(currentRow, 1).Value, Len(ws.Cells(currentRow, 1).Value) - 1)
+            errorMessage = "Class information incomplete." & vbNewLine & vbNewLine & "Missing: " & Left(ws.Cells(currentRow, 1).Value, Len(ws.Cells(currentRow, 1).Value) - 1)
             #If PRINT_DEBUG_MESSAGES Then
                 Debug.Print errorMessage
             #End If
-            msgResult = DisplayMessage(errorMessage, vbOKOnly, "Error!")
+            msgResult = DisplayMessage(errorMessage, vbOKOnly, "Error!", 190)
             ValidateClassInfo = False
             Exit Function
         End If
 
         If currentRow >= 3 And currentRow <= 5 Then
             If Not ValidateData(ws.Cells(currentRow, 3), ws.Cells(currentRow, 1).Value) Then
-                errorMessage = "Invalid value for " & ws.Cells(currentRow, 1).Value & "." & vbNewLine & _
+                errorMessage = "Invalid value for " & Left(ws.Cells(currentRow, 1).Value, Len(ws.Cells(currentRow, 1).Value) - 1) & "." & vbNewLine & vbNewLine & _
                                "Would you like to ignore and continue?"
-                If DisplayMessage(errorMessage, vbYesNo, "Error!") = vbNo Then
+                If DisplayMessage(errorMessage, vbYesNo, "Error!", 250) = vbNo Then
                     #If PRINT_DEBUG_MESSAGES Then
                         Debug.Print errorMessage
                     #End If
@@ -392,7 +401,7 @@ End Function
 
 Private Function ValidateStudentInfo(ByRef ws As Worksheet, ByVal firstRow As Integer, ByVal lastRow As Integer, ByVal firstCol As Integer, ByVal lastCol As Integer) As Boolean
     Dim currentRow As Integer, currentColumn As Integer
-    Dim errorMessage As String, msgResult As Variant
+    Dim errorMessage As String, msgResult As Variant, dialogSize As Integer
     
     For currentRow = firstRow To lastRow
         For currentColumn = firstCol To lastCol
@@ -400,19 +409,24 @@ Private Function ValidateStudentInfo(ByRef ws As Worksheet, ByVal firstRow As In
                 errorMessage = "Student information incomplete." & vbNewLine & vbNewLine & "Missing data for student " & ws.Cells(currentRow, 1).Value & "'s "
                 If currentColumn = 2 Then
                     errorMessage = errorMessage & ws.Cells(7, currentColumn).Value & "."
-                Else
-                    errorMessage = errorMessage & "(" & ws.Cells(currentRow, 2).Value & ") " & ws.Cells(7, currentColumn).Value & "."
+                ElseIf currentColumn >= 4 And currentColumn <= 9 Then
+                    errorMessage = errorMessage & "(" & ws.Cells(currentRow, 2).Value & ") " & UCase(ws.Cells(7, currentColumn).Value) & " score."
+                ElseIf currentColumn = 10 Then
+                    errorMessage = errorMessage & "(" & ws.Cells(currentRow, 2).Value & ") COMMENT."
                 End If
+                dialogSize = 250
                 GoTo ErrorHandler
             End If
             
             If currentColumn >= 4 Then
                 If Not ValidateData(ws.Cells(currentRow, currentColumn), ws.Cells(7, currentColumn).Value) Then
                     If currentColumn <> 10 Then
-                        errorMessage = "Invalid value entered for student " & ws.Cells(currentRow, 1).Value & "'s (" & ws.Cells(currentRow, 2).Value & ") " & LCase(ws.Cells(7, currentColumn).Value) & " score."
+                        errorMessage = "Invalid value entered for student " & ws.Cells(currentRow, 1).Value & "'s (" & ws.Cells(currentRow, 2).Value & ") " & UCase(ws.Cells(7, currentColumn).Value) & " score."
+                        dialogSize = 300
                     Else
-                        errorMessage = "The comment for student " & ws.Cells(currentRow, 1).Value & "'s (" & ws.Cells(currentRow, 2).Value & ") is too long. Please try to shorten it by " & _
+                        errorMessage = "The COMMENT for student " & ws.Cells(currentRow, 1).Value & "'s (" & ws.Cells(currentRow, 2).Value & ") is too long. Please try to shorten it by " & _
                                         Len(ws.Cells(currentRow, currentColumn).Value) - 315 & " or more characters."
+                        dialogSize = 330
                     End If
                     GoTo ErrorHandler
                 End If
@@ -427,7 +441,7 @@ ErrorHandler:
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print errorMessage
     #End If
-    msgResult = DisplayMessage(errorMessage, vbExclamation, "Error!")
+    msgResult = DisplayMessage(errorMessage, vbExclamation, "Error!", dialogSize)
     ValidateStudentInfo = False
 End Function
 
@@ -435,6 +449,10 @@ Private Function LoadTemplate(ByVal REPORT_TEMPLATE As String) As String
     Dim templatePath As String, tempTemplatePath As String, destinationPath As String
     Dim msgToDisplay As String, msgResult As Variant
     Dim validTemplateFound As Boolean
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Attempting to load the Speaking Evaluation Template.docx."
+    #End If
     
     templatePath = ThisWorkbook.Path & Application.PathSeparator & REPORT_TEMPLATE
     ConvertOneDriveToLocalPath templatePath
@@ -445,16 +463,22 @@ Private Function LoadTemplate(ByVal REPORT_TEMPLATE As String) As String
     
     If Not IsTemplateValid(templatePath, tempTemplatePath) Then
         msgToDisplay = "No template was found. Process canceled."
-        msgResult = DisplayMessage(msgToDisplay, vbOKOnly, "Template Not Found")
+        msgResult = DisplayMessage(msgToDisplay, vbOKOnly, "Template Not Found", 150)
         LoadTemplate = ""
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "Unable to locate a copy of the template."
+        #End If
         Exit Function
     End If
     
     If templatePath = tempTemplatePath Then
         If Not MoveFile(tempTemplatePath, destinationPath) Then
-            msgToDisplay = "Failed to move temporary template to final location."
-            msgResult = DisplayMessage(msgToDisplay, vbOKOnly, "Error!")
+            msgToDisplay = "Failed to move temporary template to final location. Please try downloading the template manually and saving it in this folder."
+            msgResult = DisplayMessage(msgToDisplay, vbOKOnly, "Error!", 320)
             LoadTemplate = ""
+            #If PRINT_DEBUG_MESSAGES Then
+                Debug.Print "Unable to move the template to the correct location."
+            #End If
             Exit Function
         End If
     End If
@@ -685,8 +709,8 @@ Private Function IsTemplateAlreadyOpen(ByVal REPORT_TEMPLATE As String, ByRef pr
     
     If templateIsOpen Then
         warningMsg = "An open instance of MS Word has been detected. Please save any open files before continuing." & vbNewLine & vbNewLine & _
-                     "Click OK to automatically close Word and continue. Or, click Cancel to finish and save your work."
-        If DisplayMessage(warningMsg, vbCritical, "Error Loading Word") = vbOK Then
+                     "Click OK to automatically close Word and continue, or click Cancel to finish and save your work."
+        If DisplayMessage(warningMsg, vbCritical, "Error Loading Word", 310) = vbOK Then
             wordDoc.Close SaveChanges:=False
             templateIsOpen = False
         End If
@@ -740,7 +764,7 @@ ErrorHandler:
         "VBA Error " & Err.Number & ": " & Err.Description
         
         If isAppleScriptInstalled Then errorMsg = errorMsg & vbNewLine & "AppleScript Error: " & appleScriptResult
-        msgResult = DisplayMessage(errorMsg, vbOKOnly, "Error Loading Word")
+        msgResult = DisplayMessage(errorMsg, vbOKOnly, "Error Loading Word", 470)
     #End If
     LoadWord = False
 End Function
@@ -766,7 +790,7 @@ Private Function VerifyAllDocShapesExist(ByRef wordDoc As Object) As Boolean
             #End If
             
             msgToDisplay = "There is a critical error with the template. Please redownload a copy of the original and try again."
-            msgResult = DisplayMessage(msgToDisplay, vbOKOnly, "Error!")
+            msgResult = DisplayMessage(msgToDisplay, vbOKOnly, "Error!", 300)
             VerifyAllDocShapesExist = False
             Exit Function
         End If
@@ -1219,17 +1243,50 @@ ErrorHandler:
 End Sub
 
 Private Function CheckForDialogToolkit() As Boolean
-    ' In theory, this should be sufficient. However, run a few tests to see if it suffers the same odd bug as the DisplayDialog function does.
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "Checking for presence of Dialog Toolkit Plus."
     #End If
     
-    CheckForDialogToolkit = AppleScriptTask(APPLE_SCRIPT_FILE, "installDialogToolkitPlus", "")
+    CheckForDialogToolkit = AppleScriptTask(APPLE_SCRIPT_FILE, "InstallDialogToolkitPlus", "paramString")
     
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "Status: " & CheckForDialogToolkit
     #End If
 End Function
+
+Private Function CheckForDialogDisplayScript() As Boolean
+    Dim resourcesFolder As String
+    Dim dialogScriptIsInstalled As Boolean
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Checking for presence of DialogDisplay.scpt."
+    #End If
+    
+    ' Needed to check for a local copy in case no internet connection available
+    resourcesFolder = ThisWorkbook.Path & "/Resources"
+    ConvertOneDriveToLocalPath resourcesFolder
+    
+    dialogScriptIsInstalled = AppleScriptTask(APPLE_SCRIPT_FILE, "InstallDialogDisplayScript", resourcesFolder)
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Status: " & dialogScriptIsInstalled
+    #End If
+    
+    CheckForDialogDisplayScript = dialogScriptIsInstalled
+End Function
+
+Private Sub RemoveDialogToolKit()
+    Dim dialogToolktPlusScript As String, resourcesFolder As String, scriptResult As Boolean
+        
+    dialogToolktPlusScript = "/Users/" & Environ("USER") & "/Library/Script Libraries/Dialog Toolkit Plus.scptd"
+    resourcesFolder = ThisWorkbook.Path & "/Resources"
+    ConvertOneDriveToLocalPath resourcesFolder
+    
+    scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFolderExist", resourcesFolder)
+    If Not scriptResult Then scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "CreateFolder", resourcesFolder)
+    If scriptResult Then scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "CopyFolder", dialogToolktPlusScript & APPLE_SCRIPT_SPLIT_KEY & resourcesFolder & "/Dialog Toolkit Plus.scptd")
+    If scriptResult Then scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DeleteFolder", dialogToolktPlusScript)
+End Sub
 
 Private Sub RequestInitialFileAndFolderAccess()
     Dim workingFolder As String, tempFolder As String
@@ -1240,7 +1297,6 @@ Private Sub RequestInitialFileAndFolderAccess()
     tempFolder = Environ("TMPDIR")
     
     ConvertOneDriveToLocalPath workingFolder
-    ConvertOneDriveToLocalPath tempFolder
     
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "Requesting access to: " & vbNewLine & _
@@ -1506,6 +1562,13 @@ Private Sub DeleteExistingFolder(ByVal filePath As String)
     #End If
 End Sub
 
+Private Sub TestDisplayMsg()
+    Dim msgToDisplay As String, msgResult As Variant
+    isDialogToolkitInstalled = True
+    msgToDisplay = "Because " & APPLE_SCRIPT_FILE & " is not installed, Excel is unable to delete any existing reports for this class. It is recommended to delete them before continuing."
+    msgResult = DisplayMessage(msgToDisplay, vbExclamation, "Notice")
+End Sub
+
 Private Function DisplayMessage(ByVal messageText As String, ByVal messageType As Integer, ByVal messageTitle As String, Optional ByVal dialogWidth As Integer = 250) As Variant
     On Error Resume Next
     #If Mac Then
@@ -1534,7 +1597,7 @@ Private Function DisplayMessage(ByVal messageText As String, ByVal messageType A
             
             On Error Resume Next
             Do While Not messageDisplayed
-                dialogResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DisplayDialog", messageText)
+                dialogResult = AppleScriptTask("DialogDisplay.scpt", "DisplayDialog", messageText)
                 messageDisplayed = (dialogResult <> "")
                 i = i + 1
                 
