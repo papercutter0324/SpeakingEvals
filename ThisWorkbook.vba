@@ -175,7 +175,7 @@ Sub PrintReports()
         Exit Sub
     End If
 
-    resourcesFolder = ThisWorkbook.Path & "/Resources" ' Should this be made Static?
+    resourcesFolder = ThisWorkbook.Path & "/Resources"
     ConvertOneDriveToLocalPath resourcesFolder
     
     #If Mac Then
@@ -213,7 +213,7 @@ Sub PrintReports()
     templatePath = LoadTemplate(resourcesFolder, REPORT_TEMPLATE)
     If templatePath = "" Then GoTo Cleanup
 
-    savePath = SetSaveLocation(ws, generateProcess) ' Perhaps move the generated reports to a "Reports" folder?
+    savePath = SetSaveLocation(ws, generateProcess)
     If savePath = "" Then GoTo Cleanup
 
     If Not LoadWord(wordApp, wordDoc, templatePath) Then
@@ -510,7 +510,6 @@ Private Function LoadTemplate(ByVal resourcesFolder As String, ByVal REPORT_TEMP
     #End If
     
     templatePath = resourcesFolder & Application.PathSeparator & REPORT_TEMPLATE
-    ConvertOneDriveToLocalPath templatePath ' Likely no longer needed
     destinationPath = templatePath
     tempTemplatePath = GetTempFilePath(REPORT_TEMPLATE)
     
