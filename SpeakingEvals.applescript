@@ -1,8 +1,8 @@
 (*
 Helper Scripts for the DYB Speaking Evaluations Excel spreadsheet
 
-Version: 1.0.0
-Build:   20250115
+Version: 1.1.0
+Build:   20250119
 Warren Feltmate
 © 2025
 *)
@@ -11,7 +11,7 @@ Warren Feltmate
 
 on GetScriptVersionNumber(paramString)
 	--- Use build number to determine if an update is available
-	return 20250115
+	return 20250119
 end GetScriptVersionNumber
 
 on GetMacOSVersion(paramString)
@@ -21,6 +21,19 @@ on GetMacOSVersion(paramString)
 		return osVersion
 	end try
 end GetMacOSVersion
+
+on CheckAccessibilitySettings(appToCheck)
+	-- Not used yet, but might be in the future as a way to validate and correct invalid entries, such as with a student's grades
+	try
+		tell application "System Events"
+			-- Checks if Accessibility features are enabled for the checked application
+			set accessibilityEnabled to (appToCheck is in (name of processes where visible is true)) and (enabled of UI elements of application process appToCheck)
+			return accessibilityEnabled
+		end tell
+	on error
+		return false
+	end try
+end CheckAccessibilitySettings
 
 -- Parameter Manipulation
 
@@ -209,7 +222,7 @@ on CopyFolder(folderPath)
 	-- Self-explanatory. Copy a folder (or bundle) from place A to place B. The original file will still exist.
 	set {targetFolder, destinationFolder} to SplitString(folderPath, "-,-")
 	try
-		do shell script "cp -rf" & space & (quoted form of targetFolder) & space & (quoted form of destinationFolder)
+		do shell script "cp -Rf" & space & (quoted form of targetFolder) & space & (quoted form of destinationFolder)
 		return true
 	on error
 		return false
@@ -253,57 +266,88 @@ on InstallDialogDisplayScript(paramString)
 	return DownloadFile(scriptPath & "-,-" & downloadURL)
 end InstallDialogDisplayScript
 
-on InstallDialogToolkitPlus(resourcesFolder)
-	set downloadDestination to POSIX path of (path to downloads folder)
-	set downloadURL to "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Dialog_Toolkit.zip"
+on CheckForScriptLibrariesFolder(paramString)
 	set scriptLibrariesFolder to POSIX path of (path to home folder) & "Library/Script Libraries"
-	set dialogToolkitPlusBundle to scriptLibrariesFolder & "/Dialog Toolkit Plus.scptd"
-	set zipFilePath to downloadDestination & "Dialog_Toolkit.zip"
-	set zipExtractionPath to downloadDestination & "dialogToolkitTemp"
 	
-	-- Check if Dialog Toolkit is already installed
-	if DoesBundleExist(dialogToolkitPlusBundle) then return true
-	
-	-- If not installed, ensure the required folder exists
-	if not DoesFolderExist(scriptLibrariesFolder) then
+	if DoesFolderExist(scriptLibrariesFolder) then
+		return scriptLibrariesFolder
+	else
 		try
 			-- ~/Library is typically a read-only folder, so I need to requst your password to create the need folder
 			do shell script "mkdir -p" & space & quoted form of scriptLibrariesFolder with administrator privileges
+			-- Set your username as the owner
+			do shell script "chown " & quoted form of (short user name of (system info)) & space & quoted form of scriptLibrariesFolder with administrator privileges
+			-- Give your username READ and WRITE permissions.
+			do shell script "chmod u+rw " & quoted form of scriptLibrariesFolder with administrator privileges
+			return scriptLibrariesFolder
 		on error
-			-- If the folder cannot be created, tell the VBA script to use the default MsgBox command
+			return ""
+		end try
+	end if
+end CheckForScriptLibrariesFolder
+
+on InstallDialogToolkitPlus(resourcesFolder)
+	set downloadURL to "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Dialog_Toolkit.zip"
+	set scriptLibrariesFolder to POSIX path of (path to home folder) & "Library/Script Libraries"
+	set dialogBundleName to "/Dialog Toolkit Plus.scptd"
+	set dialogToolkitPlusBundle to scriptLibrariesFolder & dialogBundleName
+	set zipFilePath to resourcesFolder & "/Dialog_Toolkit.zip"
+	set zipExtractionPath to resourcesFolder & "/dialogToolkitTemp"
+	
+	-- Initial check to see if already installed
+	if DoesBundleExist(dialogToolkitPlusBundle) then return true
+	
+	-- Ensure resources folder exists for later use
+	if not DoesFolderExist(resourcesFolder) then
+		try
+			CreateFolder(resourcesFolder)
+		on error
 			return false
 		end try
 	end if
 	
-	-- Ensure resources folder exists for later use
-	if not DoesFolderExist(resourcesFolder) then
-		CreateFolder(resourcesFolder)
-	end if
-	
 	-- Check for a local copy and move it to the needed folder if found
-	if DoesFileExist(resourcesFolder & "/Dialog Toolkit Plus.scptd") then
-		if CopyFile(resourcesFolder & "/Dialog Toolkit Plus.scptd" & "-,-" & dialogToolkitPlusBundle) then
+	if DoesBundleExist(resourcesFolder & dialogBundleName) then
+		if CopyFolder(resourcesFolder & dialogBundleName & "-,-" & dialogToolkitPlusBundle) then
 			return true
 		end if
 	end if
 	
-	-- Otherwise, download, extract, and...
+	-- Otherwise, download and...
 	if DownloadFile(zipFilePath & "-,-" & downloadURL) then
 		try
-			do shell script "unzip -o" & space & quoted form of zipFilePath & " -d " & quoted form of (downloadDestination & "dialogToolkitTemp")
-			-- ...keep a local copy in the resources folder
-			CopyFile(zipExtractionPath & "/Dialog_Toolkit/Dialog Toolkit Plus.scptd" & "-,-" & resourcesFolder & "/Dialog Toolkit Plus.scptd")
-			-- ...copy the script bundle to the required folders
-			RenameFile(zipExtractionPath & "/Dialog_Toolkit/Dialog Toolkit Plus.scptd" & "-,-" & dialogToolkitPlusBundle)
+			-- ...extract the files...
+			do shell script "unzip -o" & space & (quoted form of zipFilePath) & " -d " & (quoted form of zipExtractionPath)
+			-- ...keep a local copy in the resources folder...
+			CopyFolder(zipExtractionPath & "/Dialog_Toolkit" & dialogBundleName & "-,-" & resourcesFolder & dialogBundleName)
+			-- ...and copy the script bundle to the required folder
+			CopyFolder(zipExtractionPath & "/Dialog_Toolkit" & dialogBundleName & "-,-" & dialogToolkitPlusBundle)
 		end try
 	end if
 	
 	-- Remove unneeded files and folders created during this process
-	try
-		DeleteFile(zipFilePath)
-		DeleteFolder(zipExtractionPath)
-	end try
+	DeleteFile(zipFilePath)
+	DeleteFolder(zipExtractionPath)
 	
 	-- One final check to verify installation was successful and return true if it was
 	return DoesBundleExist(dialogToolkitPlusBundle)
 end InstallDialogToolkitPlus
+
+on UninstallDialogToolkitPlus(resourcesFolder)
+	set dialogToolkitPlusBundle to POSIX path of (path to home folder) & "Library/Script Libraries/Dialog Toolkit Plus.scptd"
+	set localCopy to resourcesFolder & "/Dialog Toolkit Plus.scptd"
+	
+	if DoesBundleExist(dialogToolkitPlusBundle) then
+		try
+			if not DoesBundleExist(localCopy) then CopyFolder(dialogToolkitPlusBundle & "-,-" & localCopy)
+			DeleteFolder(dialogToolkitPlusBundle)
+			set removalResult to true
+		on error
+			set removalResult to false
+		end try
+	else
+		set removalResult to false
+	end if
+	
+	return removalResult
+end UninstallDialogToolkitPlus
