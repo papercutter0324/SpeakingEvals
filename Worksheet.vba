@@ -3,27 +3,17 @@ Private Sub Worksheet_Change(ByVal targetCellsRange As Range)
     Dim englishNameRange As Range, gradesRange As Range, commentRange As Range
     Dim changedCell As Range
     
-    targetCellsRange.Value = Trim(targetCellsRange.Value)
-    If targetCellsRange.Value = "" Then Exit Sub
-
     Application.EnableEvents = False
     
-    Set levelRange = Me.Range("C3")
-    Set classDaysRange = Me.Range("C4")
-    Set classTimeRange = Me.Range("C5")
-    Set evalDateRange = Me.Range("C6")
+    targetCellsRange.Value = Trim(targetCellsRange.Value)
+    If targetCellsRange.Value = "" Then Exit Sub
+    
     Set englishNameRange = Me.Range("B8:B32")
     Set gradesRange = Union(Me.Range("D8:D32"), Me.Range("E8:E32"), Me.Range("F8:F32"), _
                             Me.Range("G8:G32"), Me.Range("H8:H32"), Me.Range("I8:I32"))
     Set commentRange = Me.Range("J8:J32")
     
-    If Not Intersect(targetCellsRange, levelRange) Is Nothing Then
-        ValdateLevelValue targetCellsRange
-    ElseIf Not Intersect(targetCellsRange, classDaysRange) Is Nothing Then
-        ValdateClassDaysValue targetCellsRange
-    ElseIf Not Intersect(targetCellsRange, classTimeRange) Is Nothing Then
-        ValdateClassTimeValue targetCellsRange
-    ElseIf Not Intersect(targetCellsRange, evalDateRange) Is Nothing Then
+    If Not Intersect(targetCellsRange, evalDateRange) Is Nothing Then
         ValdateEvaluationDateValue targetCellsRange
     ElseIf Not Intersect(targetCellsRange, englishNameRange) Is Nothing Then
         ValdateEnglishNameValue targetCellsRange
@@ -36,24 +26,9 @@ Private Sub Worksheet_Change(ByVal targetCellsRange As Range)
     Application.EnableEvents = True
 End Sub
 
-Private Sub ValdateLevelValue(ByVal targetCell As Range)
-
-End Sub
-
-Private Sub ValdateClassDaysValue(ByVal targetCell As Range)
-
-End Sub
-
-Private Sub ValdateClassTimeValue(ByVal targetCell As Range)
-
-End Sub
-
-Private Sub ValdateEvaluationDateValue(ByVal targetCell As Range)
-
-End Sub
-
 Private Sub ValdateEnglishNameValue(ByVal targetCell As Range)
-
+     ' Add a character limit check
+     ' Add a prompt to ask to trim to character limit
 End Sub
 
 Private Sub ValdateGradesValue(ByVal targetCell As Range)
@@ -115,5 +90,6 @@ Private Sub invalidScoreValue(ByVal changedCell As Range, Optional ByVal wrongNu
 End Sub
 
 Private Sub ValdateCommentValue(ByVal targetCell As Range)
-
+    ' Add a character limit check
+    ' Can be grabbed from the check when prepping the reports
 End Sub
