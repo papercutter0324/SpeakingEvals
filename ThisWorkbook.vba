@@ -11,6 +11,8 @@ Private Sub Workbook_Open()
     Dim ws As Worksheet
     Dim scriptResult As Boolean
     
+    Application.EnableEvents = False
+    
     Set ws = ActiveWorkbook.Worksheets(WS_INSTRUCTIONS)
     ws.Shapes(CURL_COMMAND_SHAPE).TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
     SetShapePositions ws
@@ -18,7 +20,16 @@ Private Sub Workbook_Open()
     
     #If Mac Then
         scriptResult = ScriptInstallationStatus
+    #Else
+        ws.Shapes("Button_SpeakingEvalsScpt_Missing").Visible = True
+        ws.Shapes("Button_SpeakingEvalsScpt_Installed").Visible = False
+        ws.Shapes("Button_DialogToolkit_Missing").Visible = True
+        ws.Shapes("Button_DialogToolkit_Installed").Visible = False
+        ws.Shapes("Button_EnhancedDialogs_Disable").Visible = True
+        ws.Shapes("Button_EnhancedDialogs_Enable").Visible = False
     #End If
+    
+    Application.EnableEvents = True
 End Sub
 
 Private Sub Workbook_BeforeClose(Cancel As Boolean)
@@ -49,7 +60,8 @@ Private Sub SetShapePositions(ByRef ws As Worksheet)
     Dim shpNamesArray As Variant
     Dim i As Integer
     
-    shpNamesArray = Array("Signature_PlaceHolder", "mySignature", "Download Buttons", "MacOS_Command")
+    shpNamesArray = Array("Signature_PlaceHolder", "mySignature", "cURL_Command", "Download Buttons", "MacOS_Command", "Button_SpeakingEvalsScpt_Installed", "Button_SpeakingEvalsScpt_Missing", _
+                          "Button_DialogToolkit_Installed", "Button_DialogToolkit_Missing", "Button_EnhancedDialogs_Enable", "Button_EnhancedDialogs_Disable")
 
     On Error Resume Next
     For i = LBound(shpNamesArray) To UBound(shpNamesArray)
@@ -59,14 +71,29 @@ Private Sub SetShapePositions(ByRef ws As Worksheet)
                 Case "Signature_Placeholder", "mySignature"
                     Set shp2 = ws.Shapes("TS Message")
                     shp1.Top = shp2.Top + ((shp2.Height - shp1.Height) / 2)
+                    shp1.Left = shp2.Left + ((shp2.Width - shp1.Width) / 2)
+                Case "cURL_Command"
+                    Set shp2 = ws.Shapes("MacOS Users")
+                    shp1.Top = 402
+                    shp1.Left = shp2.Left + ((shp2.Width - shp1.Width) / 2)
                 Case "Download Buttons"
                     Set shp2 = ws.Shapes("Seeing the Code")
                     shp1.Top = shp2.Top
+                    shp1.Left = shp2.Left + ((shp2.Width - shp1.Width) / 2)
                 Case "MacOS_Command"
                     Set shp2 = ws.Shapes("MacOS Users")
                     shp1.Top = shp2.Top
+                    shp1.Left = shp2.Left + ((shp2.Width - shp1.Width) / 2)
+                Case "Button_SpeakingEvalsScpt_Installed", "Button_SpeakingEvalsScpt_Missing"
+                    Set shp2 = ws.Shapes("MacOS Users")
+                    shp1.Left = shp2.Left + 70
+                Case "Button_DialogToolkit_Installed", "Button_DialogToolkit_Missing"
+                    Set shp2 = ws.Shapes("MacOS Users")
+                    shp1.Left = shp2.Left + (shp2.Width / 2 - (shp1.Width / 2))
+                Case "Button_EnhancedDialogs_Enabled", "Button_EnhancedDialogs_Disabled"
+                    Set shp2 = ws.Shapes("MacOS Users")
+                    shp1.Left = shp2.Left + shp2.Width - shp1.Width - 70
             End Select
-            shp1.Left = shp2.Left + ((shp2.Width - shp1.Width) / 2)
             Set shp2 = Nothing
         End If
         Set shp1 = Nothing
@@ -143,7 +170,46 @@ Private Sub SetCorrectDateValidationMessage(ByRef ws As Worksheet)
     On Error GoTo 0
 End Sub
 
-Sub PrintReports()
+Sub Main()
+    Dim clickedButtonName As String: clickedButtonName = Application.Caller
+    
+    On Error GoTo ErrorHandler
+    Application.EnableEvents = False
+    Select Case clickedButtonName
+        Case "Button_EnhancedDialogs_Enable", "Button_EnhancedDialogs_Disable"
+            ToogleButton clickedButtonName
+        Case "Button_GenerateReports", "Button_GenerateProofs"
+            #If PRINT_DEBUG_MESSAGES Then
+                Debug.Print "Beginning report generation." & vbNewLine
+            #End If
+            PrintReports clickedButtonName
+    End Select
+ErrorHandler:
+    Application.EnableEvents = True
+End Sub
+
+Private Sub ToogleButton(ByVal clickedButtonName As String)
+    Dim ws As Worksheet: Set ws = ThisWorkbook.Worksheets("Instructions")
+
+    If ws.Shapes("Button_DialogToolkit_Missing").Visible Then
+        ws.Shapes("Button_EnhancedDialogs_Disable").Visible = True
+        ws.Shapes("Button_EnhancedDialogs_Enable").Visible = False
+        Exit Sub
+    End If
+
+    Select Case clickedButtonName
+        Case "Button_EnhancedDialogs_Enable"
+            ws.Shapes("Button_EnhancedDialogs_Disable").Visible = True
+            ws.Shapes("Button_EnhancedDialogs_Enable").Visible = False
+            ws.Cells(20, 4).Value = "Enhanced Dialogs: Disabled"
+        Case "Button_EnhancedDialogs_Disable"
+            ws.Shapes("Button_EnhancedDialogs_Enable").Visible = True
+            ws.Shapes("Button_EnhancedDialogs_Disable").Visible = False
+            ws.Cells(20, 4).Value = "Enhanced Dialogs: Enabled"
+    End Select
+End Sub
+
+Private Sub PrintReports(ByVal clickedButtonName As String)
     Const REPORT_TEMPLATE As String = "Speaking Evaluation Template.docx"
     Const ERR_RESOURCES_FOLDER As String = "resourcesFolder"
     Const ERR_INCOMPLETE_RECORDS As String = "incompleteRecords"
@@ -163,10 +229,9 @@ Sub PrintReports()
 
     Set ws = ActiveSheet
     
-    generateProcess = Application.Caller
-    If generateProcess = "Button_GenerateReports" Then
+    If clickedButtonName = "Button_GenerateReports" Then
         generateProcess = "FinalReports"
-    ElseIf generateProcess = "Button_GenerateProofs" Then
+    ElseIf clickedButtonName = "Button_GenerateProofs" Then
         generateProcess = "Proofs"
     Else
         msgToDisplay = "You have clicked an invalid option for creating the reports. This shouldn't be possible unless this file has been altered " & _
@@ -180,7 +245,7 @@ Sub PrintReports()
     
     #If Mac Then
         RequestInitialFileAndFolderAccess
-        If Not (ScriptInstallationStatus("SpeakingEvals")) Then scriptResult = ScriptInstallationStatus("", True)
+        If Not (ScriptInstallationStatus("SpeakingEvals")) Or Not (ScriptInstallationStatus("DialogToolkitPlus")) Then scriptResult = ScriptInstallationStatus("", True)
     #Else
         #If PRINT_DEBUG_MESSAGES Then
             Debug.Print "Checking for resources folder." & vbNewLine & "    Path: " & resourcesFolder
@@ -334,8 +399,7 @@ Private Function VerifyRecordsAreComplete(ByRef ws As Worksheet, ByRef lastRow A
         Debug.Print "Verifying that student records are complete."
     #End If
     
-    ' Set here and passed back to keep declarations organized
-    firstStudentRecord = STUDENT_INFO_FIRST_ROW
+    firstStudentRecord = STUDENT_INFO_FIRST_ROW ' Set here and passed back to keep things organized
     
     On Error Resume Next
     lastRow = ws.Cells(ws.Rows.Count, STUDENT_INFO_FIRST_COL).End(xlUp).row
@@ -1301,48 +1365,86 @@ Private Sub KillWord(ByRef wordApp As Object, ByRef wordDoc As Object, ByVal pre
     On Error GoTo 0
 End Sub
 
-#If Mac Then
 Public Function ScriptInstallationStatus(Optional ByVal scriptToCheck As String = "", Optional ByVal recheckStatus As Boolean = False) As Boolean
-    Static isAppleScriptInstalled As Boolean, isDialogToolkitInstalled As Boolean, statusHasBeenChecked As Boolean
-    Static resourcesFolder As String, libraryScriptsFolder As String
-    Dim scriptResult As Boolean
-    
-    If libraryScriptsFolder = "" Then libraryScriptsFolder = "/Users/" & Environ("USER") & "/Library/Script Libraries"
-    If resourcesFolder = "" Then resourcesFolder = ThisWorkbook.Path & "/Resources"
-    
-    If Not statusHasBeenChecked Then
-        isAppleScriptInstalled = CheckForAppleScript()
-        If isAppleScriptInstalled Then
-            ' Check if the folder already exists to avoid scaring the use by asking for their password upon opening for the first time
-            ConvertOneDriveToLocalPath resourcesFolder
-            scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFolderExist", libraryScriptsFolder)
-            If scriptResult Then isDialogToolkitInstalled = CheckForDialogToolkit(resourcesFolder)
-            If isDialogToolkitInstalled Then isDialogToolkitInstalled = CheckForDialogDisplayScript(resourcesFolder)
-        Else
-            isDialogToolkitInstalled = False
+    #If Mac Then
+        Static isAppleScriptInstalled As Boolean, isDialogToolkitInstalled As Boolean, statusHasBeenChecked As Boolean
+        Static resourcesFolder As String, libraryScriptsFolder As String
+        Dim scriptResult As Boolean
+        
+        If libraryScriptsFolder = "" Then libraryScriptsFolder = "/Users/" & Environ("USER") & "/Library/Script Libraries"
+        If resourcesFolder = "" Then resourcesFolder = ThisWorkbook.Path & "/Resources"
+        
+        If Not statusHasBeenChecked Or recheckStatus Then
+            isAppleScriptInstalled = CheckForAppleScript()
+            If isAppleScriptInstalled Then
+                ConvertOneDriveToLocalPath resourcesFolder
+                
+                #If PRINT_DEBUG_MESSAGES Then
+                    Debug.Print "Locating Dialog Toolkit Plus.scptd" & vbNewLine & "    Searching: " & libraryScriptsFolder
+                #End If
+                
+                ' On opening, check if the folder already exists. This prevents the user being immediately asked for their password if the folder needs to be created.
+                If Not recheckStatus Then
+                    scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFolderExist", libraryScriptsFolder)
+                    If scriptResult Then isDialogToolkitInstalled = CheckForDialogToolkit(resourcesFolder)
+                Else
+                    isDialogToolkitInstalled = CheckForDialogToolkit(resourcesFolder)
+                End If
+                
+                #If PRINT_DEBUG_MESSAGES Then
+                    Debug.Print "    Status: " & IIf(scriptResult, "Installed", "Not installed")
+                #End If
+                
+                If isDialogToolkitInstalled Then
+                    isDialogToolkitInstalled = CheckForDialogDisplayScript(resourcesFolder)
+                    #If PRINT_DEBUG_MESSAGES Then
+                        Debug.Print "Attempting to install DialogDisplay.scpt"
+                        Debug.Print "    Status: " & IIf(isDialogToolkitInstalled, "Installed", "Not installed")
+                    #End If
+                End If
+            Else
+                isDialogToolkitInstalled = False
+            End If
+            statusHasBeenChecked = True
         End If
-        statusHasBeenChecked = True
-    End If
-    
-    If recheckStatus Then
-        If Not isAppleScriptInstalled Then isAppleScriptInstalled = CheckForAppleScript()
-        If isAppleScriptInstalled And Not isDialogToolkitInstalled Then
-            ' The user will be prompted for their password to create the Library Scripts folder this time
-            ConvertOneDriveToLocalPath resourcesFolder
-            isDialogToolkitInstalled = CheckForDialogToolkit(resourcesFolder)
-            If isDialogToolkitInstalled Then isDialogToolkitInstalled = CheckForDialogDisplayScript(resourcesFolder)
-        End If
-    End If
-    
-    Select Case scriptToCheck
-        Case "SpeakingEvals"
-            ScriptInstallationStatus = isAppleScriptInstalled
-        Case "DialogToolkitPlus"
-            ScriptInstallationStatus = isDialogToolkitInstalled
-        Case "DialogToolkitPlus"
-            ScriptInstallationStatus = isDialogToolkitInstalled
-    End Select
+        
+        SetVisibilityOfMacSettingsShapes isAppleScriptInstalled, isDialogToolkitInstalled
+        
+        Select Case scriptToCheck
+            Case "SpeakingEvals"
+                ScriptInstallationStatus = isAppleScriptInstalled
+            Case "DialogToolkitPlus"
+                ScriptInstallationStatus = (isDialogToolkitInstalled And ThisWorkbook.Sheets("Instructions").Shapes("Button_EnhancedDialogs_Enable").Visible)
+            Case "DialogToolkitPlus"
+                ScriptInstallationStatus = isDialogToolkitInstalled
+        End Select
+    #Else
+        ScriptInstallationStatus = False
+    #End If
 End Function
+
+#If Mac Then
+Private Sub SetVisibilityOfMacSettingsShapes(ByVal isAppleScriptInstalled As Boolean, ByVal isDialogToolkitInstalled As Boolean)
+    Dim ws As Worksheet
+    
+    On Error Resume Next
+    Set ws = ThisWorkbook.Sheets("Instructions")
+    
+    ws.Shapes("Button_SpeakingEvalsScpt_Missing").Visible = Not isAppleScriptInstalled
+    ws.Shapes("Button_SpeakingEvalsScpt_Installed").Visible = isAppleScriptInstalled
+    ws.Shapes("Button_DialogToolkit_Missing").Visible = Not isDialogToolkitInstalled
+    ws.Shapes("Button_DialogToolkit_Installed").Visible = isDialogToolkitInstalled
+    
+    If ws.Cells(20, 4).Value = "Enhanced Dialogs: Disabled" Or ws.Cells(20, 4).Value = "" Then
+        ws.Shapes("Button_EnhancedDialogs_Disable").Visible = True
+        ws.Shapes("Button_EnhancedDialogs_Enable").Visible = False
+    Else
+        ws.Shapes("Button_EnhancedDialogs_Disable").Visible = (ws.Cells(20, 4).Value = "Enhanced Dialogs: Disabled")
+        ws.Shapes("Button_EnhancedDialogs_Enable").Visible = (ws.Cells(20, 4).Value = "Enhanced Dialogs: Enabled")
+    End If
+    On Error GoTo 0
+End Sub
+
 Private Function CheckForAppleScript() As Boolean
     Dim appleScriptPath As String, appleScriptResult As Boolean
     
