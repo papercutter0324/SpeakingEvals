@@ -32,10 +32,6 @@ Private Sub Workbook_Open()
     Application.EnableEvents = True
 End Sub
 
-Sub TestAppleScriptHandingofClosing()
-    Workbook_BeforeClose False
-End Sub
-
 Private Sub Workbook_BeforeClose(Cancel As Boolean)
     #If Mac Then
         Dim resourcesFolder As String
