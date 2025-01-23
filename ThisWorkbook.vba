@@ -189,40 +189,48 @@ ErrorHandler:
 End Sub
 
 Private Sub ToogleButton(ByVal clickedButtonName As String)
-    Const SCRIPT_ENABLED As String = "Enhanced Dialogs: Enabled"
-    Const SCRIPT_DISABLED As String = "Enhanced Dialogs: Disabled"
+    #If Mac Then
+        Const SCRIPT_ENABLED As String = "Enhanced Dialogs: Enabled"
+        Const SCRIPT_DISABLED As String = "Enhanced Dialogs: Disabled"
+        
+        Dim ws As Worksheet
+        Dim installedStatus As Boolean
+        
+        Set ws = ThisWorkbook.Worksheets("Instructions")
     
-    Dim ws As Worksheet
-    Dim enabledStatus As Boolean
+        If ws.Shapes("Button_DialogToolkit_Missing").Visible Then
+            installedStatus = ScriptInstallationStatus("DialogToolkitPlus", True)
+            
+            ' Button_EnhancedDialogs_Enable isn't visible yet (a quirk of the safety checks, but expected behaviour), so
+            ' we need to check the visibility of Button_DialogToolkit_Installed to determine installation success.
+            If Not ws.Shapes("Button_DialogToolkit_Installed").Visible Then
+                ws.Shapes("Button_EnhancedDialogs_Disable").Visible = False
+                ws.Shapes("Button_EnhancedDialogs_Enable").Visible = True
+                Exit Sub
+            End If
+        End If
     
-    Set ws = ThisWorkbook.Worksheets("Instructions")
-
-    If ws.Shapes("Button_DialogToolkit_Missing").Visible Then
-        ws.Shapes("Button_EnhancedDialogs_Disable").Visible = True
-        ws.Shapes("Button_EnhancedDialogs_Enable").Visible = False
-        Exit Sub
-    End If
-
-    Select Case clickedButtonName
-        Case "Button_EnhancedDialogs_Enable"
-            ws.Shapes("Button_EnhancedDialogs_Disable").Visible = True
-            ws.Shapes("Button_EnhancedDialogs_Enable").Visible = False
-        Case "Button_EnhancedDialogs_Disable"
-            ws.Shapes("Button_EnhancedDialogs_Enable").Visible = True
-            ws.Shapes("Button_EnhancedDialogs_Disable").Visible = False
-    End Select
-    
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    Updating persistant status value."
-    #End If
-    
-    ws.Unprotect
-    ws.Cells(20, 4).Value = IIf(ws.Shapes("Button_EnhancedDialogs_Enable").Visible, SCRIPT_ENABLED, SCRIPT_DISABLED)
-    ws.Protect
-    ws.EnableSelection = xlUnlockedCells
-    
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    Value: """ & ws.Cells(20, 4).Value & """"
+        Select Case clickedButtonName
+            Case "Button_EnhancedDialogs_Enable"
+                ws.Shapes("Button_EnhancedDialogs_Disable").Visible = True
+                ws.Shapes("Button_EnhancedDialogs_Enable").Visible = False
+            Case "Button_EnhancedDialogs_Disable"
+                ws.Shapes("Button_EnhancedDialogs_Enable").Visible = True
+                ws.Shapes("Button_EnhancedDialogs_Disable").Visible = False
+        End Select
+        
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "    Updating persistant status value."
+        #End If
+        
+        ws.Unprotect
+        ws.Cells(20, 4).Value = IIf(ws.Shapes("Button_EnhancedDialogs_Enable").Visible, SCRIPT_ENABLED, SCRIPT_DISABLED)
+        ws.Protect
+        ws.EnableSelection = xlUnlockedCells
+        
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "    Value: """ & ws.Cells(20, 4).Value & """"
+        #End If
     #End If
 End Sub
 
@@ -1409,7 +1417,7 @@ Public Function ScriptInstallationStatus(Optional ByVal scriptToCheck As String 
                 End If
                 
                 #If PRINT_DEBUG_MESSAGES Then
-                    Debug.Print "    Status: " & IIf(scriptResult, "Installed", "Not installed")
+                    Debug.Print "    Status: " & IIf(isDialogToolkitInstalled, "Installed", "Not installed")
                 #End If
                 
                 If isDialogToolkitInstalled Then
@@ -1452,9 +1460,13 @@ Private Sub SetVisibilityOfMacSettingsShapes(ByVal isAppleScriptInstalled As Boo
     ws.Shapes("Button_DialogToolkit_Missing").Visible = Not isDialogToolkitInstalled
     ws.Shapes("Button_DialogToolkit_Installed").Visible = isDialogToolkitInstalled
     
-    If ws.Cells(20, 4).Value = "Enhanced Dialogs: Disabled" Or ws.Cells(20, 4).Value = "" Then
+    If Not isDialogToolkitInstalled Or ws.Cells(20, 4).Value = "Enhanced Dialogs: Disabled" Or ws.Cells(20, 4).Value = "" Then
         ws.Shapes("Button_EnhancedDialogs_Disable").Visible = True
         ws.Shapes("Button_EnhancedDialogs_Enable").Visible = False
+        ws.Unprotect
+        ws.Cells(20, 4).Value = "Enhanced Dialogs: Disabled"
+        ws.Protect
+        ws.EnableSelection = xlUnlockedCells
     Else
         ws.Shapes("Button_EnhancedDialogs_Disable").Visible = (ws.Cells(20, 4).Value = "Enhanced Dialogs: Disabled")
         ws.Shapes("Button_EnhancedDialogs_Enable").Visible = (ws.Cells(20, 4).Value = "Enhanced Dialogs: Enabled")
