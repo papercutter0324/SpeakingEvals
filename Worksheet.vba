@@ -1,5 +1,4 @@
 Private Sub Worksheet_Change(ByVal targetCellsRange As Range)
-    Dim levelRange As Range, classDaysRange As Range, classTimeRange As Range, evalDateRange As Range
     Dim englishNameRange As Range, gradesRange As Range, commentRange As Range
     Dim changedCell As Range
     
