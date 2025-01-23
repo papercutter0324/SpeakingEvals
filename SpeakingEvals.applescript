@@ -2,7 +2,7 @@
 Helper Scripts for the DYB Speaking Evaluations Excel spreadsheet
 
 Version: 1.1.0
-Build:   20250119
+Build:   20250124
 Warren Feltmate
 © 2025
 *)
@@ -11,7 +11,7 @@ Warren Feltmate
 
 on GetScriptVersionNumber(paramString)
 	--- Use build number to determine if an update is available
-	return 20250119
+	return 20250124
 end GetScriptVersionNumber
 
 on GetMacOSVersion(paramString)
@@ -346,7 +346,7 @@ on UninstallDialogToolkitPlus(resourcesFolder)
 			set removalResult to false
 		end try
 	else
-		set removalResult to false
+		set removalResult to true
 	end if
 	
 	return removalResult
