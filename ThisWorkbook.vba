@@ -32,6 +32,10 @@ Private Sub Workbook_Open()
     Application.EnableEvents = True
 End Sub
 
+Sub TestAppleScriptHandingofClosing()
+    Workbook_BeforeClose False
+End Sub
+
 Private Sub Workbook_BeforeClose(Cancel As Boolean)
     #If Mac Then
         Dim resourcesFolder As String
@@ -189,7 +193,13 @@ ErrorHandler:
 End Sub
 
 Private Sub ToogleButton(ByVal clickedButtonName As String)
-    Dim ws As Worksheet: Set ws = ThisWorkbook.Worksheets("Instructions")
+    Const SCRIPT_ENABLED As String = "Enhanced Dialogs: Enabled"
+    Const SCRIPT_DISABLED As String = "Enhanced Dialogs: Disabled"
+    
+    Dim ws As Worksheet
+    Dim enabledStatus As Boolean
+    
+    Set ws = ThisWorkbook.Worksheets("Instructions")
 
     If ws.Shapes("Button_DialogToolkit_Missing").Visible Then
         ws.Shapes("Button_EnhancedDialogs_Disable").Visible = True
@@ -201,12 +211,23 @@ Private Sub ToogleButton(ByVal clickedButtonName As String)
         Case "Button_EnhancedDialogs_Enable"
             ws.Shapes("Button_EnhancedDialogs_Disable").Visible = True
             ws.Shapes("Button_EnhancedDialogs_Enable").Visible = False
-            ws.Cells(20, 4).Value = "Enhanced Dialogs: Disabled"
         Case "Button_EnhancedDialogs_Disable"
             ws.Shapes("Button_EnhancedDialogs_Enable").Visible = True
             ws.Shapes("Button_EnhancedDialogs_Disable").Visible = False
-            ws.Cells(20, 4).Value = "Enhanced Dialogs: Enabled"
     End Select
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "    Updating persistant status value."
+    #End If
+    
+    ws.Unprotect
+    ws.Cells(20, 4).Value = IIf(ws.Shapes("Button_EnhancedDialogs_Enable").Visible, SCRIPT_ENABLED, SCRIPT_DISABLED)
+    ws.Protect
+    ws.EnableSelection = xlUnlockedCells
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "    Value: """ & ws.Cells(20, 4).Value & """"
+    #End If
 End Sub
 
 Private Sub PrintReports(ByVal clickedButtonName As String)
@@ -1526,10 +1547,20 @@ Cleanup:
     
     On Error Resume Next
     appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFileExist", scriptFolder & TEMP_APPLE_SCRIPT)
-    If appleScriptResult Then appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DeleteFile", scriptFolder & TEMP_APPLE_SCRIPT)
+    If appleScriptResult Then
+        appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DeleteFile", scriptFolder & TEMP_APPLE_SCRIPT)
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "    Removing temporary update file: " & IIf(appleScriptResult, "Successful", "Failed")
+        #End If
+    End If
     
     appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFileExist", scriptFolder & OLD_APPLE_SCRIPT)
-    If appleScriptResult Then appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DeleteFile", scriptFolder & OLD_APPLE_SCRIPT)
+    If appleScriptResult Then
+        appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DeleteFile", scriptFolder & OLD_APPLE_SCRIPT)
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "    Removing old version: " & IIf(appleScriptResult, "Successful", "Failed")
+        #End If
+    End If
     On Error GoTo 0
     
     #If PRINT_DEBUG_MESSAGES Then
@@ -1585,9 +1616,9 @@ Private Sub RemoveDialogToolKit(ByVal resourcesFolder As String)
     #End If
         
     scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "UninstallDialogToolkitPlus", resourcesFolder)
-    
+        
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    Status: " & scriptResult
+        Debug.Print "    Result: " & scriptResult
     #End If
 End Sub
 
