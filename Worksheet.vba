@@ -13,9 +13,7 @@ Private Sub Worksheet_Change(ByVal targetCellsRange As Range)
                             Me.Range("G8:G32"), Me.Range("H8:H32"), Me.Range("I8:I32"))
     Set commentRange = Me.Range("J8:J32")
     
-    If Not Intersect(targetCellsRange, evalDateRange) Is Nothing Then
-        ValdateEvaluationDateValue targetCellsRange
-    ElseIf Not Intersect(targetCellsRange, englishNameRange) Is Nothing Then
+    If Not Intersect(targetCellsRange, englishNameRange) Is Nothing Then
         ValdateEnglishNameValue targetCellsRange
     ElseIf Not Intersect(targetCellsRange, gradesRange) Is Nothing Then
         ValdateGradesValue targetCellsRange
