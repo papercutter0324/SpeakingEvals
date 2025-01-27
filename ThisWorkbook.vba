@@ -3,17 +3,22 @@ Option Explicit
 Const APPLE_SCRIPT_FILE As String = "SpeakingEvals.scpt"
 Const APPLE_SCRIPT_SPLIT_KEY = "-,-"
 
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'
+'  Auto-run Sub on Startup and Worksheet Switching
+'
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 Private Sub Workbook_Open()
     Const CURL_COMMAND_TEXT As String = "curl -L -o ~/Library/Application\ Scripts/com.microsoft.Excel/SpeakingEvals.scpt https://github.com/papercutter0324/SpeakingEvals/raw/main/SpeakingEvals.scpt"
     Const CURL_COMMAND_SHAPE As String = "cURL_Command"
     Const WS_INSTRUCTIONS As String = "Instructions"
     
-    Dim ws As Worksheet
     Dim scriptResult As Boolean
+    Dim ws As Worksheet: Set ws = ThisWorkbook.Worksheets(WS_INSTRUCTIONS)
     
+    On Error GoTo ReenableEvents
     Application.EnableEvents = False
-    
-    Set ws = ActiveWorkbook.Worksheets(WS_INSTRUCTIONS)
     ws.Shapes(CURL_COMMAND_SHAPE).TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
     SetShapePositions ws
     AutoPopulateEvaluationDateValues
@@ -22,13 +27,30 @@ Private Sub Workbook_Open()
         scriptResult = ScriptInstallationStatus
     #Else
         ws.Shapes("Button_SpeakingEvalsScpt_Missing").Visible = True
-        ws.Shapes("Button_SpeakingEvalsScpt_Installed").Visible = False
         ws.Shapes("Button_DialogToolkit_Missing").Visible = True
-        ws.Shapes("Button_DialogToolkit_Installed").Visible = False
         ws.Shapes("Button_EnhancedDialogs_Disable").Visible = True
+        ws.Shapes("Button_SpeakingEvalsScpt_Installed").Visible = False
+        ws.Shapes("Button_DialogToolkit_Installed").Visible = False
         ws.Shapes("Button_EnhancedDialogs_Enable").Visible = False
     #End If
     
+ReenableEvents:
+    Application.EnableEvents = True
+End Sub
+
+Private Sub Workbook_SheetActivate(ByVal ws As Object)
+    Const CURL_COMMAND_TEXT As String = "curl -L -o ~/Library/Application\ Scripts/com.microsoft.Excel/SpeakingEvals.scpt https://github.com/papercutter0324/SpeakingEvals/raw/main/SpeakingEvals.scpt"
+    Const CURL_COMMAND_SHAPE As String = "cURL_Command"
+    Const WS_INSTRUCTIONS As String = "Instructions"
+    
+    On Error GoTo ReenableEvents
+    Application.EnableEvents = False
+    If ws.Name = WS_INSTRUCTIONS Then
+        ws.Shapes(CURL_COMMAND_SHAPE).TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
+        SetShapePositions ws
+    End If
+    
+ReenableEvents:
     Application.EnableEvents = True
 End Sub
 
@@ -40,19 +62,6 @@ Private Sub Workbook_BeforeClose(Cancel As Boolean)
         ConvertOneDriveToLocalPath resourcesFolder
         RemoveDialogToolKit resourcesFolder
     #End If
-End Sub
-
-Private Sub Workbook_SheetActivate(ByVal ws As Object)
-    Const CURL_COMMAND_TEXT As String = "curl -L -o ~/Library/Application\ Scripts/com.microsoft.Excel/SpeakingEvals.scpt https://github.com/papercutter0324/SpeakingEvals/raw/main/SpeakingEvals.scpt"
-    Const CURL_COMMAND_SHAPE As String = "cURL_Command"
-    Const WS_INSTRUCTIONS As String = "Instructions"
-    
-    If ws.Name = WS_INSTRUCTIONS Then
-        On Error Resume Next
-        ws.Shapes(CURL_COMMAND_SHAPE).TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
-        On Error GoTo 0
-        SetShapePositions ws
-    End If
 End Sub
 
 Private Sub SetShapePositions(ByRef ws As Worksheet)
@@ -170,33 +179,42 @@ Private Sub SetCorrectDateValidationMessage(ByRef ws As Worksheet)
     On Error GoTo 0
 End Sub
 
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'
+'  Main Subs and Functions
+'
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 Sub Main()
+    Dim ws As Worksheet
     Dim clickedButtonName As String: clickedButtonName = Application.Caller
     
-    On Error GoTo ErrorHandler
+    On Error GoTo ReenableEvents
     Application.EnableEvents = False
+    Set ws = ActiveSheet
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Beginning tasks." & vbNewLine & "    ws = " & ws.Name
+    #End If
+    
     Select Case clickedButtonName
         Case "Button_EnhancedDialogs_Enable", "Button_EnhancedDialogs_Disable"
-            ToogleButton clickedButtonName
+            ToogleButton ws, clickedButtonName
         Case "Button_GenerateReports", "Button_GenerateProofs"
-            #If PRINT_DEBUG_MESSAGES Then
-                Debug.Print "Beginning report generation." & vbNewLine
-            #End If
-            PrintReports clickedButtonName
+            PrintReports ws, clickedButtonName
+            ws.Activate ' Ensure the right worksheet is being shown when finished.
     End Select
-ErrorHandler:
+    
+ReenableEvents:
     Application.EnableEvents = True
 End Sub
 
-Private Sub ToogleButton(ByVal clickedButtonName As String)
+Private Sub ToogleButton(ByRef ws As Worksheet, ByVal clickedButtonName As String)
     #If Mac Then
         Const SCRIPT_ENABLED As String = "Enhanced Dialogs: Enabled"
         Const SCRIPT_DISABLED As String = "Enhanced Dialogs: Disabled"
         
-        Dim ws As Worksheet
         Dim installedStatus As Boolean
-        
-        Set ws = ThisWorkbook.Worksheets("Instructions")
     
         If ws.Shapes("Button_DialogToolkit_Missing").Visible Then
             installedStatus = ScriptInstallationStatus("DialogToolkitPlus", True)
@@ -234,7 +252,7 @@ Private Sub ToogleButton(ByVal clickedButtonName As String)
     #End If
 End Sub
 
-Private Sub PrintReports(ByVal clickedButtonName As String)
+Private Sub PrintReports(ByRef ws As Worksheet, ByVal clickedButtonName As String)
     Const REPORT_TEMPLATE As String = "Speaking Evaluation Template.docx"
     Const ERR_RESOURCES_FOLDER As String = "resourcesFolder"
     Const ERR_INCOMPLETE_RECORDS As String = "incompleteRecords"
@@ -245,27 +263,30 @@ Private Sub PrintReports(ByVal clickedButtonName As String)
     Const MSG_ZIP_FAILED As String = "zipFailed"
     Const MSG_SUCCESS As String = "exportSuccessful"
 
-    Dim ws As Worksheet, wordApp As Object, wordDoc As Object
+    Dim wordApp As Object, wordDoc As Object
     Dim resourcesFolder As String, templatePath As String, savePath As String, fileName As String
     Dim resultMsg As String, msgToDisplay As String, msgTitle As String, msgType As Integer, msgResult As Variant, dialogSize As Integer
     Dim currentRow As Long, lastRow As Long, firstStudentRecord As Integer, i As Integer
     Dim generateProcess As String, preexistingWordInstance As Boolean, saveResult As Boolean
     Dim scriptResult As Boolean
 
-    Set ws = ActiveSheet
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Beginning report generation." & vbNewLine
+    #End If
     
-    If clickedButtonName = "Button_GenerateReports" Then
-        generateProcess = "FinalReports"
-    ElseIf clickedButtonName = "Button_GenerateProofs" Then
-        generateProcess = "Proofs"
-    Else
-        msgToDisplay = "You have clicked an invalid option for creating the reports. This shouldn't be possible unless this file has been altered " & _
+    Select Case clickedButtonName
+        Case "Button_GenerateReports"
+            generateProcess = "FinalReports"
+        Case "Button_GenerateProofs"
+            generateProcess = "Proofs"
+        Case Else
+            msgToDisplay = "You have clicked an invalid option for creating the reports. This shouldn't be possible unless this file has been altered " & _
                        "in an unintended manner. Please download a new copy of this Excel file, copy over all of the students' records, and try again."
-        msgResult = DisplayMessage(msgToDisplay, vbExclamation, "Invalid Selection!")
+            msgResult = DisplayMessage(msgToDisplay, vbExclamation, "Invalid Selection!")
         Exit Sub
-    End If
+    End Select
 
-    resourcesFolder = ThisWorkbook.Path & "/Resources"
+    resourcesFolder = ThisWorkbook.Path & Application.PathSeparator & "Resources"
     ConvertOneDriveToLocalPath resourcesFolder
     
     #If Mac Then
@@ -289,36 +310,36 @@ Private Sub PrintReports(ByVal clickedButtonName As String)
         
         If Not DoesFolderExist(resourcesFolder) Then
             resultMsg = ERR_RESOURCES_FOLDER
-            GoTo Cleanup
+            GoTo CleanUp
         End If
     #End If
 
-    If IsTemplateAlreadyOpen(REPORT_TEMPLATE, preexistingWordInstance) Then Exit Sub
+    If IsTemplateAlreadyOpen(resourcesFolder, REPORT_TEMPLATE, preexistingWordInstance) Then Exit Sub
 
     If Not VerifyRecordsAreComplete(ws, lastRow, firstStudentRecord) Then
         resultMsg = ERR_INCOMPLETE_RECORDS
-        GoTo Cleanup
+        GoTo CleanUp
     End If
 
     templatePath = LoadTemplate(resourcesFolder, REPORT_TEMPLATE)
-    If templatePath = "" Then GoTo Cleanup
+    If templatePath = "" Then GoTo CleanUp
 
     savePath = SetSaveLocation(ws, generateProcess)
-    If savePath = "" Then GoTo Cleanup
+    If savePath = "" Then GoTo CleanUp
 
     If Not LoadWord(wordApp, wordDoc, templatePath) Then
         resultMsg = ERR_LOADING_WORD
-        GoTo Cleanup
+        GoTo CleanUp
     End If
     
     If wordDoc Is Nothing Then
         resultMsg = ERR_LOADING_TEMPLATE
-        GoTo Cleanup
+        GoTo CleanUp
     End If
     
     If Not VerifyAllDocShapesExist(wordDoc) Then
         resultMsg = ERR_MISSING_SHAPES
-        GoTo Cleanup
+        GoTo CleanUp
     End If
     
     #If PRINT_DEBUG_MESSAGES Then
@@ -326,25 +347,23 @@ Private Sub PrintReports(ByVal clickedButtonName As String)
     #End If
     
     For currentRow = firstStudentRecord To lastRow
-        i = i + 1
         #If PRINT_DEBUG_MESSAGES Then
+            i = i + 1
             Debug.Print "    Current report: " & i & " of " & (lastRow - firstStudentRecord + 1)
         #End If
         ClearAllTextBoxes wordDoc
         WriteReport ws, wordApp, wordDoc, generateProcess, currentRow, savePath, fileName, saveResult
     Next currentRow
     
-    ws.Activate ' Ensure the right worksheet is being shown when finished.
-    
     If Not saveResult Then
         resultMsg = MSG_SAVE_FAILED
-        GoTo Cleanup
+        GoTo CleanUp
     End If
     
     #If Mac Then
         If Not (ScriptInstallationStatus("SpeakingEvals")) Then
             resultMsg = MSG_SUCCESS
-            GoTo Cleanup
+            GoTo CleanUp
         End If
     #End If
     
@@ -360,7 +379,7 @@ Private Sub PrintReports(ByVal clickedButtonName As String)
         If Not saveResult Then resultMsg = MSG_ZIP_FAILED
     End If
     
-Cleanup:
+CleanUp:
     Select Case resultMsg
         Case ERR_RESOURCES_FOLDER
             msgToDisplay = "Unable to locate or create the Resources folder. Please create this manually in the same location as this spreadsheet and try again."
@@ -399,15 +418,13 @@ Cleanup:
             dialogSize = 110
     End Select
     
-    If dialogSize = 0 Then dialogSize = 250
     If resultMsg <> "" Then msgResult = DisplayMessage(msgToDisplay, msgType, msgTitle, dialogSize)
     If Not wordApp Is Nothing Then
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "Beginning cleanup steps."
+            Debug.Print "Beginning final cleanup checks."
         #End If
         KillWord wordApp, wordDoc, preexistingWordInstance
     End If
-    Set ws = Nothing
 End Sub
 
 Private Function VerifyRecordsAreComplete(ByRef ws As Worksheet, ByRef lastRow As Long, ByRef firstStudentRecord As Integer) As Boolean
@@ -441,7 +458,8 @@ Private Function VerifyRecordsAreComplete(ByRef ws As Worksheet, ByRef lastRow A
     End If
     
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    Final student record entry: " & (lastRow - STUDENT_INFO_FIRST_ROW + 1) & vbNewLine & "    Beginning validation of entered records."
+        Debug.Print "    Final student record entry: " & (lastRow - STUDENT_INFO_FIRST_ROW + 1) & vbNewLine & _
+                    "    Beginning validation of entered records."
     #End If
     
     If Not ValidateClassInfo(ws, CLASS_INFO_FIRST_ROW, CLASS_INFO_LAST_ROW) Then
@@ -466,7 +484,7 @@ Private Function ValidateData(ByRef currentCell As Range, ByVal dataType As Stri
                            "Zeus", "E5 Athena", "Helios", "Poseidon", "Gaia", "Hera", "E6 Song's")
         validDays = Array("MonWed", "MonFri", "WedFri", "MWF", "TTh", "MWF (Class 1)", "MWF (Class 2)", _
                          "TTh (Class 1)", "TTh (Class 2)")
-        validTimes = Array("4pm", "5pm", "530pm", "6pm", "7pm", "8pm", "830pm", "9pm")
+        validTimes = Array("9am", "10am", "11am", "12pm", "1pm", "2pm", "3pm", "4pm", "5pm", "530pm", "6pm", "7pm", "8pm", "830pm", "9pm")
         gradeMapping = Array("C", "B", "B+", "A", "A+")
         isDeclared = True
     End If
@@ -664,7 +682,8 @@ Private Function IsTemplateValid(ByRef templatePath As String, ByVal tempTemplat
             If VerifyTemplateHash(templatePath) Then
                 IsTemplateValid = True
                 #If PRINT_DEBUG_MESSAGES Then
-                    Debug.Print "    Template file found" & vbNewLine & "    Valid hash value: " & IsTemplateValid
+                    Debug.Print "    Template file found" & vbNewLine & _
+                                "    Valid hash value: " & IsTemplateValid
                 #End If
                 Exit Function
             End If
@@ -672,7 +691,8 @@ Private Function IsTemplateValid(ByRef templatePath As String, ByVal tempTemplat
     #End If
     
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    Valid template file not found." & vbNewLine & "Attempting to download a new copy."
+        Debug.Print "    Valid template file not found." & vbNewLine & _
+                    "Attempting to download a new copy."
     #End If
     
     ' Delete invalid and/or non-local copies and grab a fresh copy
@@ -736,7 +756,7 @@ Private Function VerifyTemplateHash(ByVal filePath As String) As Boolean
         shellOutput = objShell.Exec("cmd /c certutil -hashfile """ & filePath & """ MD5").StdOut.ReadAll
         VerifyTemplateHash = (LCase(TEMPLATE_HASH) = LCase(Trim(Split(shellOutput, vbCrLf)(1))))
     #End If
-Cleanup:
+CleanUp:
     #If Mac Then
     #Else
         Set objShell = Nothing
@@ -747,7 +767,7 @@ ErrorHandler:
         Debug.Print "Error: " & Err.Number & " - " & Err.Description
     #End If
     VerifyTemplateHash = False
-    Resume Cleanup
+    Resume CleanUp
 End Function
 
 Private Function SetSaveLocation(ByRef ws As Object, ByVal saveRoutine As String) As String
@@ -757,7 +777,8 @@ Private Function SetSaveLocation(ByRef ws As Object, ByVal saveRoutine As String
     ConvertOneDriveToLocalPath filePath
     
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "Setting save location for generated reports." & vbNewLine & "    Save location: " & filePath
+        Debug.Print "Setting save location for generated reports." & vbNewLine & _
+                    "    Save location: " & filePath
     #End If
 
     If DoesFolderExist(filePath) Then
@@ -780,7 +801,8 @@ Private Function SetSaveLocation(ByRef ws As Object, ByVal saveRoutine As String
     End If
     
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "Saving reports in: " & vbNewLine & "    " & filePath
+        Debug.Print "Saving reports in: " & vbNewLine & _
+                    "    " & filePath
     #End If
     
     SetSaveLocation = filePath
@@ -855,9 +877,10 @@ Private Sub CreateSaveFolder(ByRef filePath As String)
     End If
 End Sub
 
-Private Function IsTemplateAlreadyOpen(ByVal REPORT_TEMPLATE As String, ByRef preexistingWordInstance As Boolean) As Boolean
+Private Function IsTemplateAlreadyOpen(ByVal resourcesFolder As String, ByVal REPORT_TEMPLATE As String, ByRef preexistingWordInstance As Boolean) As Boolean
     Dim wordApp As Object, wordDoc As Object
     Dim templatePath As String, templateIsOpen As Boolean
+    Dim pathOfOpenDoc As String
     Dim warningMsg As String
     
     #If PRINT_DEBUG_MESSAGES Then
@@ -870,35 +893,32 @@ Private Function IsTemplateAlreadyOpen(ByVal REPORT_TEMPLATE As String, ByRef pr
     
     If Not wordApp Is Nothing Then
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Found an open instance of MS Word." & vbNewLine & "    Checking if template is open."
+            Debug.Print "    Found an open instance of MS Word." & vbNewLine & _
+                        "    Checking if template is open."
         #End If
         
         preexistingWordInstance = True
-    
-        If Left(ThisWorkbook.Path, 23) = "https://d.docs.live.net" Or Left(ThisWorkbook.Path, 11) = "OneDrive://" Then
-            templatePath = ThisWorkbook.Path & "/" & REPORT_TEMPLATE
-        Else
-            templatePath = ThisWorkbook.Path & Application.PathSeparator & REPORT_TEMPLATE
-        End If
+        templatePath = resourcesFolder & Application.PathSeparator & REPORT_TEMPLATE
         
         For Each wordDoc In wordApp.Documents
-            If StrComp(wordDoc.FullName, templatePath, vbTextCompare) = 0 Then
+            pathOfOpenDoc = wordDoc.FullName
+            ConvertOneDriveToLocalPath pathOfOpenDoc
+            If StrComp(pathOfOpenDoc, templatePath, vbTextCompare) = 0 Then
                 templateIsOpen = True
                 #If PRINT_DEBUG_MESSAGES Then
                     Debug.Print "    Open instance of the template found. Asking if user wishes to automatically close and continue."
                 #End If
-                Exit For
+                 warningMsg = "An open instance of MS Word has been detected. Please save any open files before continuing." & vbNewLine & vbNewLine & _
+                     "Click OK to automatically close Word and continue, or click Cancel to finish and save your work."
+                If DisplayMessage(warningMsg, vbOKCancel + vbCritical, "Error Loading Word", 310) = vbOK Then
+                    wordDoc.Close SaveChanges:=False
+                    templateIsOpen = False
+                    #If PRINT_DEBUG_MESSAGES Then
+                        Debug.Print "    Open instance has been closed."
+                    #End If
+                End If
             End If
         Next wordDoc
-    End If
-    
-    If templateIsOpen Then
-        warningMsg = "An open instance of MS Word has been detected. Please save any open files before continuing." & vbNewLine & vbNewLine & _
-                     "Click OK to automatically close Word and continue, or click Cancel to finish and save your work."
-        If DisplayMessage(warningMsg, vbCritical, "Error Loading Word", 310) = vbOK Then
-            wordDoc.Close SaveChanges:=False
-            templateIsOpen = False
-        End If
     End If
     On Error GoTo 0
     
@@ -912,6 +932,7 @@ Private Function IsTemplateAlreadyOpen(ByVal REPORT_TEMPLATE As String, ByRef pr
 End Function
 
 Private Function LoadWord(ByRef wordApp As Object, ByRef wordDoc As Object, ByVal templatePath As String) As Boolean
+    Dim openDoc As Object
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "Attempting to open an instance of MS Word."
     #End If
@@ -952,22 +973,26 @@ Private Function LoadWord(ByRef wordApp As Object, ByRef wordDoc As Object, ByVa
     wordApp.ScreenUpdating = True
     
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    Visible: " & wordApp.Visible
-        Debug.Print "    Show Upating: " & wordApp.ScreenUpdating
+        Debug.Print "    Visible: " & wordApp.Visible & vbNewLine & _
+                    "    Show Upating: " & wordApp.ScreenUpdating
     #End If
     
-    If Not wordApp Is Nothing Then Set wordDoc = wordApp.Documents.Open(templatePath)
+    If Not wordApp Is Nothing Then
+        Set wordDoc = wordApp.Documents.Open(templatePath)
+        If Val(wordApp.Version) > 15 And wordDoc.AutoSaveOn Then wordDoc.AutoSaveOn = False
+    End If
+    
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "    Template loaded: " & (Not wordDoc Is Nothing)
     #End If
+    
     LoadWord = (Not wordApp Is Nothing)
     Exit Function
 ErrorHandler:
     #If Mac Then
         errorMsg = "An error occurred while trying to load Microsoft Word. This is usually a result of a quirk in MacOS. Try creating the reports again, and it should work fine." & vbNewLine & vbNewLine & _
-        "If the problem persists, please take a picture of the following error message and ask your team leader to send it to Warren at Bundang." & vbNewLine & vbNewLine & _
-        "VBA Error " & Err.Number & ": " & Err.Description
-        
+                   "If the problem persists, please take a picture of the following error message and ask your team leader to send it to Warren at Bundang." & vbNewLine & vbNewLine & _
+                   "VBA Error " & Err.Number & ": " & Err.Description
         If (ScriptInstallationStatus("SpeakingEvals")) Then errorMsg = errorMsg & vbNewLine & "AppleScript Error: " & appleScriptResult
         msgResult = DisplayMessage(errorMsg, vbOKOnly, "Error Loading Word", 470)
     #End If
@@ -1017,9 +1042,11 @@ Private Function WordDocShapeExists(ByRef wordDoc As Object, ByVal shapeName As 
             For Each grpItem In shp.GroupItems
                 If grpItem.Name = shapeName Then
                     WordDocShapeExists = True
+                    
                     #If PRINT_DEBUG_MESSAGES Then
                         Debug.Print "    " & shapeName & ": Present"
                     #End If
+                    
                     Exit Function
                 End If
             Next grpItem
@@ -1087,7 +1114,8 @@ Private Sub WriteReport(ByRef ws As Object, ByRef wordApp As Object, ByRef wordD
     fileName = koreanTeacher & "(" & classTime & ")" & " - " & koreanName & "(" & englishName & ")"
     
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "        Report filename: " & fileName & vbNewLine & "        Saving to: " & savePath
+        Debug.Print "        Report filename: " & fileName & vbNewLine & _
+                    "        Saving to: " & savePath
     #End If
     
     With wordDoc
@@ -1355,7 +1383,8 @@ Private Sub KillWord(ByRef wordApp As Object, ByRef wordDoc As Object, ByVal pre
         wordDoc.Close SaveChanges:=False
         Set wordDoc = Nothing
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Attempting to close the template." & vbNewLine & "    Status: " & (wordDoc Is Nothing)
+            Debug.Print "    Attempting to close the template." & vbNewLine & _
+                        "    Status: " & (wordDoc Is Nothing)
         #End If
     End If
     
@@ -1536,7 +1565,7 @@ Private Sub CheckForAppleScriptUpdate()
         #If PRINT_DEBUG_MESSAGES Then
             Debug.Print "    Installed version is up-to-date."
         #End If
-        GoTo Cleanup
+        GoTo CleanUp
     End If
     
     appleScriptResult = AppleScriptTask(TEMP_APPLE_SCRIPT, "RenameFile", scriptFolder & APPLE_SCRIPT_FILE & APPLE_SCRIPT_SPLIT_KEY & scriptFolder & OLD_APPLE_SCRIPT)
@@ -1548,7 +1577,7 @@ Private Sub CheckForAppleScriptUpdate()
         If appleScriptResult Then Debug.Print "    Update complete."
     #End If
     
-Cleanup:
+CleanUp:
     #If PRINT_DEBUG_MESSAGES Then
         If appleScriptResult Then Debug.Print "    Beginning clean up process."
     #End If
@@ -1581,7 +1610,7 @@ ErrorHandler:
         If Err.Number <> 0 Then Debug.Print "Error during the update process."
         If Err.Description <> "" Then Debug.Print "Error: " & Err.Description
     #End If
-    Resume Cleanup
+    Resume CleanUp
 End Sub
 
 Private Function CheckForDialogToolkit(ByVal resourcesFolder As String) As Boolean
@@ -1708,7 +1737,7 @@ Private Function CheckForCurl() As Boolean
     #End If
     
     CheckForCurl = checkResult
-Cleanup:
+CleanUp:
     If Not objExec Is Nothing Then Set objExec = Nothing
     If Not objShell Is Nothing Then Set objShell = Nothing
     Exit Function
@@ -1717,7 +1746,7 @@ ErrorHandler:
         Debug.Print "    Error while checking for curl.exe: " & Err.Description
     #End If
     CheckForCurl = False
-    Resume Cleanup
+    Resume CleanUp
 End Function
 
 Private Function DownloadUsingCurl(ByVal templatePath As String, ByVal REPORT_TEMPLATE_URL As String) As Boolean
