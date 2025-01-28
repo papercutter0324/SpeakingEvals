@@ -13,22 +13,31 @@ Private Sub Worksheet_Change(ByVal targetCellsRange As Range)
     Set commentRange = Me.Range("J8:J32")
     
     For Each changedCell In targetCellsRange
-        If changedCell.Value <> "" Then
-           cellValue = Trim(changedCell.Value)
-            
+        If Not IsEmpty(changedCell) Then changedCell.Value = Trim(changedCell.Value)
+        
+        If IsEmpty(changedCell) Or changedCell.Value = "" Then
             Select Case True
                 Case Not Intersect(changedCell, englishNameRange) Is Nothing
-                    ValdateNameValue "English", changedCell, cellValue
+                    SetDefaultCellShading changedCell, Me.Cells(7, 2).Value
                 Case Not Intersect(changedCell, koreanNameRange) Is Nothing
-                    ValdateNameValue "Korean", changedCell, cellValue
-                Case Not Intersect(changedCell, gradesRange) Is Nothing
-                    ValdateGradesValue cellValue
+                    SetDefaultCellShading changedCell, Me.Cells(7, 3).Value
                 Case Not Intersect(changedCell, commentRange) Is Nothing
-                    ValdateCommentValue changedCell, cellValue
+                    SetDefaultCellShading changedCell, Me.Cells(7, 10).Value
             End Select
-            
-            If cellValue = "" Then changedCell.Select
-            changedCell.Value = cellValue
+        End If
+        
+        If changedCell.Value <> "" Then
+            Select Case True
+                Case Not Intersect(changedCell, englishNameRange) Is Nothing
+                    ValdateNameValue "English", changedCell
+                Case Not Intersect(changedCell, koreanNameRange) Is Nothing
+                    ValdateNameValue "Korean", changedCell
+                Case Not Intersect(changedCell, gradesRange) Is Nothing
+                    ValdateGradesValue changedCell
+                    If changedCell.Value = "" Then changedCell.Select
+                Case Not Intersect(changedCell, commentRange) Is Nothing
+                    ValdateCommentValue changedCell
+            End Select
         End If
     Next changedCell
 
@@ -42,13 +51,16 @@ ErrorHandler:
     Resume CleanUp
 End Sub
 
-Private Sub ValdateNameValue(ByVal nameLanguage As String, ByRef changedCell As Range, ByRef cellValue As String)
+Private Sub ValdateNameValue(ByVal nameLanguage As String, ByRef changedCell As Range)
     Dim msgToDisplay As String, userChoice As Integer
+    Dim cellValue As String
+    
+    cellValue = changedCell.Value
     
     Select Case nameLanguage
         Case "English"
             If Len(cellValue) > 30 Then
-                changedCell.Interior.Color = RGB(255, 255, 0)
+                If changedCell.Interior.Color <> RGB(255, 255, 0) Then UpdateCellShading changedCell, RGB(255, 255, 0)
                 msgToDisplay = "The student's English name is longer than 30 characters and might not " & _
                                "fit on the report. Please verify how it looks after generating " & _
                                "the report and consider using a shorter version."
@@ -60,94 +72,124 @@ Private Sub ValdateNameValue(ByVal nameLanguage As String, ByRef changedCell As 
         Case "Korean"
             ' If possible, add a check to see English letters, numbers, or punctuation is present.
             If Len(cellValue) = 1 Or Len(cellValue) > 4 Then
-                changedCell.Interior.Color = RGB(255, 0, 0)
-                msgToDisplay = "Please verify the student's Korean name is correct. An invalid length has been detected."
+                If changedCell.Interior.Color <> RGB(255, 0, 0) Then UpdateCellShading changedCell, RGB(255, 0, 0)
+                msgToDisplay = "Please verify the you have written student's Korean name in Korean and spelled it correctly. An invalid length has been detected."
                 userChoice = ThisWorkbook.DisplayMessage(msgToDisplay, vbOKOnly, "Name Error!", 250)
                 changedCell.Select
             ElseIf Len(cellValue) = 2 Or Len(cellValue) = 4 Then
-                changedCell.Interior.Color = RGB(255, 255, 0)
-                msgToDisplay = "Please verify the student's Korean name is correct. While some students " & _
-                               "have a name of this length, it is very uncommon."
+                If changedCell.Interior.Color <> RGB(255, 255, 0) Then UpdateCellShading changedCell, RGB(255, 255, 0)
+                msgToDisplay = "Please verify the student's Korean name is correct. If you have typed it in English, please write it in Korean. " & _
+                               "If you have written it in Korean, please check the spelling; a name of this length is uncommon."
                 userChoice = ThisWorkbook.DisplayMessage(msgToDisplay, vbOKOnly, "Possible Name Error!", 250)
                 changedCell.Select
             Else
-                changedCell.Interior.ColorIndex = xlNone
+                If changedCell.Interior.Color <> xlNone Then UpdateCellShading changedCell, xlNone
             End If
     End Select
 End Sub
 
-Private Sub ValdateGradesValue(ByRef cellValue As String)
+Private Sub ValdateGradesValue(ByRef changedCell As Range)
+    Dim cellValue As String: cellValue = changedCell.Value
+    
     If IsNumeric(cellValue) Then
         Select Case cellValue
-            Case 1: cellValue = "C"
-            Case 2: cellValue = "B"
-            Case 3: cellValue = "B+"
-            Case 4: cellValue = "A"
-            Case 5: cellValue = "A+"
-            Case Else: invalidScoreValue cellValue
+            Case 1: changedCell.Value = "C"
+            Case 2: changedCell.Value = "B"
+            Case 3: changedCell.Value = "B+"
+            Case 4: changedCell.Value = "A"
+            Case 5: changedCell.Value = "A+"
+            Case Else
+                invalidScoreWarning
+                changedCell.Value = ""
         End Select
     ElseIf VarType(cellValue) = vbString Then
         Select Case LCase(cellValue)
-            Case "c": cellValue = "C"
-            Case "b": cellValue = "B"
-            Case "b+": cellValue = "B+"
-            Case "a": cellValue = "A"
-            Case "a+": cellValue = "A+"
+            Case "c": changedCell.Value = "C"
+            Case "b": changedCell.Value = "B"
+            Case "b+": changedCell.Value = "B+"
+            Case "a": changedCell.Value = "A"
+            Case "a+": changedCell.Value = "A+"
             Case Else
                 If Len(cellValue) = 1 Then
-                    invalidScoreValue cellValue
+                    invalidScoreWarning
+                    changedCell.Value = ""
                 ElseIf Len(cellValue) > 1 Then
-                    TrimToLetterGrade cellValue
+                    TrimToLetterGrade changedCell
                 End If
         End Select
     End If
 End Sub
 
-Private Sub TrimToLetterGrade(ByRef cellValue As String)
+Private Sub TrimToLetterGrade(ByRef changedCell As Range)
     Dim firstCharacter As String, firstTwoCharacters As String, outsideCharacters As String
     
-    firstTwoCharacters = UCase(Left(cellValue, 2))
+    firstTwoCharacters = UCase(Left(changedCell.Value, 2))
     firstCharacter = Left(firstTwoCharacters, 1)
-    outsideCharacters = firstCharacter & Right(cellValue, 1)
+    outsideCharacters = firstCharacter & Right(changedCell.Value, 1)
     
     Select Case True
         Case (firstTwoCharacters = "A+"), (firstTwoCharacters = "B+")
-            cellValue = firstTwoCharacters
+            changedCell.Value = firstTwoCharacters
         Case (outsideCharacters = "A+"), (outsideCharacters = "B+")
-            cellValue = outsideCharacters
+            changedCell.Value = outsideCharacters
         Case (firstCharacter = "A"), (firstCharacter = "B"), (firstCharacter = "C")
-            cellValue = firstCharacter
+            changedCell.Value = firstCharacter
         Case Else
-            invalidScoreValue cellValue
+            invalidScoreWarning
+            changedCell.Value = ""
     End Select
 End Sub
 
-Private Sub invalidScoreValue(ByRef cellValue As String)
+Private Sub invalidScoreWarning()
     Const MSG_TO_DISPLAY As String = "An invalid score value has been entered. Please try entering the score again."
     Dim userChoice As Integer
 
     userChoice = ThisWorkbook.DisplayMessage(MSG_TO_DISPLAY, vbOKOnly, "Invalid Value!", 250)
-    cellValue = ""
 End Sub
 
-Private Sub ValdateCommentValue(ByRef changedCell As Range, ByRef cellValue As String)
+Private Sub ValdateCommentValue(ByRef changedCell As Range)
     Dim msgToDisplay As String, userChoice As Integer
+    Dim cellValue As String
+    
+    cellValue = changedCell.Value
     
     Select Case True
+        Case Len(cellValue) = 0
+            If changedCell.Interior.Color <> RGB(242, 242, 242) Then UpdateCellShading changedCell, RGB(242, 242, 242)
         Case Len(cellValue) < 80
-            changedCell.Interior.Color = RGB(255, 255, 0)
+            If changedCell.Interior.Color <> RGB(255, 255, 0) Then UpdateCellShading changedCell, RGB(255, 255, 0)
             msgToDisplay = "The comment you have typed is very short. Please check that you " & _
                            "have followed the ""Positive - Negative - Positive"" format."
             userChoice = ThisWorkbook.DisplayMessage(msgToDisplay, vbOKOnly, "Short Comment!", 250)
             changedCell.Select
         Case Len(cellValue) > 315
-            changedCell.Interior.Color = RGB(255, 0, 0)
+            If changedCell.Interior.Color <> RGB(255, 0, 0) Then UpdateCellShading changedCell, RGB(255, 0, 0)
             msgToDisplay = "The comment you have typed is too long. Please shorten it by " & _
                            Len(cellValue) - 315 & " characters (or more) to ensure it fits " & _
                            "properly in the reports comment box."
             userChoice = ThisWorkbook.DisplayMessage(msgToDisplay, vbOKOnly, "Long Comment!", 250)
             changedCell.Select
         Case Else
-            changedCell.Interior.Color = RGB(242, 242, 242)
+            If changedCell.Interior.Color <> RGB(242, 242, 242) Then UpdateCellShading changedCell, RGB(242, 242, 242)
     End Select
+End Sub
+
+Private Sub SetDefaultCellShading(ByRef changedCell As Range, ByVal columnName As String)
+    Dim shadingColour As Long
+    
+    Select Case columnName
+        Case "English Name", "Korean Name"
+            shadingColour = xlNone
+        Case "Comments"
+            shadingColour = RGB(242, 242, 242)
+    End Select
+    
+    If changedCell.Interior.Color <> shadingColour Then UpdateCellShading changedCell, shadingColour
+End Sub
+
+Private Sub UpdateCellShading(ByRef changedCell As Range, ByVal shadingColour As Long)
+    Me.Unprotect
+    changedCell.Interior.Color = shadingColour
+    Me.Protect
+    Me.EnableSelection = xlUnlockedCells
 End Sub
