@@ -1,11 +1,12 @@
 Private Sub Worksheet_Change(ByVal targetCellsRange As Range)
     Dim changedCell As Range, englishNameRange As Range, koreanNameRange As Range
-    Dim gradesRange As Range, commentRange As Range
+    Dim evalDateRange As Range, gradesRange As Range, commentRange As Range
     Dim cellValue As String
     
     On Error GoTo ErrorHandler
     Application.EnableEvents = False
     
+    Set evalDateRange = Me.Range("C6")
     Set englishNameRange = Me.Range("B8:B32")
     Set koreanNameRange = Me.Range("C8:C32")
     Set gradesRange = Union(Me.Range("D8:D32"), Me.Range("E8:E32"), Me.Range("F8:F32"), _
@@ -28,6 +29,8 @@ Private Sub Worksheet_Change(ByVal targetCellsRange As Range)
         
         If changedCell.Value <> "" Then
             Select Case True
+                Case Not Intersect(changedCell, evalDateRange) Is Nothing
+                    ValdateEvalDateValue changedCell
                 Case Not Intersect(changedCell, englishNameRange) Is Nothing
                     ValdateNameValue "English", changedCell
                 Case Not Intersect(changedCell, koreanNameRange) Is Nothing
@@ -51,9 +54,34 @@ ErrorHandler:
     Resume CleanUp
 End Sub
 
+Private Sub ValdateEvalDateValue(ByRef changedCell As Range)
+    Dim cellValue As String, dateFormatStyle As String
+    Dim userChoice As Integer
+    
+    cellValue = changedCell.Value
+    
+    Select Case Application.International(xlDateOrder)
+       Case 0
+           dateFormatStyle = "MM/DD/YYYY"
+       Case 1
+           dateFormatStyle = "DD/MM/YYYY"
+       Case 2
+           dateFormatStyle = "YYYY/MM/DD"
+    End Select
+    
+    If IsDate(cellValue) Then
+         changedCell.Value = Format(CDate(cellValue), "MMM. YYYY")
+    Else
+        msgToDisplay = "Please enter a valid date using " & dateFormatStyle & " formatting."
+        userChoice = ThisWorkbook.DisplayMessage(msgToDisplay, vbOKOnly, "Invalid Date!", 200)
+        changedCell.Select
+        changedCell.Value = ""
+    End If
+End Sub
+
 Private Sub ValdateNameValue(ByVal nameLanguage As String, ByRef changedCell As Range)
-    Dim msgToDisplay As String, userChoice As Integer
-    Dim cellValue As String
+    Dim msgToDisplay As String, cellValue As String
+    Dim userChoice As Integer
     
     cellValue = changedCell.Value
     
@@ -64,23 +92,22 @@ Private Sub ValdateNameValue(ByVal nameLanguage As String, ByRef changedCell As 
                 msgToDisplay = "The student's English name is longer than 30 characters and might not " & _
                                "fit on the report. Please verify how it looks after generating " & _
                                "the report and consider using a shorter version."
-                userChoice = ThisWorkbook.DisplayMessage(msgToDisplay, vbOKOnly, "English Name Is Too Long!", 250)
+                userChoice = ThisWorkbook.DisplayMessage(msgToDisplay, vbOKOnly, "English Name Is Too Long!", 370)
                 changedCell.Select
             Else
-                changedCell.Interior.ColorIndex = xlNone
+                If changedCell.Interior.Color <> xlNone Then UpdateCellShading changedCell, xlNone
             End If
         Case "Korean"
-            ' If possible, add a check to see English letters, numbers, or punctuation is present.
             If Len(cellValue) = 1 Or Len(cellValue) > 4 Then
                 If changedCell.Interior.Color <> RGB(255, 0, 0) Then UpdateCellShading changedCell, RGB(255, 0, 0)
                 msgToDisplay = "Please verify the you have written student's Korean name in Korean and spelled it correctly. An invalid length has been detected."
-                userChoice = ThisWorkbook.DisplayMessage(msgToDisplay, vbOKOnly, "Name Error!", 250)
+                userChoice = ThisWorkbook.DisplayMessage(msgToDisplay, vbOKOnly, "Name Error!", 350)
                 changedCell.Select
             ElseIf Len(cellValue) = 2 Or Len(cellValue) = 4 Then
                 If changedCell.Interior.Color <> RGB(255, 255, 0) Then UpdateCellShading changedCell, RGB(255, 255, 0)
                 msgToDisplay = "Please verify the student's Korean name is correct. If you have typed it in English, please write it in Korean. " & _
                                "If you have written it in Korean, please check the spelling; a name of this length is uncommon."
-                userChoice = ThisWorkbook.DisplayMessage(msgToDisplay, vbOKOnly, "Possible Name Error!", 250)
+                userChoice = ThisWorkbook.DisplayMessage(msgToDisplay, vbOKOnly, "Possible Name Error!", 380)
                 changedCell.Select
             Else
                 If changedCell.Interior.Color <> xlNone Then UpdateCellShading changedCell, xlNone
@@ -165,8 +192,8 @@ Private Sub ValdateCommentValue(ByRef changedCell As Range)
         Case Len(cellValue) > 315
             If changedCell.Interior.Color <> RGB(255, 0, 0) Then UpdateCellShading changedCell, RGB(255, 0, 0)
             msgToDisplay = "The comment you have typed is too long. Please shorten it by " & _
-                           Len(cellValue) - 315 & " characters (or more) to ensure it fits " & _
-                           "properly in the reports comment box."
+                           Len(cellValue) - 315 & " characters (or more) to ensure it properly " & _
+                           "fits in the report's comment box."
             userChoice = ThisWorkbook.DisplayMessage(msgToDisplay, vbOKOnly, "Long Comment!", 250)
             changedCell.Select
         Case Else
