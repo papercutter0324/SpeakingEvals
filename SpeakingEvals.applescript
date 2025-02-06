@@ -1,8 +1,8 @@
 (*
 Helper Scripts for the DYB Speaking Evaluations Excel spreadsheet
 
-Version: 1.1.0
-Build:   20250124
+Version: 1.2.0
+Build:   20250207
 Warren Feltmate
 © 2025
 *)
@@ -11,7 +11,7 @@ Warren Feltmate
 
 on GetScriptVersionNumber(paramString)
 	--- Use build number to determine if an update is available
-	return 20250124
+	return 20250207
 end GetScriptVersionNumber
 
 on GetMacOSVersion(paramString)
@@ -217,6 +217,15 @@ on ClearFolder(folderToEmpty)
 		return false
 	end try
 end ClearFolder
+
+on ClearPDFsAfterZipping(folderToEmpty)
+	try
+		do shell script "find" & space & (quoted form of folderToEmpty) & space & "-type f -name '*.pdf' -delete"
+		return true
+	on error
+		return false
+	end try
+end ClearPDFsAfterZipping
 
 on CopyFolder(folderPath)
 	-- Self-explanatory. Copy a folder (or bundle) from place A to place B. The original file will still exist.
