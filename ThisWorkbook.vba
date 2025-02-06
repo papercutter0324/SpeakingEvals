@@ -12,29 +12,34 @@ Const APPLE_SCRIPT_SPLIT_KEY = "-,-"
 Private Sub Workbook_Open()
     Const CURL_COMMAND_TEXT As String = "curl -L -o ~/Library/Application\ Scripts/com.microsoft.Excel/SpeakingEvals.scpt https://github.com/papercutter0324/SpeakingEvals/raw/main/SpeakingEvals.scpt"
     
-    Dim ws As Worksheet, shp As Shapes
+    Dim ws As Worksheet, shps As Shapes
     Dim scriptResult As Boolean
     
     On Error GoTo ReenableEvents
     Application.EnableEvents = False
     
     Set ws = ThisWorkbook.Worksheets("Instructions")
-    Set shp = ws.Shapes
-    
-    shp("cURL_Command").TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
-    
     SetShapePositions ws
+    
+    Set ws = ThisWorkbook.Worksheets("mySignature")
+    SetShapePositions ws
+    
+    Set ws = ThisWorkbook.Worksheets("MacOS Users")
+    SetShapePositions ws
+    Set shps = ws.Shapes
+    shps("cURL_Command").TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
+    
     AutoPopulateEvaluationDateValues
     
     #If Mac Then
         scriptResult = ScriptInstallationStatus
     #Else
-        shp("Button_SpeakingEvalsScpt_Missing").Visible = True
-        shp("Button_DialogToolkit_Missing").Visible = True
-        shp("Button_EnhancedDialogs_Disable").Visible = True
-        shp("Button_SpeakingEvalsScpt_Installed").Visible = False
-        shp("Button_DialogToolkit_Installed").Visible = False
-        shp("Button_EnhancedDialogs_Enable").Visible = False
+        shps("Button_SpeakingEvalsScpt_Missing").Visible = True
+        shps("Button_DialogToolkit_Missing").Visible = True
+        shps("Button_EnhancedDialogs_Disable").Visible = True
+        shps("Button_SpeakingEvalsScpt_Installed").Visible = False
+        shps("Button_DialogToolkit_Installed").Visible = False
+        shps("Button_EnhancedDialogs_Enable").Visible = False
     #End If
     
 ReenableEvents:
@@ -43,17 +48,10 @@ End Sub
 
 Private Sub Workbook_SheetActivate(ByVal ws As Object)
     Const CURL_COMMAND_TEXT As String = "curl -L -o ~/Library/Application\ Scripts/com.microsoft.Excel/SpeakingEvals.scpt https://github.com/papercutter0324/SpeakingEvals/raw/main/SpeakingEvals.scpt"
-    Const CURL_COMMAND_SHAPE As String = "cURL_Command"
-    Const WS_INSTRUCTIONS As String = "Instructions"
     
-    On Error GoTo ReenableEvents
     Application.EnableEvents = False
-    If ws.Name = WS_INSTRUCTIONS Then
-        ws.Shapes(CURL_COMMAND_SHAPE).TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
-        SetShapePositions ws
-    End If
-    
-ReenableEvents:
+    If ws.Name = "MacOS Users" Then ws.Shapes("cURL_Command").TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
+    SetShapePositions ws
     Application.EnableEvents = True
 End Sub
 
@@ -73,8 +71,16 @@ Private Sub SetShapePositions(ByRef ws As Worksheet)
     Dim i As Integer
     
     Set shps = ws.Shapes
-    shpNamesArray = Array("Signature_PlaceHolder", "mySignature", "cURL_Command", "Download Buttons", "MacOS_Command", "Button_SpeakingEvalsScpt_Installed", "Button_SpeakingEvalsScpt_Missing", _
-                          "Button_DialogToolkit_Installed", "Button_DialogToolkit_Missing", "Button_EnhancedDialogs_Enable", "Button_EnhancedDialogs_Disable")
+    
+    Select Case ws.Name
+        Case Is = "Instructions"
+            shpNamesArray = Array("Download Buttons")
+        Case Is = "MacOS Users"
+            shpNamesArray = Array("cURL_Command", "MacOS_Command", "Button_SpeakingEvalsScpt_Installed", "Button_SpeakingEvalsScpt_Missing", "Button_DialogToolkit_Installed", _
+                          "Button_DialogToolkit_Missing", "Button_EnhancedDialogs_Enable", "Button_EnhancedDialogs_Disable")
+        Case Is = "mySignature"
+            shpNamesArray = Array("Signature_PlaceHolder", "mySignature")
+    End Select
 
     On Error Resume Next
     For i = LBound(shpNamesArray) To UBound(shpNamesArray)
@@ -86,9 +92,9 @@ Private Sub SetShapePositions(ByRef ws As Worksheet)
                     shp1.Top = shp2.Top + ((shp2.Height - shp1.Height) / 2)
                     shp1.Left = shp2.Left + ((shp2.Width - shp1.Width) / 2)
                 Case "cURL_Command"
-                    Set shp2 = shps("MacOS Users")
-                    shp1.Top = 402
-                    shp1.Left = shp2.Left + ((shp2.Width - shp1.Width) / 2)
+                    Set shp2 = shps("MacOS-Message")
+                    shp1.Top = shp2.Top + 2
+                    shp1.Left = shp2.Left + (shp2.Width - shp1.Width)
                 Case "Download Buttons"
                     Set shp2 = shps("Seeing the Code")
                     shp1.Top = shp2.Top
@@ -96,15 +102,15 @@ Private Sub SetShapePositions(ByRef ws As Worksheet)
                 Case "MacOS_Command"
                     Set shp2 = shps("MacOS Users")
                     shp1.Top = shp2.Top
-                    shp1.Left = shp2.Left + ((shp2.Width - shp1.Width) / 2)
+                    shp1.Left = shp2.Left
                 Case "Button_SpeakingEvalsScpt_Installed", "Button_SpeakingEvalsScpt_Missing"
                     Set shp2 = shps("MacOS Users")
                     shp1.Left = shp2.Left + 70
                 Case "Button_DialogToolkit_Installed", "Button_DialogToolkit_Missing"
-                    Set shp2 = shps("MacOS Users")
-                    shp1.Left = shp2.Left + (shp2.Width / 2 - (shp1.Width / 2))
+                    Set shp2 = shps("MacOS_Command")
+                    shp1.Left = shp2.Left + (shp2.Width / 2 - (shp1.Width / 2)) + 35
                 Case "Button_EnhancedDialogs_Enabled", "Button_EnhancedDialogs_Disabled"
-                    Set shp2 = shps("MacOS Users")
+                    Set shp2 = shps("MacOS_Command")
                     shp1.Left = shp2.Left + shp2.Width - shp1.Width - 70
             End Select
             Set shp2 = Nothing
@@ -249,7 +255,7 @@ Private Sub ExportSignatureFromExcel(ByVal SIGNATURE_SHAPE_NAME As String, ByRef
     Set tempSheet = Sheets("Temp_signature")
     tempSheet.Select
     
-    Set signatureshp = ThisWorkbook.Worksheets("Instructions").Shapes(SIGNATURE_SHAPE_NAME)
+    Set signatureshp = ThisWorkbook.Worksheets("mySignature").Shapes(SIGNATURE_SHAPE_NAME)
     signatureshp.Copy
     
     savePath = GetTempFilePath("tempSignature.png")
@@ -497,7 +503,7 @@ Private Sub InsertSignature(ByRef wordDoc As Object)
     End If
     
     On Error Resume Next
-    useEmbeddedSignature = (Not ThisWorkbook.Sheets("Instructions").Shapes("mySignature") Is Nothing)
+    useEmbeddedSignature = (Not ThisWorkbook.Sheets("mySignature").Shapes("mySignature") Is Nothing)
     On Error GoTo 0
      
     If newImagePath = "" Then
@@ -673,9 +679,30 @@ ErrorHandler:
 End Function
 
 Private Function SaveToFile(ByRef wordDoc As Object, ByVal saveRoutine As String, ByVal savePath As String, ByVal fileName As String) As Boolean
+    Dim tempFile As String, destFile As String
+    Dim scriptResult As Boolean
+    
+    scriptResult = False
+    
     On Error Resume Next
     If saveRoutine = "Proofs" Then
-        wordDoc.SaveAs2 fileName:=(savePath & fileName & ".docx"), FileFormat:=16, AddtoRecentFiles:=False, EmbedTrueTypeFonts:=True
+        ' wordDoc.CompatibilityMode = 14 ' wdWord2010 = 14 / wdWord2007 = 12 / wdCurrent = -1
+        tempFile = GetTempFilePath(fileName & ".docx")
+        destFile = savePath & fileName & ".docx"
+        
+        #If Mac Then
+            wordDoc.SaveAs2 fileName:=tempFile, FileFormat:=16, AddtoRecentFiles:=False, EmbedTrueTypeFonts:=True
+            
+            If (ScriptInstallationStatus("SpeakingEvals")) Then
+                scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "CopyFile", tempFile & "-,-" & destFile) ' Move file
+            End If
+        #Else
+            wordDoc.SaveAs2 fileName:=tempFile, FileFormat:=16, AddtoRecentFiles:=False, EmbedTrueTypeFonts:=True
+        #End If
+        
+        If Not scriptResult Then
+            Name tempFile As destFile
+        End If
     Else
         #If Mac Then
             ' Export to PDF is a bit flaky on MacOS, so we need to do a full SaveAs2. Only results in a minimal time loss.
@@ -728,7 +755,8 @@ Private Sub WriteReport(ByRef ws As Object, ByRef wordApp As Object, ByRef wordD
     commentText = ws.Cells(currentRow, 10).Value
     overallGrade = CalculateOverallGrade(ws, currentRow)
     
-    fileName = koreanTeacher & "(" & classTime & ")" & " - " & koreanName & "(" & englishName & ")"
+    ' fileName = koreanTeacher & "(" & classTime & ")" & " - " & koreanName & "(" & englishName & ")"
+    fileName = koreanName & "(" & englishName & ")" & " - " & ws.Cells(4, 3).Value
     
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "        Report filename: " & fileName & vbNewLine & _
@@ -791,6 +819,7 @@ Private Sub ZipReports(ByRef ws As Worksheet, ByVal savePath As String, ByRef sa
             saveResult = False
         Else
             saveResult = True
+            scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "ClearPDFsAfterZipping", savePath)
         End If
     #Else
         Dim shellApp As Object
@@ -809,6 +838,7 @@ Private Sub ZipReports(ByRef ws As Worksheet, ByVal savePath As String, ByRef sa
         Do While pdfPath <> ""
             shellApp.Namespace(zipPath).CopyHere savePath & pdfPath
             Application.Wait Now + TimeValue("0:00:01") ' Delay to allow compression
+            ' Add a line to delete the PDF file
             pdfPath = Dir ' Get the next PDF file
         Loop
         
@@ -1675,7 +1705,7 @@ Public Function ScriptInstallationStatus(Optional ByVal scriptToCheck As String 
             Case "SpeakingEvals"
                 ScriptInstallationStatus = isAppleScriptInstalled
             Case "DialogToolkitPlus"
-                ScriptInstallationStatus = (isDialogToolkitInstalled And ThisWorkbook.Sheets("Instructions").Shapes("Button_EnhancedDialogs_Enable").Visible)
+                ScriptInstallationStatus = (isDialogToolkitInstalled And ThisWorkbook.Sheets("MacOS Users").Shapes("Button_EnhancedDialogs_Enable").Visible)
         End Select
     #Else
         ScriptInstallationStatus = False
@@ -1779,12 +1809,12 @@ Private Sub ToogleMacSettingsButtons(ByRef ws As Worksheet, ByVal clickedButtonN
         #End If
         
         ws.Unprotect
-        ws.Cells(20, 4).Value = IIf(ws.Shapes("Button_EnhancedDialogs_Enable").Visible, SCRIPT_ENABLED, SCRIPT_DISABLED)
+        ws.Cells(1, 1).Value = IIf(ws.Shapes("Button_EnhancedDialogs_Enable").Visible, SCRIPT_ENABLED, SCRIPT_DISABLED)
         ws.Protect
         ws.EnableSelection = xlUnlockedCells
         
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Value: """ & ws.Cells(20, 4).Value & """"
+            Debug.Print "    Value: """ & ws.Cells(1, 1).Value & """"
         #End If
     #End If
 End Sub
@@ -1990,7 +2020,7 @@ Private Sub SetVisibilityOfMacSettingsShapes(ByVal isAppleScriptInstalled As Boo
     Dim enhancedDialogsStatus As String
     Dim enhancedDialogsAreDisabled As Boolean
     
-    Set ws = ThisWorkbook.Sheets("Instructions")
+    Set ws = ThisWorkbook.Sheets("MacOS Users")
     Set shps = ws.Shapes
     
     shps("Button_SpeakingEvalsScpt_Missing").Visible = Not isAppleScriptInstalled
@@ -1998,7 +2028,7 @@ Private Sub SetVisibilityOfMacSettingsShapes(ByVal isAppleScriptInstalled As Boo
     shps("Button_DialogToolkit_Missing").Visible = Not isDialogToolkitInstalled
     shps("Button_DialogToolkit_Installed").Visible = isDialogToolkitInstalled
     
-    enhancedDialogsStatus = ws.Cells(20, 4).Value
+    enhancedDialogsStatus = ws.Cells(1, 1).Value
     enhancedDialogsAreDisabled = Not isDialogToolkitInstalled Or enhancedDialogsStatus = "Enhanced Dialogs: Disabled" Or enhancedDialogsStatus = ""
     
     shps("Button_EnhancedDialogs_Disable").Visible = enhancedDialogsAreDisabled
@@ -2006,7 +2036,7 @@ Private Sub SetVisibilityOfMacSettingsShapes(ByVal isAppleScriptInstalled As Boo
     
     If enhancedDialogsAreDisabled And enhancedDialogsStatus <> "Enhanced Dialogs: Disabled" Then
         ws.Unprotect
-        ws.Cells(20, 4).Value = "Enhanced Dialogs: Disabled"
+        ws.Cells(1, 1).Value = "Enhanced Dialogs: Disabled"
         ws.Protect
         ws.EnableSelection = xlUnlockedCells
     End If
