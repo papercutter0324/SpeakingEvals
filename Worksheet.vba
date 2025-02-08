@@ -74,7 +74,6 @@ Private Sub ValdateEvalDateValue(ByRef changedCell As Range)
     Else
         msgToDisplay = "Please enter a valid date using " & dateFormatStyle & " formatting."
         userChoice = ThisWorkbook.DisplayMessage(msgToDisplay, vbOKOnly, "Invalid Date!", 200)
-        changedCell.Select
         changedCell.Value = ""
     End If
 End Sub
@@ -93,7 +92,6 @@ Private Sub ValdateNameValue(ByVal nameLanguage As String, ByRef changedCell As 
                                "fit on the report. Please verify how it looks after generating " & _
                                "the report and consider using a shorter version."
                 userChoice = ThisWorkbook.DisplayMessage(msgToDisplay, vbOKOnly, "English Name Is Too Long!", 370)
-                changedCell.Select
             Else
                 If changedCell.Interior.Color <> xlNone Then UpdateCellShading changedCell, xlNone
             End If
@@ -102,13 +100,11 @@ Private Sub ValdateNameValue(ByVal nameLanguage As String, ByRef changedCell As 
                 If changedCell.Interior.Color <> RGB(255, 0, 0) Then UpdateCellShading changedCell, RGB(255, 0, 0)
                 msgToDisplay = "Please verify the you have written student's Korean name in Korean and spelled it correctly. An invalid length has been detected."
                 userChoice = ThisWorkbook.DisplayMessage(msgToDisplay, vbOKOnly, "Name Error!", 350)
-                changedCell.Select
             ElseIf Len(cellValue) = 2 Or Len(cellValue) = 4 Then
                 If changedCell.Interior.Color <> RGB(255, 255, 0) Then UpdateCellShading changedCell, RGB(255, 255, 0)
                 msgToDisplay = "Please verify the student's Korean name is correct. If you have typed it in English, please write it in Korean. " & _
                                "If you have written it in Korean, please check the spelling; a name of this length is uncommon."
                 userChoice = ThisWorkbook.DisplayMessage(msgToDisplay, vbOKOnly, "Possible Name Error!", 380)
-                changedCell.Select
             Else
                 If changedCell.Interior.Color <> xlNone Then UpdateCellShading changedCell, xlNone
             End If
@@ -188,14 +184,12 @@ Private Sub ValdateCommentValue(ByRef changedCell As Range)
             msgToDisplay = "The comment you have typed is very short. Please check that you " & _
                            "have followed the ""Positive - Negative - Positive"" format."
             userChoice = ThisWorkbook.DisplayMessage(msgToDisplay, vbOKOnly, "Short Comment!", 250)
-            changedCell.Select
         Case Len(cellValue) > 315
             If changedCell.Interior.Color <> RGB(255, 0, 0) Then UpdateCellShading changedCell, RGB(255, 0, 0)
             msgToDisplay = "The comment you have typed is too long. Please shorten it by " & _
                            Len(cellValue) - 315 & " characters (or more) to ensure it properly " & _
                            "fits in the report's comment box."
             userChoice = ThisWorkbook.DisplayMessage(msgToDisplay, vbOKOnly, "Long Comment!", 250)
-            changedCell.Select
         Case Else
             If changedCell.Interior.Color <> RGB(242, 242, 242) Then UpdateCellShading changedCell, RGB(242, 242, 242)
     End Select
