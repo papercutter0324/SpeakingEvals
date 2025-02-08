@@ -2,7 +2,7 @@
 Helper Scripts for the DYB Speaking Evaluations Excel spreadsheet
 
 Version: 1.2.0
-Build:   20250207
+Build:   20250209
 Warren Feltmate
 © 2025
 *)
@@ -11,7 +11,7 @@ Warren Feltmate
 
 on GetScriptVersionNumber(paramString)
 	--- Use build number to determine if an update is available
-	return 20250207
+	return 20250209
 end GetScriptVersionNumber
 
 on GetMacOSVersion(paramString)
@@ -200,18 +200,11 @@ end RenameFile
 -- Folder Manipulation
 
 on ClearFolder(folderToEmpty)
-	-- Empties the target folder, but only of PDF and ZIP files. This folder will not be deleted.
+	-- Empties the target folder, but only of DOCX, PDF, and ZIP files. This folder will not be deleted.
 	try
 		do shell script "find" & space & (quoted form of folderToEmpty) & space & "-type f -name '*.pdf' -delete"
 		do shell script "find" & space & (quoted form of folderToEmpty) & space & "-type f -name '*.zip' -delete"
-		-- It then checks for a Proofs folder and clears it of DOCX files.
-		set folderToEmpty to folderToEmpty & "Proofs/"
-		if DoesFolderExist(folderToEmpty) then
-			do shell script "find" & space & (quoted form of folderToEmpty) & space & "-type f -name '*.docx' -delete"
-			set folderContents to list folder folderToEmpty without invisibles
-			-- If found and empty, it then deletes the Proofs folder
-			if (count of folderContents) is 0 then DeleteFolder(folderToEmpty)
-		end if
+		do shell script "find" & space & (quoted form of folderToEmpty) & space & "-type f -name '*.docx' -delete"
 		return true
 	on error
 		return false
