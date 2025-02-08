@@ -32,7 +32,7 @@ Private Sub Workbook_Open()
     AutoPopulateEvaluationDateValues
     
     #If Mac Then
-        scriptResult = ScriptInstallationStatus
+        scriptResult = AreAppleScriptsInstalled
     #Else
         shps("Button_SpeakingEvalsScpt_Missing").Visible = True
         shps("Button_DialogToolkit_Missing").Visible = True
@@ -187,21 +187,31 @@ End Sub
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Sub Main()
-    Dim ws As Worksheet
+    Dim ws As Worksheet: Set ws = ActiveSheet
     Dim clickedButtonName As String: clickedButtonName = Application.Caller
-    
-    On Error GoTo ReenableEvents
-    Application.EnableEvents = False
-    Set ws = ActiveSheet
     
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "Beginning tasks." & vbNewLine & _
                     "    Active Worksheet = " & ws.Name
     #End If
     
+    #If Mac Then
+        Dim msgToDiplay As String
+        
+        If Not AreAppleScriptsInstalled(True) Then
+            RemindUserToInstallSpeakingEvalsScpt
+            Exit Sub
+        End If
+    #End If
+    
+    On Error GoTo ReenableEvents
+    Application.EnableEvents = False
+    
     Select Case clickedButtonName
+        #If Mac Then
         Case "Button_EnhancedDialogs_Enable", "Button_EnhancedDialogs_Disable"
             ToogleMacSettingsButtons ws, clickedButtonName
+        #End If
         Case "Button_GenerateReports", "Button_GenerateProofs"
             GenerateReports ws, clickedButtonName
             ws.Activate ' Ensure the right worksheet is being shown when finished.
@@ -331,7 +341,6 @@ Private Sub GenerateReports(ByRef ws As Worksheet, ByVal clickedButtonName As St
             ' Create an error msg
             ' GoTo CleanUp
         End If
-        If Not (ScriptInstallationStatus("SpeakingEvals")) Or Not (ScriptInstallationStatus("DialogToolkitPlus")) Then scriptResult = ScriptInstallationStatus("", True)
     #Else
         #If PRINT_DEBUG_MESSAGES Then
             Debug.Print "Checking for resources folder." & vbNewLine & _
@@ -409,13 +418,6 @@ Private Sub GenerateReports(ByRef ws As Worksheet, ByVal clickedButtonName As St
         resultMsg = MSG_SAVE_FAILED
         GoTo CleanUp
     End If
-    
-    #If Mac Then
-        If Not (ScriptInstallationStatus("SpeakingEvals")) Then
-            resultMsg = MSG_SUCCESS
-            GoTo CleanUp
-        End If
-    #End If
     
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "    Save process complete."
@@ -509,20 +511,20 @@ Private Sub InsertSignature(ByRef wordDoc As Object)
     If newImagePath = "" Then
         If useEmbeddedSignature Then
             ExportSignatureFromExcel SIGNATURE_SHAPE_NAME, newImagePath
-        ElseIf (ScriptInstallationStatus("SpeakingEvals")) Then
+        Else
             #If Mac Then
                 newImagePath = AppleScriptTask(APPLE_SCRIPT_FILE, "FindSignature", signaturePath)
                 If newImagePath = "" Then Exit Sub
                 signatureFound = True
+            #Else
+                If Dir(signaturePath & SIGNATURE_PNG_FILENAME) <> "" Then
+                    newImagePath = signaturePath & SIGNATURE_PNG_FILENAME
+                ElseIf Dir(signaturePath & SIGNATURE_JPG_FILENAME) <> "" Then
+                    newImagePath = signaturePath & SIGNATURE_JPG_FILENAME
+                Else
+                    Exit Sub
+                End If
             #End If
-        ElseIf Not signatureFound Then
-            If Dir(signaturePath & SIGNATURE_PNG_FILENAME) <> "" Then
-                newImagePath = signaturePath & SIGNATURE_PNG_FILENAME
-            ElseIf Dir(signaturePath & SIGNATURE_JPG_FILENAME) <> "" Then
-                newImagePath = signaturePath & SIGNATURE_JPG_FILENAME
-            Else
-                Exit Sub
-            End If
         End If
     End If
     
@@ -585,16 +587,15 @@ Private Sub KillWord(ByRef wordApp As Object, ByRef wordDoc As Object, ByVal pre
     #If Mac Then
         Dim closeResult As String
         
-        If (ScriptInstallationStatus("SpeakingEvals")) Then
-            #If PRINT_DEBUG_MESSAGES Then
-                Debug.Print "    Attempting extra step required to complete close MS Word on MacOS."
-            #End If
-        
-            closeResult = AppleScriptTask(APPLE_SCRIPT_FILE, "CloseWord", closeResult)
-            #If PRINT_DEBUG_MESSAGES Then
-                Debug.Print "    Status: " & closeResult
-            #End If
-        End If
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "    Attempting extra step required to complete close MS Word on MacOS."
+        #End If
+    
+        closeResult = AppleScriptTask(APPLE_SCRIPT_FILE, "CloseWord", closeResult)
+
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "    Status: " & closeResult
+        #End If
     #End If
     On Error GoTo 0
 End Sub
@@ -615,7 +616,7 @@ Private Function LoadWord(ByRef wordApp As Object, ByRef wordDoc As Object, ByVa
     #If Mac Then
         Dim appleScriptResult As String, msgToDisplay As String, msgResult As Variant
         
-        If (ScriptInstallationStatus("SpeakingEvals")) And wordApp Is Nothing Then
+        If wordApp Is Nothing Then
             appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "LoadApplication", "Microsoft Word")
             
             #If PRINT_DEBUG_MESSAGES Then
@@ -630,8 +631,9 @@ Private Function LoadWord(ByRef wordApp As Object, ByRef wordDoc As Object, ByVa
             
             Set wordApp = GetObject(, "Word.Application")
         End If
+    #Else
+        If wordApp Is Nothing Then Set wordApp = CreateObject("Word.Application")
     #End If
-    If wordApp Is Nothing Then Set wordApp = CreateObject("Word.Application")
     
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "    MS Word loaded: " & (Not wordApp Is Nothing)
@@ -672,7 +674,10 @@ ErrorHandler:
         msgToDisplay = "An error occurred while trying to load Microsoft Word. This is usually a result of a quirk in MacOS. Try creating the reports again, and it should work fine." & vbNewLine & vbNewLine & _
                         "If the problem persists, please take a picture of the following error message and ask your team leader to send it to Warren at Bundang." & vbNewLine & vbNewLine & _
                         "VBA Error " & Err.Number & ": " & Err.Description
-        If (ScriptInstallationStatus("SpeakingEvals")) Then msgToDisplay = msgToDisplay & vbNewLine & "AppleScript Error: " & appleScriptResult
+        #If Mac Then
+            msgToDisplay = msgToDisplay & vbNewLine & "AppleScript Error: " & appleScriptResult
+        #End If
+        
         msgResult = DisplayMessage(msgToDisplay, vbOKOnly, "Error Loading Word", 470)
     #End If
     LoadWord = False
@@ -686,26 +691,19 @@ Private Function SaveToFile(ByRef wordDoc As Object, ByVal saveRoutine As String
     
     On Error Resume Next
     If saveRoutine = "Proofs" Then
-        ' wordDoc.CompatibilityMode = 14 ' wdWord2010 = 14 / wdWord2007 = 12 / wdCurrent = -1
         tempFile = GetTempFilePath(fileName & ".docx")
         destFile = savePath & fileName & ".docx"
         
+        ' Saving to the temp folder and then moving prevents a file permission issue with iCloud and having to wait for each upload with OneDrive
         #If Mac Then
             wordDoc.SaveAs2 fileName:=tempFile, FileFormat:=16, AddtoRecentFiles:=False, EmbedTrueTypeFonts:=True
-            
-            If (ScriptInstallationStatus("SpeakingEvals")) Then
-                scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "CopyFile", tempFile & "-,-" & destFile) ' Move file
-            End If
+            scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "CopyFile", tempFile & APPLE_SCRIPT_SPLIT_KEY & destFile)
         #Else
             wordDoc.SaveAs2 fileName:=tempFile, FileFormat:=16, AddtoRecentFiles:=False, EmbedTrueTypeFonts:=True
-        #End If
-        
-        If Not scriptResult Then
             Name tempFile As destFile
-        End If
+        #End If
     Else
         #If Mac Then
-            ' Export to PDF is a bit flaky on MacOS, so we need to do a full SaveAs2. Only results in a minimal time loss.
             wordDoc.SaveAs2 fileName:=(savePath & fileName & ".pdf"), FileFormat:=17, AddtoRecentFiles:=False, EmbedTrueTypeFonts:=True
         #Else
             wordDoc.ExportAsFixedFormat OutputFileName:=(savePath & fileName & ".pdf"), ExportFormat:=17, BitmapMissingFonts:=True
@@ -803,14 +801,6 @@ Private Sub ZipReports(ByRef ws As Worksheet, ByVal savePath As String, ByRef sa
     
     #If Mac Then
         Dim scriptResult As String
-        
-        If Not (ScriptInstallationStatus("SpeakingEvals")) Then
-            #If PRINT_DEBUG_MESSAGES Then
-                Debug.Print "    SpeakingEvals.scpt is not installed. Unable to create the ZIP file."
-            #End If
-            saveResult = False
-            Exit Sub
-        End If
         
         scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "CreateZipFile", savePath & APPLE_SCRIPT_SPLIT_KEY & zipPath)
         
@@ -1083,19 +1073,17 @@ Private Function DownloadReportTemplate(ByVal templatePath As String) As Boolean
     Dim downloadResult As Boolean
     
     #If Mac Then
-        If (ScriptInstallationStatus("SpeakingEvals")) Then
-            On Error Resume Next
-            downloadResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DownloadFile", templatePath & APPLE_SCRIPT_SPLIT_KEY & REPORT_TEMPLATE_URL)
-            #If PRINT_DEBUG_MESSAGES Then
-                Debug.Print IIf(Err.Number = 0, "    Download successful.", "    Error: " & Err.Description)
-            #End If
-            
-            If downloadResult Then downloadResult = RequestFileAndFolderAccess(templatePath)
-            #If PRINT_DEBUG_MESSAGES Then
-                Debug.Print "    File access " & IIf(downloadResult, "granted.", "denied.")
-            #End If
-            On Error GoTo 0
-        End If
+        On Error Resume Next
+        downloadResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DownloadFile", templatePath & APPLE_SCRIPT_SPLIT_KEY & REPORT_TEMPLATE_URL)
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print IIf(Err.Number = 0, "    Download successful.", "    Error: " & Err.Description)
+        #End If
+        
+        If downloadResult Then downloadResult = RequestFileAndFolderAccess(templatePath)
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "    File access " & IIf(downloadResult, "granted.", "denied.")
+        #End If
+        On Error GoTo 0
     #Else
         If CheckForCurl() Then
             downloadResult = DownloadUsingCurl(templatePath, REPORT_TEMPLATE_URL)
@@ -1116,23 +1104,6 @@ End Function
 Private Function IsTemplateValid(ByRef templatePath As String, ByVal tempTemplatePath As String) As Boolean
     #If Mac Then
         Dim msgToDisplay As String
-        
-        If Not (ScriptInstallationStatus("SpeakingEvals")) Then
-            If (Dir(templatePath) <> "") Then
-                #If PRINT_DEBUG_MESSAGES Then
-                    Debug.Print "    Template file found." & vbNewLine & _
-                                "    SpeakingEvals.scpt is not installed. Unable to validate."
-                #End If
-                msgToDisplay = "A template file was found, but its validity cannot be confirmed without SpeakingEvals.scpt. Proceed anyway?"
-                IsTemplateValid = (DisplayMessage(msgToDisplay, vbYesNo, "Warning!", 0) = vbYes)
-            Else
-                #If PRINT_DEBUG_MESSAGES Then
-                    Debug.Print "    Template file not found." & vbNewLine & _
-                                "    SpeakingEvals.scpt is not installed. Unable to download new copy."
-                #End If
-            End If
-            Exit Function
-        End If
         
         If VerifyTemplateHash(templatePath) Then
             IsTemplateValid = True
@@ -1248,17 +1219,7 @@ Private Function VerifyTemplateHash(ByVal filePath As String) As Boolean
     Const TEMPLATE_HASH As String = "C0343895A881DF739B2B974635A100A6"
     
     #If Mac Then
-        Dim msgToDisplay As String, msgResult As Variant
-        If Not (ScriptInstallationStatus("SpeakingEvals")) Then
-            msgToDisplay = "SpeakingEvals.scpt has not been installed, so the report template's file integrity cannot be validated. The reports will " & _
-                           "still be created, but please check that everything looks okay."
-            msgResult = DisplayMessage(msgToDisplay, vbOKOnly, "Notice")
-            VerifyTemplateHash = True
-            Exit Function
-        End If
-            
         VerifyTemplateHash = AppleScriptTask(APPLE_SCRIPT_FILE, "CompareMD5Hashes", filePath & APPLE_SCRIPT_SPLIT_KEY & TEMPLATE_HASH)
-        Exit Function
     #Else
         Dim objShell As Object, shellOutput As String
         
@@ -1356,19 +1317,8 @@ Private Sub CreateSaveFolder(ByRef filePath As String)
 
     On Error Resume Next
     #If Mac Then
-        Dim msgToDisplay As String, msgTitle As String, msgResult As Variant
         Dim scriptResult As Boolean
-
-        If (ScriptInstallationStatus("SpeakingEvals")) Then
-            scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "CreateFolder", filePath)
-        Else
-            If Dir(filePath, vbDirectory) = "" Then MkDir filePath
-            If Dir(filePath & "/*") <> "" Then
-                msgToDisplay = "It appears some files still exist in " & filePath & ". " & vbNewLine & vbNewLine & "The new reports will be generated, but " & _
-                               "the old files will not be deleted and may be overwritten."
-                msgResult = DisplayMessage(msgToDisplay, vbOKOnly, "Notice")
-            End If
-        End If
+        scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "CreateFolder", filePath)
     #Else
         Dim fso As Object
         Set fso = CreateObject("Scripting.FileSystemObject")
@@ -1390,12 +1340,8 @@ Private Sub DeleteFile(ByVal filePath As String)
     #If Mac Then
         Dim appleScriptResult As Boolean
         
-        If (ScriptInstallationStatus("SpeakingEvals")) Then
-            appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFileExist", filePath)
-            If appleScriptResult Then appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DeleteFile", filePath)
-        Else
-            Kill filePath
-        End If
+        appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFileExist", filePath)
+        If appleScriptResult Then appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DeleteFile", filePath)
     #Else
         Dim fso As Object
         
@@ -1416,13 +1362,7 @@ Private Sub DeleteExistingFolder(ByVal filePath As String)
         Dim msgToDisplay As String, msgResult As Variant
         Dim scriptResult As Boolean
 
-        If (ScriptInstallationStatus("SpeakingEvals")) Then
-            scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "ClearFolder", filePath)
-        Else
-            msgToDisplay = "Because " & APPLE_SCRIPT_FILE & " is not installed, Excel is unable to delete any existing reports for this class. It is recommended to delete them before continuing." & _
-                           vbNewLine & vbNewLine & "You can safely delete any files in '" & filePath & "' now and then click 'Okay' to continue."
-            msgResult = DisplayMessage(msgToDisplay, vbOKOnly, "Notice")
-        End If
+        scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "ClearFolder", filePath)
     #Else
         Dim fso As Object
         Set fso = CreateObject("Scripting.FileSystemObject")
@@ -1456,7 +1396,7 @@ Public Function DisplayMessage(ByVal messageText As String, ByVal messageType As
         Const ICON_EXCLAMATION As Integer = 48
         Const ICON_INFORMATION As Integer = 64
 
-        If (ScriptInstallationStatus("DialogToolkitPlus")) Then
+        If AreEnhancedDialogsEnabled Then
             #If PRINT_DEBUG_MESSAGES Then
                 Debug.Print "Attempting to display message via Dialog Toolkit Plus." & vbNewLine & _
                             "    Message: " & messageText
@@ -1506,8 +1446,8 @@ Public Function DisplayMessage(ByVal messageText As String, ByVal messageType As
                     If Err.Number <> 0 Then lastError = Err.Number & " - " & Err.Description
                 #End If
                 
-                If i >= 30 Then
-                    DisplayMessage = MsgBox(messageText, messageType, messageTitle)
+                If i >= 10 Then
+                    dialogResult = MsgBox(messageText, messageType, messageTitle)
                     messageDisplayed = True
                 End If
             Loop
@@ -1529,11 +1469,7 @@ End Function
 
 Private Function DoesFolderExist(ByVal filePath As String) As Boolean
     #If Mac Then
-        If (ScriptInstallationStatus("SpeakingEvals")) Then
-            DoesFolderExist = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFolderExist", filePath)
-        Else
-            DoesFolderExist = (Dir(filePath, vbDirectory) <> "")
-        End If
+        DoesFolderExist = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFolderExist", filePath)
     #Else
         DoesFolderExist = (Dir(filePath, vbDirectory) <> "")
     #End If
@@ -1629,12 +1565,7 @@ Private Function MoveFile(ByVal initialPath As String, ByVal destinationPath As 
     
     On Error Resume Next
     #If Mac Then
-        If (ScriptInstallationStatus("SpeakingEvals")) Then
-            moveSuccessful = AppleScriptTask(APPLE_SCRIPT_FILE, "CopyFile", initialPath & APPLE_SCRIPT_SPLIT_KEY & destinationPath)
-        Else
-            Name initialPath As destinationPath
-            moveSuccessful = (Err.Number = 0)
-        End If
+        moveSuccessful = AppleScriptTask(APPLE_SCRIPT_FILE, "CopyFile", initialPath & APPLE_SCRIPT_SPLIT_KEY & destinationPath)
     #Else
         Dim fso As Object
         Set fso = CreateObject("Scripting.FileSystemObject")
@@ -1646,70 +1577,12 @@ Private Function MoveFile(ByVal initialPath As String, ByVal destinationPath As 
     #If PRINT_DEBUG_MESSAGES Then
         If Not moveSuccessful Then
             Debug.Print "Failed to move template to " & destinationPath
-            If Not (ScriptInstallationStatus("SpeakingEvals")) Then Debug.Print Err.Number & " - " & Err.Description
         End If
     #End If
     
     Err.Clear
     On Error GoTo 0
     MoveFile = moveSuccessful
-End Function
-
-Public Function ScriptInstallationStatus(Optional ByVal scriptToCheck As String = "", Optional ByVal recheckStatus As Boolean = False) As Boolean
-    #If Mac Then
-        Static isAppleScriptInstalled As Boolean, isDialogToolkitInstalled As Boolean, statusHasBeenChecked As Boolean
-        Static resourcesFolder As String, libraryScriptsFolder As String
-        Dim scriptResult As Boolean
-        
-        If libraryScriptsFolder = "" Then libraryScriptsFolder = "/Users/" & Environ("USER") & "/Library/Script Libraries"
-        If resourcesFolder = "" Then resourcesFolder = ThisWorkbook.Path & "/Resources"
-        
-        If Not statusHasBeenChecked Or recheckStatus Then
-            isAppleScriptInstalled = CheckForAppleScript()
-            If isAppleScriptInstalled Then
-                ConvertOneDriveToLocalPath resourcesFolder
-                
-                #If PRINT_DEBUG_MESSAGES Then
-                    Debug.Print "Locating Dialog Toolkit Plus.scptd" & vbNewLine & _
-                                "    Searching: " & libraryScriptsFolder
-                #End If
-                
-                ' On opening, check if the folder already exists. This prevents the user being immediately asked for their password if the folder needs to be created.
-                If Not recheckStatus Then
-                    scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFolderExist", libraryScriptsFolder)
-                    If scriptResult Then isDialogToolkitInstalled = CheckForDialogToolkit(resourcesFolder)
-                Else
-                    isDialogToolkitInstalled = CheckForDialogToolkit(resourcesFolder)
-                End If
-                
-                #If PRINT_DEBUG_MESSAGES Then
-                    Debug.Print "    Status: " & IIf(isDialogToolkitInstalled, "Installed", "Not installed")
-                #End If
-                
-                If isDialogToolkitInstalled Then
-                    isDialogToolkitInstalled = CheckForDialogDisplayScript(resourcesFolder)
-                    #If PRINT_DEBUG_MESSAGES Then
-                        Debug.Print "Attempting to install DialogDisplay.scpt" & vbNewLine & _
-                                    "    Status: " & IIf(isDialogToolkitInstalled, "Installed", "Not installed")
-                    #End If
-                End If
-            Else
-                isDialogToolkitInstalled = False
-            End If
-            statusHasBeenChecked = True
-        End If
-        
-        SetVisibilityOfMacSettingsShapes isAppleScriptInstalled, isDialogToolkitInstalled
-        
-        Select Case scriptToCheck
-            Case "SpeakingEvals"
-                ScriptInstallationStatus = isAppleScriptInstalled
-            Case "DialogToolkitPlus"
-                ScriptInstallationStatus = (isDialogToolkitInstalled And ThisWorkbook.Sheets("MacOS Users").Shapes("Button_EnhancedDialogs_Enable").Visible)
-        End Select
-    #Else
-        ScriptInstallationStatus = False
-    #End If
 End Function
 
 Private Function SetSaveLocation(ByRef ws As Object, ByVal saveRoutine As String) As String
@@ -1748,23 +1621,6 @@ Private Function SetSaveLocation(ByRef ws As Object, ByVal saveRoutine As String
         End If
     #End If
     
-    If saveRoutine = "Proofs" Then
-        filePath = filePath & "Proofs"
-        If DoesFolderExist(filePath) Then DeleteExistingFolder filePath
-        CreateSaveFolder filePath
-        #If Mac Then
-            permissionGranted = RequestFileAndFolderAccess(filePath)
-            #If PRINT_DEBUG_MESSAGES Then
-                Debug.Print IIf(permissionGranted, "    Folder access granted. Continuing with process.", "    Folder access denied. Cannot continue.")
-            #End If
-            If Not permissionGranted Then
-                ' Add a proofs permission denied value
-                SetSaveLocation = ""
-                Exit Function
-            End If
-        #End If
-    End If
-    
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "Saving reports in: " & vbNewLine & _
                     "    " & filePath
@@ -1773,56 +1629,60 @@ Private Function SetSaveLocation(ByRef ws As Object, ByVal saveRoutine As String
     SetSaveLocation = filePath
 End Function
 
-Private Sub ToogleMacSettingsButtons(ByRef ws As Worksheet, ByVal clickedButtonName As String)
-    #If Mac Then
-        Const SCRIPT_ENABLED As String = "Enhanced Dialogs: Enabled"
-        Const SCRIPT_DISABLED As String = "Enhanced Dialogs: Disabled"
-        
-        Dim shps As Shapes
-        Dim installedStatus As Boolean
-    
-        Set shps = ws.Shapes
-    
-        If shps("Button_DialogToolkit_Missing").Visible Then
-            installedStatus = ScriptInstallationStatus("DialogToolkitPlus", True)
-            
-            ' Button_EnhancedDialogs_Enable isn't visible yet (a quirk of the safety checks, but expected behaviour), so
-            ' we need to check the visibility of Button_DialogToolkit_Installed to determine installation success.
-            If Not shps("Button_DialogToolkit_Installed").Visible Then
-                shps("Button_EnhancedDialogs_Disable").Visible = False
-                shps("Button_EnhancedDialogs_Enable").Visible = True
-                Exit Sub
-            End If
-        End If
-    
-        Select Case clickedButtonName
-            Case "Button_EnhancedDialogs_Enable"
-                shps("Button_EnhancedDialogs_Disable").Visible = True
-                shps("Button_EnhancedDialogs_Enable").Visible = False
-            Case "Button_EnhancedDialogs_Disable"
-                shps("Button_EnhancedDialogs_Enable").Visible = True
-                shps("Button_EnhancedDialogs_Disable").Visible = False
-        End Select
-        
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Updating persistant status value."
-        #End If
-        
-        ws.Unprotect
-        ws.Cells(1, 1).Value = IIf(ws.Shapes("Button_EnhancedDialogs_Enable").Visible, SCRIPT_ENABLED, SCRIPT_DISABLED)
-        ws.Protect
-        ws.EnableSelection = xlUnlockedCells
-        
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Value: """ & ws.Cells(1, 1).Value & """"
-        #End If
-    #End If
-End Sub
-
 #If Mac Then
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ' MacOS Only
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Function AreAppleScriptsInstalled(Optional ByVal recheckStatus As Boolean = False) As Boolean
+    Dim libraryScriptsFolder As String, resourcesFolder As String, isAppleScriptInstalled As Boolean
+    Dim isDialogToolkitInstalled As Boolean, statusHasBeenChecked As Boolean, scriptResult As Boolean
+    
+    isAppleScriptInstalled = CheckForAppleScript()
+    
+    If isAppleScriptInstalled Then
+        If Not recheckStatus Then CheckForAppleScriptUpdate
+        
+        libraryScriptsFolder = "/Users/" & Environ("USER") & "/Library/Script Libraries"
+        resourcesFolder = ThisWorkbook.Path & "/Resources"
+        ConvertOneDriveToLocalPath resourcesFolder
+
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "Locating Dialog Toolkit Plus.scptd" & vbNewLine & _
+                        "    Searching: " & libraryScriptsFolder
+        #End If
+
+        If Not recheckStatus Then
+            ' When first opened, only check for Dialog Toolkit Plus if the folder has been previously created
+            scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFolderExist", libraryScriptsFolder)
+            If scriptResult Then isDialogToolkitInstalled = CheckForDialogToolkit(resourcesFolder)
+        Else
+            isDialogToolkitInstalled = CheckForDialogToolkit(resourcesFolder)
+        End If
+
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "    Installed: " & isDialogToolkitInstalled
+        #End If
+
+        If isDialogToolkitInstalled Then
+            isDialogToolkitInstalled = CheckForDialogDisplayScript(resourcesFolder)
+            #If PRINT_DEBUG_MESSAGES Then
+                Debug.Print "Attempting to install DialogDisplay.scpt" & vbNewLine & _
+                            "    Installed: " & isDialogToolkitInstalled
+            #End If
+        End If
+    Else
+        isDialogToolkitInstalled = False
+    End If
+
+    SetVisibilityOfMacSettingsShapes isAppleScriptInstalled, isDialogToolkitInstalled
+
+    AreAppleScriptsInstalled = isAppleScriptInstalled
+End Function
+
+Private Function AreEnhancedDialogsEnabled() As Boolean
+    AreEnhancedDialogsEnabled = ThisWorkbook.Sheets("MacOS Users").Shapes("Button_EnhancedDialogs_Enable").Visible
+End Function
 
 Private Function CheckForAppleScript() As Boolean
     Dim appleScriptPath As String, appleScriptStatus As Boolean
@@ -1841,8 +1701,6 @@ Private Function CheckForAppleScript() As Boolean
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "    Found: " & appleScriptStatus
     #End If
-    
-    If appleScriptStatus Then CheckForAppleScriptUpdate
     
     CheckForAppleScript = appleScriptStatus
 End Function
@@ -1980,7 +1838,7 @@ Private Sub RemoveDialogToolKit(ByVal resourcesFolder As String)
 End Sub
 
 Private Function RequestFileAndFolderAccess(Optional ByVal filePath As Variant = "") As Boolean
-    Dim workingFolder As Variant, resourcesFolder As Variant, tempFolder As Variant
+    Dim workingFolder As Variant, resourcesFolder As Variant, excelTempFolder As Variant, wordTempFolder As Variant
     Dim filePermissionCandidates As Variant, pathToRequest As Variant
     Dim fileAccessGranted As Boolean, allAccessHasBeenGranted As Boolean
     Dim i As Integer
@@ -1990,8 +1848,9 @@ Private Function RequestFileAndFolderAccess(Optional ByVal filePath As Variant =
             workingFolder = ThisWorkbook.Path
             ConvertOneDriveToLocalPath workingFolder
             resourcesFolder = workingFolder & "/Resources"
-            tempFolder = Environ("TMPDIR")
-            filePermissionCandidates = Array(workingFolder, resourcesFolder, tempFolder)
+            excelTempFolder = Environ("TMPDIR")
+            wordTempFolder = Replace(excelTempFolder, "Excel", "Word")
+            filePermissionCandidates = Array(workingFolder, resourcesFolder, excelTempFolder, wordTempFolder)
         Case Else
             ConvertOneDriveToLocalPath filePath ' Seems to be not needed?
             filePermissionCandidates = Array(filePath)
@@ -2040,6 +1899,58 @@ Private Sub SetVisibilityOfMacSettingsShapes(ByVal isAppleScriptInstalled As Boo
         ws.Protect
         ws.EnableSelection = xlUnlockedCells
     End If
+End Sub
+
+Private Sub RemindUserToInstallSpeakingEvalsScpt()
+    Const msgToDisplay As String = "SpeakingEvals.scpt must be installed in order to generate reports. Please run the terminal command on the ""MacOs Users"" sheet to install it and try again."
+    Dim msgResult As Integer
+
+    msgResult = DisplayMessage(msgToDisplay, vbExclamation, "Invalid Selection!")
+    ThisWorkbook.Sheets("MacOS Users").Activate
+End Sub
+
+Private Sub ToogleMacSettingsButtons(ByRef ws As Worksheet, ByVal clickedButtonName As String)
+    Const SCRIPT_ENABLED As String = "Enhanced Dialogs: Enabled"
+    Const SCRIPT_DISABLED As String = "Enhanced Dialogs: Disabled"
+    
+    Dim shps As Shapes
+    Dim installedStatus As Boolean
+
+    Set shps = ws.Shapes
+
+    If shps("Button_DialogToolkit_Missing").Visible Then
+        installedStatus = AreAppleScriptsInstalled(True)
+        
+        ' Button_EnhancedDialogs_Enable isn't visible yet (a quirk of the safety checks, but expected behaviour), so
+        ' we need to check the visibility of Button_DialogToolkit_Installed to determine installation success.
+        If Not shps("Button_DialogToolkit_Installed").Visible Then
+            shps("Button_EnhancedDialogs_Disable").Visible = False
+            shps("Button_EnhancedDialogs_Enable").Visible = True
+            Exit Sub
+        End If
+    End If
+
+    Select Case clickedButtonName
+        Case "Button_EnhancedDialogs_Enable"
+            shps("Button_EnhancedDialogs_Disable").Visible = True
+            shps("Button_EnhancedDialogs_Enable").Visible = False
+        Case "Button_EnhancedDialogs_Disable"
+            shps("Button_EnhancedDialogs_Enable").Visible = True
+            shps("Button_EnhancedDialogs_Disable").Visible = False
+    End Select
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "    Updating persistant status value."
+    #End If
+    
+    ws.Unprotect
+    ws.Cells(1, 1).Value = IIf(ws.Shapes("Button_EnhancedDialogs_Enable").Visible, SCRIPT_ENABLED, SCRIPT_DISABLED)
+    ws.Protect
+    ws.EnableSelection = xlUnlockedCells
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "    Value: """ & ws.Cells(1, 1).Value & """"
+    #End If
 End Sub
 #Else
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
