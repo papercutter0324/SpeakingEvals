@@ -374,7 +374,7 @@ Private Sub GenerateReports(ByRef ws As Worksheet, ByVal clickedButtonName As St
         GoTo CleanUp
     End If
 
-    templatePath = LoadTemplate(resourcesFolder, REPORT_TEMPLATE)
+    templatePath = LocateTemplate(resourcesFolder, REPORT_TEMPLATE)
     If templatePath = "" Then
         ' Set an error msg
         GoTo CleanUp
@@ -505,7 +505,7 @@ Private Sub InsertSignature(ByRef wordDoc As Object)
     End If
     
     On Error Resume Next
-    useEmbeddedSignature = (Not ThisWorkbook.Sheets("mySignature").Shapes("mySignature") Is Nothing)
+    useEmbeddedSignature = (Not ThisWorkbook.Sheets("mySignature").Shapes(SIGNATURE_SHAPE_NAME) Is Nothing)
     On Error GoTo 0
      
     If newImagePath = "" Then
@@ -517,13 +517,14 @@ Private Sub InsertSignature(ByRef wordDoc As Object)
                 If newImagePath = "" Then Exit Sub
                 signatureFound = True
             #Else
-                If Dir(signaturePath & SIGNATURE_PNG_FILENAME) <> "" Then
-                    newImagePath = signaturePath & SIGNATURE_PNG_FILENAME
-                ElseIf Dir(signaturePath & SIGNATURE_JPG_FILENAME) <> "" Then
-                    newImagePath = signaturePath & SIGNATURE_JPG_FILENAME
-                Else
-                    Exit Sub
-                End If
+                Select Case True
+                    Case Dir(signaturePath & SIGNATURE_PNG_FILENAME) <> ""
+                        newImagePath = signaturePath & SIGNATURE_PNG_FILENAME
+                    Case Dir(signaturePath & SIGNATURE_JPG_FILENAME) <> ""
+                        newImagePath = signaturePath & SIGNATURE_JPG_FILENAME
+                    Case Else
+                        Exit Sub
+                End Select
             #End If
         End If
     End If
@@ -1101,84 +1102,44 @@ Private Function DownloadReportTemplate(ByVal templatePath As String) As Boolean
     End If
 End Function
 
-Private Function IsTemplateValid(ByRef templatePath As String, ByVal tempTemplatePath As String) As Boolean
-    #If Mac Then
-        Dim msgToDisplay As String
-        
-        If VerifyTemplateHash(templatePath) Then
-            IsTemplateValid = True
-            #If PRINT_DEBUG_MESSAGES Then
-                Debug.Print "    Template file found" & vbNewLine & _
-                            "    Valid hash value: " & IsTemplateValid
-            #End If
-            Exit Function
-        End If
-    #Else
-        If Dir(templatePath) <> "" Then
-            If VerifyTemplateHash(templatePath) Then
-                IsTemplateValid = True
-                #If PRINT_DEBUG_MESSAGES Then
-                    Debug.Print "    Template file found" & vbNewLine & _
-                                "    Valid hash value: " & IsTemplateValid
-                #End If
-                Exit Function
-            End If
-        End If
-    #End If
-    
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    Valid template file not found." & vbNewLine & _
-                    "Attempting to download a new copy."
-    #End If
-    
-    ' Delete invalid and/or non-local copies and grab a fresh copy
-    DeleteFile templatePath
-    templatePath = tempTemplatePath
-    IsTemplateValid = DownloadReportTemplate(templatePath)
-End Function
-
-Private Function LoadTemplate(ByVal resourcesFolder As String, ByVal REPORT_TEMPLATE As String) As String
-    Dim templatePath As String, tempTemplatePath As String, destinationPath As String
+Private Function LocateTemplate(ByVal resourcesFolder As String, ByVal REPORT_TEMPLATE As String) As String
+    Dim templatePath As String, tempTemplatePath As String
     Dim msgToDisplay As String, msgResult As Variant
-    Dim validTemplateFound As Boolean
     
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "Attempting to load the Speaking Evaluation Template.docx."
     #End If
     
     templatePath = resourcesFolder & Application.PathSeparator & REPORT_TEMPLATE
-    destinationPath = templatePath
     tempTemplatePath = GetTempFilePath(REPORT_TEMPLATE)
     
     DeleteFile tempTemplatePath ' Removing existing file to avoid problems overwriting
-    
-    If Not IsTemplateValid(templatePath, tempTemplatePath) Then
+
+    If Not VerifyTemplateHash(templatePath) And Not DownloadReportTemplate(templatePath) Then
         msgToDisplay = "No template was found. Process canceled."
         msgResult = DisplayMessage(msgToDisplay, vbOKOnly, "Template Not Found", 150)
-        LoadTemplate = ""
+        LocateTemplate = ""
         #If PRINT_DEBUG_MESSAGES Then
             Debug.Print "    Unable to locate a copy of the template."
         #End If
         Exit Function
     End If
-    
-    If templatePath = tempTemplatePath Then
-        If Not MoveFile(tempTemplatePath, destinationPath) Then
-            msgToDisplay = "Failed to move temporary template to final location. Please try downloading the template manually and saving it in this folder."
-            msgResult = DisplayMessage(msgToDisplay, vbOKOnly, "Error!", 320)
-            LoadTemplate = ""
-            #If PRINT_DEBUG_MESSAGES Then
-                Debug.Print "    Unable to move the template to the correct location."
-            #End If
-            Exit Function
-        End If
-    End If
-    
+
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    Template successfully loaded."
+        Debug.Print "    Valid template found."
     #End If
     
-    LoadTemplate = templatePath
+    If MoveFile(templatePath, tempTemplatePath) Then
+        LocateTemplate = tempTemplatePath
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "    Loading temporary copy."
+        #End If
+    Else
+        LocateTemplate = templatePath
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "    Failed to make a temporary copy. Using resources copy directly."
+        #End If
+    End If
 End Function
 
 Private Function VerifyAllDocShapesExist(ByRef wordDoc As Object) As Boolean
@@ -1215,18 +1176,21 @@ Private Function VerifyAllDocShapesExist(ByRef wordDoc As Object) As Boolean
     VerifyAllDocShapesExist = True
 End Function
 
-Private Function VerifyTemplateHash(ByVal filePath As String) As Boolean
+Private Function VerifyTemplateHash(ByVal templatePath As String) As Boolean
     Const TEMPLATE_HASH As String = "C0343895A881DF739B2B974635A100A6"
     
     #If Mac Then
-        VerifyTemplateHash = AppleScriptTask(APPLE_SCRIPT_FILE, "CompareMD5Hashes", filePath & APPLE_SCRIPT_SPLIT_KEY & TEMPLATE_HASH)
+        VerifyTemplateHash = AppleScriptTask(APPLE_SCRIPT_FILE, "CompareMD5Hashes", templatePath & APPLE_SCRIPT_SPLIT_KEY & TEMPLATE_HASH)
     #Else
         Dim objShell As Object, shellOutput As String
-        
-        On Error GoTo ErrorHandler
-        Set objShell = CreateObject("WScript.Shell")
-        shellOutput = objShell.Exec("cmd /c certutil -hashfile """ & filePath & """ MD5").StdOut.ReadAll
-        VerifyTemplateHash = (LCase(TEMPLATE_HASH) = LCase(Trim(Split(shellOutput, vbCrLf)(1))))
+        If Dir(templatePath) <> "" Then
+            On Error GoTo ErrorHandler
+            Set objShell = CreateObject("WScript.Shell")
+            shellOutput = objShell.Exec("cmd /c certutil -hashfile """ & templatePath & """ MD5").StdOut.ReadAll
+            VerifyTemplateHash = (LCase(TEMPLATE_HASH) = LCase(Trim(Split(shellOutput, vbCrLf)(1))))
+        Else
+            VerifyTemplateHash = False
+        End If
     #End If
 CleanUp:
     #If Mac Then
@@ -1736,7 +1700,7 @@ Private Sub CheckForAppleScriptUpdate()
     
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "    Installed Version: " & currentScriptVersion & vbNewLine & _
-                    "    Latest Version:    " & downloadedScriptVersion
+                    "    Online Version:    " & downloadedScriptVersion
     #End If
     
     If downloadedScriptVersion <= currentScriptVersion Then
@@ -1825,16 +1789,18 @@ End Function
 Private Sub RemoveDialogToolKit(ByVal resourcesFolder As String)
     Dim scriptResult As Boolean
         
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "Removing Dialog ToolKit Plus from ~/Library/Script Libraries" & vbNewLine & _
-                    "    A local copy will be stored in: " & resourcesFolder
-    #End If
-        
-    scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "UninstallDialogToolkitPlus", resourcesFolder)
-        
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    Result: " & scriptResult
-    #End If
+    If CheckForAppleScript() Then
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "Removing Dialog ToolKit Plus from ~/Library/Script Libraries" & vbNewLine & _
+                        "    A local copy will be stored in: " & resourcesFolder
+        #End If
+            
+        scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "UninstallDialogToolkitPlus", resourcesFolder)
+            
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "    Result: " & scriptResult
+        #End If
+    End If
 End Sub
 
 Private Function RequestFileAndFolderAccess(Optional ByVal filePath As Variant = "") As Boolean
