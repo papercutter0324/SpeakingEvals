@@ -184,7 +184,7 @@ Private Sub SetLayoutInstructions(ByRef wb As Workbook, ByRef ws As Worksheet)
     shp("Title Bar - Warning").Top = refShape.Top
     shp("Title Bar - Warning").Left = refShape.Left + refShape.Width + 20
     shp("Title Bar - Warning").Height = refShape.Height
-    shp("Title Bar - Warning").Width = 305
+    shp("Title Bar - Warning").Width = 340
     Set refShape = shp("Title Bar - Warning")
     
     shp("Message - Warning").Top = refShape.Top + refShape.Height
@@ -201,7 +201,7 @@ Private Sub SetLayoutInstructions(ByRef wb As Workbook, ByRef ws As Worksheet)
     
     shp("Message - Important Files").Top = refShape.Top + refShape.Height
     shp("Message - Important Files").Left = refShape.Left
-    shp("Message - Important Files").Height = 540
+    shp("Message - Important Files").Height = 725
     shp("Message - Important Files").Width = refShape.Width
     
     Set refShape = shp("Message - Seeing the Code")
