@@ -1,17 +1,18 @@
 Private Sub Worksheet_Change(ByVal targetCellsRange As Range)
-    Dim changedCell As Range, englishNameRange As Range, koreanNameRange As Range
-    Dim evalDateRange As Range, gradesRange As Range, commentRange As Range
+    Dim changedCell As Range
     Dim cellValue As String
     
     On Error GoTo ErrorHandler
     Application.EnableEvents = False
     
-    Set evalDateRange = Me.Range("C6")
-    Set englishNameRange = Me.Range("B8:B32")
-    Set koreanNameRange = Me.Range("C8:C32")
-    Set gradesRange = Union(Me.Range("D8:D32"), Me.Range("E8:E32"), Me.Range("F8:F32"), _
-                            Me.Range("G8:G32"), Me.Range("H8:H32"), Me.Range("I8:I32"))
-    Set commentRange = Me.Range("J8:J32")
+    Dim nativeTeacherRange As Range: Set nativeTeacherRange = Me.Range("C1")
+    Dim koreanTeacherRange As Range: Set koreanTeacherRange = Me.Range("C2")
+    Dim evalDateRange As Range: Set evalDateRange = Me.Range("C6")
+    Dim englishNameRange As Range: Set englishNameRange = Me.Range("B8:B32")
+    Dim koreanNameRange As Range: Set koreanNameRange = Me.Range("C8:C32")
+    Dim gradesRange As Range: Set gradesRange = Union(Me.Range("D8:D32"), Me.Range("E8:E32"), Me.Range("F8:F32"), _
+                                                      Me.Range("G8:G32"), Me.Range("H8:H32"), Me.Range("I8:I32"))
+    Dim commentRange As Range: Set commentRange = Me.Range("J8:J32")
     
     For Each changedCell In targetCellsRange
         If Not IsEmpty(changedCell) Then changedCell.Value = Trim(changedCell.Value)
@@ -29,11 +30,17 @@ Private Sub Worksheet_Change(ByVal targetCellsRange As Range)
         
         If changedCell.Value <> "" Then
             Select Case True
+                Case Not Intersect(changedCell, nativeTeacherRange) Is Nothing
+                    CapitalizeFirstLetters changedCell, "Native Teacher"
+                Case Not Intersect(changedCell, koreanTeacherRange) Is Nothing
+                    CapitalizeFirstLetters changedCell, "Korean Teacher"
                 Case Not Intersect(changedCell, evalDateRange) Is Nothing
                     ValdateEvalDateValue changedCell
                 Case Not Intersect(changedCell, englishNameRange) Is Nothing
+                    CapitalizeFirstLetters changedCell, "English Name"
                     ValdateNameValue "English", changedCell
                 Case Not Intersect(changedCell, koreanNameRange) Is Nothing
+                    CapitalizeFirstLetters changedCell, "Korean Name"
                     ValdateNameValue "Korean", changedCell
                 Case Not Intersect(changedCell, gradesRange) Is Nothing
                     ValdateGradesValue changedCell
@@ -141,6 +148,25 @@ Private Sub ValdateGradesValue(ByRef changedCell As Range)
                 End If
         End Select
     End If
+End Sub
+Private Sub CapitalizeFirstLetters(ByRef changedCell As Range, ByVal columnName As String)
+    Dim cellWords() As String, newCellValue As String
+    Dim i As Integer
+    
+    Select Case columnName
+        Case "Native Teacher", "Korean Teacher", "English Name", "Korean Name"
+            cellWords = Split(changedCell.Value, " ")
+            For i = LBound(cellWords) To UBound(cellWords)
+                If Len(cellWords(i)) > 0 Then
+                    cellWords(i) = UCase(Left(cellWords(i), 1)) & LCase(Mid(cellWords(i), 2))
+                End If
+            Next i
+            newCellValue = Join(cellWords, " ")
+        Case Comment
+            
+    End Select
+    
+    changedCell.Value = newCellValue
 End Sub
 
 Private Sub TrimToLetterGrade(ByRef changedCell As Range)
