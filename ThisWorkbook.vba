@@ -273,6 +273,7 @@ Private Sub SetLayoutMacOSUsers(ByRef wb As Workbook)
 End Sub
 
 Private Sub SetLayoutMySignature(ByRef wb As Workbook)
+    Dim maxHeight As Double, maxWidth As Double, aspectRatio As Double
     Dim refShape As Shape
     
     With wb.Sheets("mySignature")
@@ -309,11 +310,21 @@ Private Sub SetLayoutMySignature(ByRef wb As Workbook)
             End With
             
             Set refShape = .Item("Signature Container")
-            On Error Resume Next
+            maxHeight = refShape.Height - 20
+            maxWidth = refShape.Width - 30
+            
             If DoesShapeExist(wb.Sheets("mySignature"), "mySignature_Placeholder") Then
                 With .Item("mySignature_Placeholder")
-                    .Width = 378.09
-                    .Height = 105
+                    aspectRatio = .Width / .Height
+                    
+                    If maxWidth / maxHeight > aspectRatio Then
+                        .Width = maxHeight * aspectRatio
+                        .Height = maxHeight
+                    Else
+                        .Width = maxWidth
+                        .Height = maxWidth / aspectRatio
+                    End If
+
                     .Top = refShape.Top + (refShape.Height / 2) - (.Height / 2)
                     .Left = refShape.Left + (refShape.Width / 2) - (.Width / 2)
                 End With
@@ -321,11 +332,20 @@ Private Sub SetLayoutMySignature(ByRef wb As Workbook)
             
             If DoesShapeExist(wb.Sheets("mySignature"), "mySignature") Then
                 With .Item("mySignature")
+                    aspectRatio = .Width / .Height
+                    
+                    If maxWidth / maxHeight > aspectRatio Then
+                        .Width = maxHeight * aspectRatio
+                        .Height = maxHeight
+                    Else
+                        .Width = maxWidth
+                        .Height = maxWidth / aspectRatio
+                    End If
+
                     .Top = refShape.Top + (refShape.Height / 2) - (.Height / 2)
                     .Left = refShape.Left + (refShape.Width / 2) - (.Width / 2)
                 End With
             End If
-            On Error GoTo 0
         End With
         .Protect
     End With
