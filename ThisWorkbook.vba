@@ -11,37 +11,62 @@ Const APPLE_SCRIPT_SPLIT_KEY = "-,-"
 
 Private Sub Workbook_Open()
     Const CURL_COMMAND_TEXT As String = "curl -L -o ~/Library/Application\ Scripts/com.microsoft.Excel/SpeakingEvals.scpt https://github.com/papercutter0324/SpeakingEvals/raw/main/SpeakingEvals.scpt"
-    
     Dim ws As Worksheet, shps As Shapes
-    Dim scriptResult As Boolean
+    Dim startupMessageToDisplay As String
+    
+    ThisWorkbook.Sheets("Instructions").Activate
+    startupMessageToDisplay = "Initial"
+    DisplayStartupMessage startupMessageToDisplay
     
     On Error GoTo ReenableEvents
     Application.EnableEvents = False
     
-    Set ws = ThisWorkbook.Worksheets("Instructions")
-    SetShapePositions ws
+    For Each ws In ThisWorkbook.Worksheets
+        ws.Unprotect
+        
+        Select Case ws.Name
+            Case "Instructions"
+                SetLayoutInstructions ThisWorkbook, ws
+            Case "MacOS Users"
+                Set shps = ws.Shapes
+                shps("cURL_Command").TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
+                
+                #If Mac Then
+                    Dim scriptResult As Boolean
+                    scriptResult = AreAppleScriptsInstalled
+                #Else
+                    shps("Button_SpeakingEvalsScpt_Missing").Visible = True
+                    shps("Button_DialogToolkit_Missing").Visible = True
+                    shps("Button_EnhancedDialogs_Disable").Visible = True
+                    shps("Button_SpeakingEvalsScpt_Installed").Visible = False
+                    shps("Button_DialogToolkit_Installed").Visible = False
+                    shps("Button_EnhancedDialogs_Enable").Visible = False
+                #End If
+                
+                Set shps = Nothing
+                SetLayoutMacOSUsers ThisWorkbook
+            Case "mySignature"
+                SetLayoutMySignature ThisWorkbook
+            Case Else
+                AutoPopulateEvaluationDateValues ws
+                SetLayoutClassRecords ThisWorkbook, ws
+        End Select
+        
+        ws.Protect
+        ws.EnableSelection = xlUnlockedCells
+    Next ws
     
-    Set ws = ThisWorkbook.Worksheets("mySignature")
-    SetShapePositions ws
-    
-    Set ws = ThisWorkbook.Worksheets("MacOS Users")
-    SetShapePositions ws
-    Set shps = ws.Shapes
-    shps("cURL_Command").TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
-    
-    AutoPopulateEvaluationDateValues
+    startupMessageToDisplay = "Complete"
     
     #If Mac Then
-        scriptResult = AreAppleScriptsInstalled
-    #Else
-        shps("Button_SpeakingEvalsScpt_Missing").Visible = True
-        shps("Button_DialogToolkit_Missing").Visible = True
-        shps("Button_EnhancedDialogs_Disable").Visible = True
-        shps("Button_SpeakingEvalsScpt_Installed").Visible = False
-        shps("Button_DialogToolkit_Installed").Visible = False
-        shps("Button_EnhancedDialogs_Enable").Visible = False
+        If Not scriptResult Then
+            startupMessageToDisplay = "SpeakEvals.scpt Reminder"
+            ThisWorkbook.Sheets("MacOS Users").Activate
+        End If
     #End If
-    
+        
+    DisplayStartupMessage startupMessageToDisplay
+
 ReenableEvents:
     Application.EnableEvents = True
 End Sub
@@ -50,8 +75,19 @@ Private Sub Workbook_SheetActivate(ByVal ws As Object)
     Const CURL_COMMAND_TEXT As String = "curl -L -o ~/Library/Application\ Scripts/com.microsoft.Excel/SpeakingEvals.scpt https://github.com/papercutter0324/SpeakingEvals/raw/main/SpeakingEvals.scpt"
     
     Application.EnableEvents = False
-    If ws.Name = "MacOS Users" Then ws.Shapes("cURL_Command").TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
-    SetShapePositions ws
+    
+    Select Case ws.Name
+        Case "Instructions"
+            SetLayoutInstructions ThisWorkbook, ws
+        Case "MacOS Users"
+            ws.Shapes("cURL_Command").TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
+            SetLayoutMacOSUsers ThisWorkbook
+        Case "mySignature"
+            SetLayoutMySignature ThisWorkbook
+        Case Else
+            SetLayoutClassRecords ThisWorkbook, ws
+    End Select
+    
     Application.EnableEvents = True
 End Sub
 
@@ -65,118 +101,457 @@ Private Sub Workbook_BeforeClose(Cancel As Boolean)
     #End If
 End Sub
 
-Private Sub SetShapePositions(ByRef ws As Worksheet)
-    Dim shps As Shapes, shp1 As Shape, shp2 As Shape
-    Dim shpNamesArray As Variant
-    Dim i As Integer
+Private Sub DisplayStartupMessage(ByVal startupStage As String)
+    Dim msgToDisplay As String, dialogSize As Integer, msgResult As Integer
     
-    Set shps = ws.Shapes
-    
-    Select Case ws.Name
-        Case Is = "Instructions"
-            shpNamesArray = Array("Download Buttons")
-        Case Is = "MacOS Users"
-            shpNamesArray = Array("cURL_Command", "MacOS_Command", "Button_SpeakingEvalsScpt_Installed", "Button_SpeakingEvalsScpt_Missing", "Button_DialogToolkit_Installed", _
-                          "Button_DialogToolkit_Missing", "Button_EnhancedDialogs_Enable", "Button_EnhancedDialogs_Disable")
-        Case Is = "mySignature"
-            shpNamesArray = Array("Signature_PlaceHolder", "mySignature")
+    Select Case startupStage
+        Case "Initial"
+            msgToDisplay = "Please wait a few moments while a self-check is performed to ensure all sheets and cells are properly formatted. " & _
+                           "All existing information will br preserved, and another message will appear to inform you the process is complete."
+            dialogSize = 430
+        Case "Complete"
+            msgToDisplay = "Process complete!"
+            dialogSize = 120
+        Case "SpeakEvals.scpt Reminder"
+            msgToDisplay = "You must install SpeakingEvals.scpt in order for this file to fuction properly. Please follow these instructions and " & _
+                           "read the notices about why you will see popups for System Events and file & folder permission requests."
+            dialogSize = 470
     End Select
-
-    On Error Resume Next
-    For i = LBound(shpNamesArray) To UBound(shpNamesArray)
-        Set shp1 = shps(shpNamesArray(i))
-        If Not shp1 Is Nothing Then
-            Select Case shp1.Name
-                Case "Signature_Placeholder", "mySignature"
-                    Set shp2 = shps("TS Message")
-                    shp1.Top = shp2.Top + ((shp2.Height - shp1.Height) / 2)
-                    shp1.Left = shp2.Left + ((shp2.Width - shp1.Width) / 2)
-                Case "cURL_Command"
-                    Set shp2 = shps("MacOS-Message")
-                    shp1.Top = shp2.Top + 2
-                    shp1.Left = shp2.Left + (shp2.Width - shp1.Width)
-                Case "Download Buttons"
-                    Set shp2 = shps("Seeing the Code")
-                    shp1.Top = shp2.Top
-                    shp1.Left = shp2.Left + ((shp2.Width - shp1.Width) / 2)
-                Case "MacOS_Command"
-                    Set shp2 = shps("MacOS Users")
-                    shp1.Top = shp2.Top
-                    shp1.Left = shp2.Left
-                Case "Button_SpeakingEvalsScpt_Installed", "Button_SpeakingEvalsScpt_Missing"
-                    Set shp2 = shps("MacOS Users")
-                    shp1.Left = shp2.Left + 70
-                Case "Button_DialogToolkit_Installed", "Button_DialogToolkit_Missing"
-                    Set shp2 = shps("MacOS_Command")
-                    shp1.Left = shp2.Left + (shp2.Width / 2 - (shp1.Width / 2)) + 35
-                Case "Button_EnhancedDialogs_Enabled", "Button_EnhancedDialogs_Disabled"
-                    Set shp2 = shps("MacOS_Command")
-                    shp1.Left = shp2.Left + shp2.Width - shp1.Width - 70
-            End Select
-            Set shp2 = Nothing
-        End If
-        Set shp1 = Nothing
-    Next i
-    On Error GoTo 0
+    
+    msgResult = DisplayMessage(msgToDisplay, vbInformation, "Welcome!", dialogSize)
 End Sub
 
-Private Sub AutoPopulateEvaluationDateValues()
-    Dim ws As Worksheet, dateValue As Range
+Private Sub AutoPopulateEvaluationDateValues(ByRef ws As Worksheet)
+    Dim dateValue As Range
     Dim messageText As String, msgResult As Variant
-    Dim i As Long, lastRow As Long
     
     On Error Resume Next
     Application.EnableEvents = False
-    For i = 1 To ThisWorkbook.Worksheets.Count
-        Set ws = ThisWorkbook.Worksheets(i)
-        lastRow = ws.Cells(ws.Rows.Count, 2).End(xlUp).row
-        If ws.Range("A6").Value = "Evaluation Date:" Then
-            SetCorrectDateValidationMessage ws
-            
-            Set dateValue = ws.Range("C6")
+    
+    If ws.Range("A6").Value = "Evaluation Date:" Then
+        Set dateValue = ws.Range("C6")
 
-            If IsEmpty(dateValue) Then
-                ' Add date if not entered yet
-                dateValue.Value = Format(Date, "MMM. YYYY")
-            ElseIf IsDate(dateValue.Value) And dateValue.Value < Date - 45 Then
-                ' Update the date if the current value is over 45 days ago
-                dateValue.Value = Format(Date, "MMM. YYYY")
-            ElseIf Not IsDate(dateValue.Value) Then
-                ' Display an error message if an invalid date is found
-                messageText = "An invalid date has been found on worksheet " & ws.Name & "." & vbNewLine & "Please enter a valid date."
-                msgResult = DisplayMessage(messageText, vbInformation, "Invalid Date!")
-            End If
+        If IsEmpty(dateValue) Then
+            ' Add date if not entered yet
+            dateValue.Value = Format(Date, "MMM. YYYY")
+        ElseIf IsDate(dateValue.Value) And dateValue.Value < Date - 21 Then
+            ' Update the date if the current value is over 21 days ago
+            dateValue.Value = Format(Date, "MMM. YYYY")
+        ElseIf Not IsDate(dateValue.Value) Then
+            ' Display an error message if an invalid date is found
+            messageText = "An invalid date has been found on worksheet " & ws.Name & "." & vbNewLine & "Please enter a valid date."
+            msgResult = DisplayMessage(messageText, vbInformation, "Invalid Date!")
         End If
-    Next i
+    End If
+    
     Application.EnableEvents = True
     On Error GoTo 0
 End Sub
 
-Private Sub SetCorrectDateValidationMessage(ByRef ws As Worksheet)
-    Dim dateFormatStyle As String, dateFormatMessage As String, dateFormula1 As String
+Private Sub SetLayoutInstructions(ByRef wb As Workbook, ByRef ws As Worksheet)
+    Dim shp As Shapes, refShape As Shape, currentshp As Shape
+    Dim btnHeight As Double, btnWidth As Double, cellSpacing As Double
+    Dim btnNamesArray As Variant
+    Dim i As Integer
     
-    Select Case Application.International(xlDateOrder)
-       Case 0
-           dateFormatStyle = "MM/DD/YYYY"
-       Case 1
-           dateFormatStyle = "DD/MM/YYYY"
-       Case 2
-           dateFormatStyle = "YYYY/MM/DD"
-    End Select
-    dateFormatMessage = vbNewLine & dateFormatStyle & vbNewLine & "or MM/YYYY."
+    Set shp = ws.Shapes
     
-    On Error Resume Next
-    ws.Unprotect
-    With ws.Cells(6, 3).Validation
-        .Delete
-        .Add Type:=xlValidateInputOnly, _
-             AlertStyle:=xlValidAlertStop
-        .InputTitle = "Date Format"
-        .InputMessage = dateFormatMessage
-        .ShowError = False
+    shp("Title Bar - Instructions").Top = 15
+    shp("Title Bar - Instructions").Left = 15
+    shp("Title Bar - Instructions").Height = 58
+    shp("Title Bar - Instructions").Width = 1165
+    Set refShape = shp("Title Bar - Instructions")
+    
+    shp("Message - Instructions").Top = refShape.Top + refShape.Height
+    shp("Message - Instructions").Left = refShape.Left
+    shp("Message - Instructions").Height = 610
+    shp("Message - Instructions").Width = refShape.Width
+    Set refShape = shp("Message - Instructions")
+    
+    shp("Title Bar - Seeing the Code").Top = refShape.Top + refShape.Height + 20
+    shp("Title Bar - Seeing the Code").Left = refShape.Left
+    shp("Title Bar - Seeing the Code").Height = shp("Title Bar - Instructions").Height
+    shp("Title Bar - Seeing the Code").Width = refShape.Width
+    Set refShape = shp("Title Bar - Seeing the Code")
+    
+    shp("Message - Seeing the Code").Top = refShape.Top + refShape.Height
+    shp("Message - Seeing the Code").Left = refShape.Left
+    shp("Message - Seeing the Code").Height = 265
+    shp("Message - Seeing the Code").Width = refShape.Width
+    
+    Set refShape = shp("Title Bar - Instructions")
+    
+    shp("Title Bar - Warning").Top = refShape.Top
+    shp("Title Bar - Warning").Left = refShape.Left + refShape.Width + 20
+    shp("Title Bar - Warning").Height = refShape.Height
+    shp("Title Bar - Warning").Width = 305
+    Set refShape = shp("Title Bar - Warning")
+    
+    shp("Message - Warning").Top = refShape.Top + refShape.Height
+    shp("Message - Warning").Left = refShape.Left
+    shp("Message - Warning").Height = 150
+    shp("Message - Warning").Width = refShape.Width
+    Set refShape = shp("Message - Warning")
+    
+    shp("Title Bar - Important Files").Top = refShape.Top + refShape.Height + 20
+    shp("Title Bar - Important Files").Left = refShape.Left
+    shp("Title Bar - Important Files").Height = shp("Title Bar - Instructions").Height
+    shp("Title Bar - Important Files").Width = refShape.Width
+    Set refShape = shp("Title Bar - Important Files")
+    
+    shp("Message - Important Files").Top = refShape.Top + refShape.Height
+    shp("Message - Important Files").Left = refShape.Left
+    shp("Message - Important Files").Height = 540
+    shp("Message - Important Files").Width = refShape.Width
+    
+    Set refShape = shp("Message - Seeing the Code")
+    btnHeight = 70
+    btnWidth = 200
+    cellSpacing = (refShape.Width - 40 - (btnWidth * 5)) / 4
+    btnNamesArray = Array("Button_Speadsheet", "Button_Font", "Button_ReportTemplate", "Button_SignatureTemplate", "Button_SourceCode")
+    
+    For i = LBound(btnNamesArray) To UBound(btnNamesArray)
+        Set currentshp = shp(btnNamesArray(i))
+        currentshp.Height = btnHeight
+        currentshp.Width = btnWidth
+        currentshp.Left = refShape.Left + 20 + i * (btnWidth + cellSpacing)
+        currentshp.Top = refShape.Top + refShape.Height - btnHeight - 20
+    Next i
+End Sub
+
+Private Sub SetLayoutMacOSUsers(ByRef wb As Workbook)
+    Dim refShape As Shape, currentBtn As Shape
+    Dim buttonNamesArray As Variant, i As Integer
+    
+    buttonNamesArray = Array("Button_SpeakingEvalsScpt_Installed", "Button_SpeakingEvalsScpt_Missing", "Button_DialogToolkit_Installed", _
+                            "Button_DialogToolkit_Missing", "Button_EnhancedDialogs_Enable", "Button_EnhancedDialogs_Disable")
+    
+    With wb.Sheets("MacOS Users")
+        .Unprotect
+        With .Shapes
+            With .Item("Title Bar")
+                .Height = 58
+                .Width = 1285
+                .Top = 15
+                .Left = 15
+            End With
+            
+            Set refShape = .Item("Title Bar")
+            With .Item("Message")
+                .Height = 680
+                .Width = refShape.Width
+                .Top = refShape.Top + refShape.Height
+                .Left = refShape.Left
+            End With
+                    
+            Set refShape = .Item("Message")
+            With .Item("cURL_Command")
+                .Height = 115
+                .Width = 560
+                .Top = refShape.Top
+                .Left = refShape.Left + refShape.Width - .Width
+            End With
+            
+            For i = LBound(buttonNamesArray) To UBound(buttonNamesArray)
+                Set currentBtn = .Item(buttonNamesArray(i))
+                currentBtn.Height = 70
+                currentBtn.Width = 200
+                currentBtn.Top = refShape.Top + refShape.Height - currentBtn.Height - 20
+                
+                Select Case buttonNamesArray(i)
+                    Case "Button_SpeakingEvalsScpt_Installed", "Button_SpeakingEvalsScpt_Missing"
+                        currentBtn.Left = refShape.Left + 70
+                    Case "Button_DialogToolkit_Installed", "Button_DialogToolkit_Missing"
+                        currentBtn.Left = refShape.Left + 350
+                    Case "Button_EnhancedDialogs_Enable", "Button_EnhancedDialogs_Disable"
+                        currentBtn.Left = refShape.Left + 630
+                End Select
+            Next i
+        End With
+        .Protect
     End With
+End Sub
+
+Private Sub SetLayoutMySignature(ByRef wb As Workbook)
+    Dim refShape As Shape
+    
+    With wb.Sheets("mySignature")
+        .Unprotect
+        With .Shapes
+            With .Item("Title Bar")
+                .Height = 58
+                .Width = 1270
+                .Top = 15
+                .Left = 15
+            End With
+            
+            Set refShape = .Item("Title Bar")
+            With .Item("Message")
+                .Height = 840
+                .Width = refShape.Width
+                .Top = refShape.Top + refShape.Height
+                .Left = refShape.Left
+            End With
+                    
+            With .Item("Signature Title Bar")
+                .Height = refShape.Height
+                .Width = 300
+                .Top = refShape.Top
+                .Left = refShape.Left + refShape.Width - .Width
+            End With
+            
+            Set refShape = .Item("Signature Title Bar")
+            With .Item("Signature Container")
+                .Height = 130
+                .Width = refShape.Width
+                .Top = refShape.Top + refShape.Height
+                .Left = refShape.Left
+            End With
+            
+            Set refShape = .Item("Signature Container")
+            On Error Resume Next
+            If DoesShapeExist(wb.Sheets("mySignature"), "mySignature_Placeholder") Then
+                With .Item("mySignature_Placeholder")
+                    .Width = 378.09
+                    .Height = 105
+                    .Top = refShape.Top + (refShape.Height / 2) - (.Height / 2)
+                    .Left = refShape.Left + (refShape.Width / 2) - (.Width / 2)
+                End With
+            End If
+            
+            If DoesShapeExist(wb.Sheets("mySignature"), "mySignature") Then
+                With .Item("mySignature")
+                    .Top = refShape.Top + (refShape.Height / 2) - (.Height / 2)
+                    .Left = refShape.Left + (refShape.Width / 2) - (.Width / 2)
+                End With
+            End If
+            On Error GoTo 0
+        End With
+        .Protect
+    End With
+End Sub
+
+Private Function DoesShapeExist(ByVal ws As Worksheet, ByVal shapeName As String) As Boolean
+    Dim shp As Shape
+    On Error Resume Next
+    Set shp = ws.Shapes(shapeName)
+    DoesShapeExist = Not shp Is Nothing
+    On Error GoTo 0
+End Function
+
+Private Sub SetLayoutClassRecords(ByRef wb As Workbook, ByRef ws As Worksheet)
+    Dim btnGenerateProofs As Shape, btnGenerateReports As Shape, btnOpenTypingSite As Shape, btnRepairLayout As Shape
+    Dim shadingRanges As Variant, borderRanges As Variant, borderTypes As Variant, borderSetting As Variant
+    Dim cellTop As Double, cellHeight As Double, cellLeft As Double, cellWidth As Double
+    Dim cellVerticalSpacing As Double, cellHorizontalSpacing As Double
+    Dim buttonHeight As Double, buttonWidth As Double
+    Dim mainBorders As Range, dashedBorders As Range, noInsideBorders As Range
+    Dim unlockedCells As Range, lockedCells As Range, currentRng As Range
+    Dim i As Integer
+        
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+    ws.Unprotect
+    
+    shadingRanges = Array( _
+        Array("classInfoShadingRange", "A1:C6", RGB(255, 255, 255)), _
+        Array("indexEngKorHeaderShapingRange", "A7:C7", RGB(197, 217, 241)), _
+        Array("indexNumberShadingRange", "A8:A32", RGB(217, 217, 217)), _
+        Array("EngKorNameShadingRange", "B8:C32", RGB(255, 255, 255)), _
+        Array("grammarHeaderShadingRange", "D1:D7", RGB(177, 160, 199)), _
+        Array("grammarValuesShadingRange", "D8:D32", RGB(228, 223, 236)), _
+        Array("pronunciationHeaderShadingRange", "E1:E7", RGB(146, 205, 220)), _
+        Array("pronunciationValuesShadingRange", "E8:E32", RGB(218, 238, 243)), _
+        Array("fluencyHeaderShadingRange", "F1:F7", RGB(218, 150, 148)), _
+        Array("fluencyValuesShadingRange", "F8:F32", RGB(242, 220, 219)), _
+        Array("mannerHeaderShadingRange", "G1:G7", RGB(250, 191, 143)), _
+        Array("mannerValuesShadingRange", "G8:G32", RGB(253, 233, 217)), _
+        Array("contentHeaderShadingRange", "H1:H7", RGB(196, 215, 155)), _
+        Array("contentValuesShadingRange", "H8:H32", RGB(235, 241, 222)), _
+        Array("overallEffortHeaderShadingRange", "I1:I7", RGB(149, 179, 215)), _
+        Array("overallEffortValuesShadingRange", "I8:I32", RGB(220, 230, 241)), _
+        Array("buttonShadingRange", "J1:J5", RGB(255, 255, 255)), _
+        Array("commentHeaderShadingRange", "J6:J7", RGB(191, 191, 191)), _
+        Array("commentValuesShadingRange", "J8:J32", RGB(242, 242, 242)), _
+        Array("notesHeaderShadingRange", "K1:K7", RGB(196, 189, 151)), _
+        Array("notesValuesShadingRange", "K8:K32", RGB(221, 217, 196)) _
+    )
+    
+    For i = LBound(shadingRanges) To UBound(shadingRanges)
+        Set currentRng = ws.Range(shadingRanges(i)(1))
+        On Error Resume Next
+        If Not wb.Names(shadingRanges(i)(0)) Is Nothing Then wb.Names(shadingRanges(i)(0)).Delete
+        wb.Names.Add Name:=shadingRanges(i)(0), RefersTo:=currentRng
+        currentRng.Interior.Color = shadingRanges(i)(2)
+        VerifyTipMessages ws, shadingRanges(i)(0), currentRng
+        On Error GoTo 0
+    Next i
+    
+    With ws
+        .Columns("A").ColumnWidth = 7
+        .Columns("B:C").ColumnWidth = 18
+        .Columns("D:I").ColumnWidth = 21
+        .Columns("J").ColumnWidth = 102.5
+        .Columns("K").ColumnWidth = 44.17
+        .Rows("1:6").RowHeight = 30
+        .Rows("7").RowHeight = 25
+        .Rows("8:32").RowHeight = 50
+    End With
+        
+    cellTop = ws.Cells(1, 10).Top
+    cellHeight = ws.Cells(1, 10).Height * 5
+    cellLeft = ws.Cells(1, 10).Left
+    cellWidth = ws.Cells(1, 10).Width
+    buttonHeight = 50
+    buttonWidth = 187
+    cellVerticalSpacing = (cellHeight - (2 * buttonHeight)) / 3
+    cellHorizontalSpacing = (cellWidth - (2 * buttonWidth)) / 3
+        
+    Set btnGenerateProofs = ws.Shapes("Button_GenerateProofs")
+    Set btnGenerateReports = ws.Shapes("Button_GenerateReports")
+    Set btnOpenTypingSite = ws.Shapes("Button_OpenTypingSite")
+    Set btnRepairLayout = ws.Shapes("Button_RepairLayout")
+        
+    btnGenerateProofs.Height = buttonHeight
+    btnGenerateProofs.Width = buttonWidth
+    btnGenerateProofs.Top = cellTop + cellVerticalSpacing
+    btnGenerateProofs.Left = cellLeft + cellHorizontalSpacing
+        
+    btnGenerateReports.Height = buttonHeight
+    btnGenerateReports.Width = buttonWidth
+    btnGenerateReports.Top = cellTop + (cellVerticalSpacing * 2) + buttonHeight
+    btnGenerateReports.Left = cellLeft + cellHorizontalSpacing
+
+    btnOpenTypingSite.Height = buttonHeight
+    btnOpenTypingSite.Width = buttonWidth
+    btnOpenTypingSite.Top = cellTop + cellVerticalSpacing
+    btnOpenTypingSite.Left = cellLeft + (cellHorizontalSpacing * 2) + buttonWidth
+
+    btnRepairLayout.Height = buttonHeight
+    btnRepairLayout.Width = buttonWidth
+    btnRepairLayout.Top = cellTop + (cellVerticalSpacing * 2) + buttonHeight
+    btnRepairLayout.Left = cellLeft + (cellHorizontalSpacing * 2) + buttonWidth
+        
+    On Error Resume Next
+    Set mainBorders = ws.Range("A1:C6,A8:A32,B8:C32,D8:I32,J8:J32,K8:K32")
+    Set dashedBorders = ws.Range("A1:C6,A8:A32,B8:C32,D8:I32,J8:J32,K8:K32")
+    Set noInsideBorders = ws.Range("D1:I6,J1:J5,K1:K6")
+    Set unlockedCells = ws.Range("C1:C6,B8:K32")
+    Set lockedCells = ws.Range("A1:B6,D1:K6,A7:K7,A8:A32")
+    
+    With mainBorders.Borders
+        .LineStyle = xlContinuous
+        .Weight = xlThick
+    End With
+    
+    With dashedBorders.Borders
+        .Item(xlInsideHorizontal).LineStyle = xlDash
+        .Item(xlInsideHorizontal).Weight = xlThin
+        .Item(xlInsideVertical).LineStyle = xlLineStyleNone
+    End With
+    
+    With noInsideBorders.Borders
+        .Item(xlInsideHorizontal).LineStyle = xlLineStyleNone
+        .Item(xlInsideVertical).LineStyle = xlLineStyleNone
+    End With
+    
+    unlockedCells.Locked = False
+    lockedCells.Locked = True
+    On Error GoTo 0
+    
     ws.Protect
-    ws.EnableSelection = xlUnlockedCells
+    Application.ScreenUpdating = True
+    Application.Calculation = xlCalculationAutomatic
+End Sub
+
+Private Sub VerifyTipMessages(ByRef ws As Worksheet, ByVal rangeType As String, ByRef cellRange As Range)
+    Dim currentCell As Range, rangeCol As Range, rangeCell As Range
+    Dim dateInputMessage As Variant, validationValues As Variant
+    Dim validationInputTitle As String, validationInputMessage As String
+    Dim columnFont As String, columnFontSize As Integer, columnFontBold As Boolean
+    Dim i As Integer
+    
+    Select Case rangeType
+        Case "classInfoShadingRange"
+            Select Case Application.International(xlDateOrder)
+               Case 0
+                   dateInputMessage = "MM/DD/YYYY" & vbNewLine & "or MM/YYYY."
+               Case 1
+                   dateInputMessage = "DD/MM/YYYY" & vbNewLine & "or MM/YYYY."
+               Case 2
+                   dateInputMessage = "YYYY/MM/DD" & vbNewLine & "or MM/YYYY."
+            End Select
+            
+            validationValues = Array( _
+                Array("Native Teacher's Name", "Please enter just your" & vbNewLine & "name, no suffix or title" & vbNewLine & "like ""tr."""), _
+                Array("Korean Teacher's Name", "Please write their Korean name. The parents are unlikely to know their English name."), _
+                Array("Class Level", "Click on the down arrow and choose the class's level from the list."), _
+                Array("Class Days", "Select the days when you see this class." & vbNewLine & vbNewLine & "For Athena and Song's classes, use Class-1 and Class-2 to help organize split classes."), _
+                Array("Class Time", "Select what time you have Class 1 each week. Scroll to see more options." & vbNewLine & vbNewLine & "This is to help you keep track of which class this is; it won't appear on the final reports."), _
+                Array("Date Format", dateInputMessage) _
+            )
+            
+            For i = 1 To 6
+                columnFont = IIf(i = 2, "Batang", "Calibri")
+                SetCellFormating ws.Cells(i, 3), validationValues(i - 1)(0), validationValues(i - 1)(1), columnFont, 14, False
+            Next i
+        Case "EngKorNameShadingRange", "grammarValuesShadingRange", "pronunciationValuesShadingRange", "fluencyValuesShadingRange", "mannerValuesShadingRange", "contentValuesShadingRange", "overallEffortValuesShadingRange", "commentValuesShadingRange", "notesValuesShadingRange"
+            columnFont = "Calibri"
+            columnFontBold = False
+            For Each rangeCol In cellRange.Columns
+                Select Case rangeCol.Column
+                    Case 2
+                        validationInputTitle = "Character Limit"
+                        validationInputMessage = "    30 characters"
+                        columnFontSize = 18
+                    Case 3
+                        validationInputTitle = ""
+                        validationInputMessage = ""
+                        columnFont = "Batang"
+                        columnFontSize = 20
+                    Case 4 To 9
+                        validationInputTitle = "Enter a Grade"
+                        validationInputMessage = "Valid Letter Grades" & vbNewLine & "  A+ / A / B+ / B / C" & vbNewLine & vbNewLine & "Valid Numeric Scores   " & vbNewLine & "  1 ~ 5"
+                        columnFontSize = 22
+                        columnFontBold = True
+                    Case 10
+                        validationInputTitle = "Feedback Sandwich"
+                        validationInputMessage = "FORMAT:" & vbNewLine & "  Good-Bad-Good" & vbNewLine & vbNewLine & "LIMIT:" & vbNewLine & "  315 characters"
+                        columnFontSize = 14
+                    Case 11
+                        validationInputTitle = ""
+                        validationInputMessage = ""
+                        columnFontSize = 14
+                End Select
+                
+                For Each rangeCell In rangeCol.Cells
+                    SetCellFormating rangeCell, validationInputTitle, validationInputMessage, columnFont, columnFontSize, columnFontBold
+                Next rangeCell
+            Next rangeCol
+    End Select
+End Sub
+
+Private Sub SetCellFormating(ByRef wsCell As Range, ByVal validationInputTitle As String, ByVal validationInputMessage As String, ByVal columnFont As String, ByVal columnFontSize As Integer, ByVal columnFontBold As Boolean)
+    On Error Resume Next
+    With wsCell
+        With .Validation
+            If .inputTitle <> validationInputTitle Then
+                .Delete
+                .Add Type:=xlValidateInputOnly, _
+                     AlertStyle:=xlValidAlertStop
+                .inputTitle = validationInputTitle
+                .inputMessage = validationInputMessage
+                .ShowError = False
+            End If
+        End With
+        With .Font
+            .Name = columnFont
+            .Size = columnFontSize
+            .Bold = columnFontBold
+            .Italic = False
+            .Underline = False
+        End With
+    End With
     On Error GoTo 0
 End Sub
 
@@ -215,6 +590,8 @@ Sub Main()
         Case "Button_GenerateReports", "Button_GenerateProofs"
             GenerateReports ws, clickedButtonName
             ws.Activate ' Ensure the right worksheet is being shown when finished.
+        Case "Button_RepairLayout"
+            SetLayoutClassRecords ThisWorkbook, ws
     End Select
     
 ReenableEvents:
@@ -700,8 +1077,11 @@ Private Function SaveToFile(ByRef wordDoc As Object, ByVal saveRoutine As String
             wordDoc.SaveAs2 fileName:=tempFile, FileFormat:=16, AddtoRecentFiles:=False, EmbedTrueTypeFonts:=True
             scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "CopyFile", tempFile & APPLE_SCRIPT_SPLIT_KEY & destFile)
         #Else
+            Dim fso As Object
+            Set fso = CreateObject("Scripting.FileSystemObject")
+            
             wordDoc.SaveAs2 fileName:=tempFile, FileFormat:=16, AddtoRecentFiles:=False, EmbedTrueTypeFonts:=True
-            Name tempFile As destFile
+            If fso.FileExists(tempFile) Then fso.CopyFile tempFile, destFile, True
         #End If
     Else
         #If Mac Then
