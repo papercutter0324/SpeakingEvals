@@ -691,6 +691,8 @@ Private Sub ExportSignatureFromExcel(ByVal SIGNATURE_SHAPE_NAME As String, ByRef
     Dim signSheet As Worksheet, tempSheet As Worksheet
     Dim signatureshp As Shape, chrt As ChartObject
     
+    Application.EnableEvents = False
+    
     Sheets.Add(, Sheets(Sheets.Count)).Name = "Temp_signature"
     Set tempSheet = Sheets("Temp_signature")
     tempSheet.Select
@@ -702,20 +704,18 @@ Private Sub ExportSignatureFromExcel(ByVal SIGNATURE_SHAPE_NAME As String, ByRef
     ConvertOneDriveToLocalPath savePath
     
     On Error Resume Next
-    Application.DisplayAlerts = False
     With tempSheet.ChartObjects.Add(Left:=tempSheet.Range("B2").Left, Top:=tempSheet.Range("B2").Top, _
                                     Width:=signatureshp.Width, Height:=signatureshp.Height)
-        .Activate
         .Chart.Paste
         .Chart.ChartArea.Format.Line.Visible = msoFalse
         .Chart.Export savePath, "png"
         .Delete
     End With
     tempSheet.Delete
-    Application.DisplayAlerts = True
     On Error GoTo 0
+    
+    Application.DisplayAlerts = True
 End Sub
-
 Private Sub GenerateReports(ByRef ws As Worksheet, ByVal clickedButtonName As String)
     Const REPORT_TEMPLATE As String = "Speaking Evaluation Template.docx"
     Const ERR_RESOURCES_FOLDER As String = "resourcesFolder"
