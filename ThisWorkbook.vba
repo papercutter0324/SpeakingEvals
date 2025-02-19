@@ -154,25 +154,31 @@ Private Sub VerifySheetNames(ByRef wb As Workbook)
 End Sub
 
 Private Sub AutoPopulateEvaluationDateValues(ByRef ws As Worksheet)
-    Dim dateValue As Range
+    Dim dateCell As Range, dateAsDate As Date, dateToCheck As Date
     Dim messageText As String, msgResult As Variant
     
     On Error Resume Next
     Application.EnableEvents = False
     
     If ws.Range("A6").Value = "Evaluation Date:" Then
-        Set dateValue = ws.Range("C6")
+        Set dateCell = ws.Range("C6")
 
-        If IsEmpty(dateValue) Then
-            ' Add date if not entered yet
-            dateValue.Value = Format(Date, "MMM. YYYY")
-        ElseIf IsDate(dateValue.Value) And dateValue.Value < Date - 21 Then
-            ' Update the date if the current value is over 21 days ago
-            dateValue.Value = Format(Date, "MMM. YYYY")
-        ElseIf Not IsDate(dateValue.Value) Then
-            ' Display an error message if an invalid date is found
-            messageText = "An invalid date has been found on worksheet " & ws.Name & "." & vbNewLine & "Please enter a valid date."
-            msgResult = DisplayMessage(messageText, vbInformation, "Invalid Date!")
+        If Len(Trim$(dateCell.Value)) = 0 Then
+            dateCell.Value = Format(Date, "MMM. YYYY")
+        Else
+            If IsDate(Trim$(dateCell.Value)) Then
+                dateAsDate = CDate(Trim$(dateCell.Value))
+                dateToCheck = DateAdd("m", -2, Date)
+            
+                If dateAsDate < dateToCheck Then
+                    dateCell.Value = Format(Date, "MMM. YYYY")
+                End If
+            Else
+                messageText = "An invalid date has been found on worksheet " & ws.Name & "." & vbNewLine & _
+                              "Please enter a valid date."
+                msgResult = DisplayMessage(messageText, vbInformation, "Invalid Date!")
+                dateCell.Value = ""
+            End If
         End If
     End If
     
@@ -433,7 +439,7 @@ Private Sub SetLayoutClassRecords(ByRef wb As Workbook, ByRef ws As Worksheet)
         If Not wb.Names(shadingRanges(i)(0)) Is Nothing Then wb.Names(shadingRanges(i)(0)).Delete
         wb.Names.Add Name:=shadingRanges(i)(0), RefersTo:=currentRng
         currentRng.Interior.Color = shadingRanges(i)(2)
-        VerifyTipMessages ws, shadingRanges(i)(0), currentRng
+        VerifyValidationSettings ws, shadingRanges(i)(0), currentRng
         On Error GoTo 0
     Next i
     
@@ -509,6 +515,8 @@ Private Sub SetLayoutClassRecords(ByRef wb As Workbook, ByRef ws As Worksheet)
         .Locked = False
         .HorizontalAlignment = xlHAlignCenter
         .VerticalAlignment = xlVAlignCenter
+        .WrapText = True
+        .NumberFormat = "@"
     End With
     
     lockedCells.Locked = True
@@ -517,12 +525,12 @@ Private Sub SetLayoutClassRecords(ByRef wb As Workbook, ByRef ws As Worksheet)
     ws.Protect
 End Sub
 
-Private Sub VerifyTipMessages(ByRef ws As Worksheet, ByVal rangeType As String, ByRef cellRange As Range)
+Private Sub VerifyValidationSettings(ByRef ws As Worksheet, ByVal rangeType As String, ByRef cellRange As Range)
     Dim currentCell As Range, rangeCol As Range, rangeCell As Range
     Dim dateInputMessage As Variant, validationValues As Variant
     Dim validationInputTitle As String, validationInputMessage As String
     Dim columnFont As String, columnFontSize As Integer, columnFontBold As Boolean
-    Dim i As Integer
+    Dim i As Double
     
     Select Case rangeType
         Case "classInfoShadingRange"
@@ -536,30 +544,43 @@ Private Sub VerifyTipMessages(ByRef ws As Worksheet, ByVal rangeType As String, 
             End Select
             
             validationValues = Array( _
-                Array("Native Teacher's Name", "Please enter just your" & vbNewLine & "name, no suffix or title" & vbNewLine & "like ""tr."""), _
-                Array("Korean Teacher's Name", "Please write their Korean name. The parents are unlikely to know their English name."), _
-                Array("Class Level", "Click on the down arrow and choose the class's level from the list."), _
-                Array("Class Days", "Select the days when you see this class." & vbNewLine & vbNewLine & "For Athena and Song's classes, use Class-1 and Class-2 to help organize split classes."), _
-                Array("Class Time", "Select what time you have Class 1 each week. Scroll to see more options." & vbNewLine & vbNewLine & "This is to help you keep track of which class this is; it won't appear on the final reports."), _
-                Array("Date Format", dateInputMessage) _
+                Array("Native Teacher's Name", _
+                      "Please enter just your" & vbNewLine & "name, no suffix or title" & vbNewLine & "like ""tr.""", _
+                      ""), _
+                Array("Korean Teacher's Name", _
+                      "Please write their Korean name. The parents are unlikely to know their English name.", _
+                      ""), _
+                Array("Class Level", _
+                      "Click on the down arrow and choose the class's level from the list.", _
+                      "Theseus, Perseus, Odysseus, Hercules, Artemis, Hermes, Apollo, Zeus, E5 Athena, Helios, Poseidon, Gaia, Hera, E6 Song's"), _
+                Array("Class Days", _
+                      "Select the days when you see this class." & vbNewLine & vbNewLine & "For Athena and Song's classes, use Class-1 and Class-2 to help organize split classes.", _
+                      "MonWed, MonFri, WedFri, MWF, TTh, MWF (Class 1), MWF (Class 2), TTh (Class 1), TTh (Class 2)"), _
+                Array("Class Time", _
+                      "Select what time you have Class 1 each week. Scroll to see more options." & vbNewLine & vbNewLine & "This is to help you keep track of which class this is; it won't appear on the final reports.", _
+                      "9pm, 830pm, 8pm, 7pm, 6pm, 530pm, 5pm, 4pm, 3pm, 2pm, 1pm, 12pm, 11am, 10am, 9am"), _
+                Array("Date Format", _
+                      dateInputMessage, _
+                      "") _
             )
             
             For i = 1 To 6
                 columnFont = IIf(i = 2, "Batang", "Calibri")
-                SetCellFormating ws.Cells(i, 3), validationValues(i - 1)(0), validationValues(i - 1)(1), columnFont, 14, False
+                SetCellFormating ws.Cells(i, 3), validationValues(i - 1)(0), validationValues(i - 1)(1), validationValues(i - 1)(2), columnFont, 14, False
             Next i
         Case "EngKorNameShadingRange", "grammarValuesShadingRange", "pronunciationValuesShadingRange", "fluencyValuesShadingRange", "mannerValuesShadingRange", "contentValuesShadingRange", "overallEffortValuesShadingRange", "commentValuesShadingRange", "notesValuesShadingRange"
             columnFont = "Calibri"
             columnFontBold = False
+            
             For Each rangeCol In cellRange.Columns
                 Select Case rangeCol.Column
                     Case 2
                         validationInputTitle = "Character Limit"
-                        validationInputMessage = "    30 characters"
+                        validationInputMessage = "30 characters"
                         columnFontSize = 18
                     Case 3
-                        validationInputTitle = ""
-                        validationInputMessage = ""
+                        validationInputTitle = "Language Reminder"
+                        validationInputMessage = "Please write their names in Korean."
                         columnFont = "Batang"
                         columnFontSize = 20
                     Case 4 To 9
@@ -578,22 +599,41 @@ Private Sub VerifyTipMessages(ByRef ws As Worksheet, ByVal rangeType As String, 
                 End Select
                 
                 For Each rangeCell In rangeCol.Cells
-                    SetCellFormating rangeCell, validationInputTitle, validationInputMessage, columnFont, columnFontSize, columnFontBold
+                    SetCellFormating rangeCell, validationInputTitle, validationInputMessage, "", columnFont, columnFontSize, columnFontBold
                 Next rangeCell
             Next rangeCol
     End Select
 End Sub
 
-Private Sub SetCellFormating(ByRef wsCell As Range, ByVal validationInputTitle As String, ByVal validationInputMessage As String, ByVal columnFont As String, ByVal columnFontSize As Integer, ByVal columnFontBold As Boolean)
+Private Sub SetCellFormating(ByRef wsCell As Range, ByVal validationInputTitle As String, ByVal validationInputMessage As String, ByVal validationListValue As String, ByVal columnFont As String, ByVal columnFontSize As Integer, ByVal columnFontBold As Boolean)
+    Dim cellRow As Long, cellColumn As Long
+
     On Error Resume Next
     With wsCell
+        cellRow = .Row
+        cellColumn = .Column
+        
         With .Validation
-            If .inputTitle <> validationInputTitle Then
+            If 1 = 1 Then '.InputTitle <> validationInputTitle Then
                 .Delete
-                .Add Type:=xlValidateInputOnly, _
-                     AlertStyle:=xlValidAlertStop
-                .inputTitle = validationInputTitle
-                .inputMessage = validationInputMessage
+                
+                If cellColumn = 3 Then
+                    Select Case cellRow
+                        Case 3 To 5
+                            .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Formula1:=validationListValue
+                            .IgnoreBlank = True
+                            .InCellDropdown = True
+                            .ShowInput = True
+                            .ShowError = True
+                        Case Else
+                            .Add Type:=xlValidateInputOnly, AlertStyle:=xlValidAlertStop
+                    End Select
+                Else
+                    .Add Type:=xlValidateInputOnly, AlertStyle:=xlValidAlertStop
+                End If
+
+                .InputTitle = validationInputTitle
+                .InputMessage = validationInputMessage
                 .ShowError = False
             End If
         End With
@@ -1305,7 +1345,7 @@ Private Function VerifyRecordsAreComplete(ByRef ws As Worksheet, ByRef lastRow A
     firstStudentRecord = STUDENT_INFO_FIRST_ROW ' Set here and passed back to keep things organized
     
     On Error Resume Next
-    lastRow = ws.Cells(ws.Rows.Count, STUDENT_INFO_FIRST_COL).End(xlUp).row
+    lastRow = ws.Cells(ws.Rows.Count, STUDENT_INFO_FIRST_COL).End(xlUp).Row
     On Error GoTo 0
     
     If lastRow < STUDENT_INFO_FIRST_ROW Then
@@ -1354,7 +1394,7 @@ Private Function ValidateData(ByRef currentCell As Range, ByVal dataType As Stri
     End If
     
     Application.EnableEvents = False
-    dataValue = Trim(currentCell.Value)
+    dataValue = Trim$(currentCell.Value)
     
     Select Case dataType
         Case "Level:"
@@ -1620,7 +1660,7 @@ Private Function VerifyTemplateHash(ByVal templatePath As String) As Boolean
             On Error GoTo ErrorHandler
             Set objShell = CreateObject("WScript.Shell")
             shellOutput = objShell.Exec("cmd /c certutil -hashfile """ & templatePath & """ MD5").StdOut.ReadAll
-            VerifyTemplateHash = (LCase(TEMPLATE_HASH) = LCase(Trim(Split(shellOutput, vbCrLf)(1))))
+            VerifyTemplateHash = (LCase(TEMPLATE_HASH) = LCase(Trim$(Split(shellOutput, vbCrLf)(1))))
         Else
             VerifyTemplateHash = False
         End If
