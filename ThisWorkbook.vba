@@ -11,22 +11,28 @@ Const APPLE_SCRIPT_SPLIT_KEY = "-,-"
 
 Private Sub Workbook_Open()
     Const CURL_COMMAND_TEXT As String = "curl -L -o ~/Library/Application\ Scripts/com.microsoft.Excel/SpeakingEvals.scpt https://github.com/papercutter0324/SpeakingEvals/raw/main/SpeakingEvals.scpt"
-    Dim ws As Worksheet, shps As Shapes
+    Dim wb As Workbook, ws As Worksheet, shps As Shapes
     Dim startupMessageToDisplay As String
     
-    ThisWorkbook.Sheets("Instructions").Activate
+    Application.EnableEvents = False
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+    
+    Set wb = ThisWorkbook
+    
     startupMessageToDisplay = "Initial"
     DisplayStartupMessage startupMessageToDisplay
     
-    On Error GoTo ReenableEvents
-    Application.EnableEvents = False
+    VerifySheetNames wb
+    wb.Sheets("Instructions").Activate
     
-    For Each ws In ThisWorkbook.Worksheets
+    On Error GoTo ReenableEvents
+    For Each ws In wb.Worksheets
         ws.Unprotect
         
         Select Case ws.Name
             Case "Instructions"
-                SetLayoutInstructions ThisWorkbook, ws
+                SetLayoutInstructions wb, ws
             Case "MacOS Users"
                 Set shps = ws.Shapes
                 shps("cURL_Command").TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
@@ -44,12 +50,12 @@ Private Sub Workbook_Open()
                 #End If
                 
                 Set shps = Nothing
-                SetLayoutMacOSUsers ThisWorkbook
+                SetLayoutMacOSUsers wb
             Case "mySignature"
-                SetLayoutMySignature ThisWorkbook
+                SetLayoutMySignature wb
             Case Else
                 AutoPopulateEvaluationDateValues ws
-                SetLayoutClassRecords ThisWorkbook, ws
+                SetLayoutClassRecords wb, ws
         End Select
         
         ws.Protect
@@ -61,7 +67,7 @@ Private Sub Workbook_Open()
     #If Mac Then
         If Not scriptResult Then
             startupMessageToDisplay = "SpeakEvals.scpt Reminder"
-            ThisWorkbook.Sheets("MacOS Users").Activate
+            wb.Sheets("MacOS Users").Activate
         End If
     #End If
         
@@ -69,26 +75,37 @@ Private Sub Workbook_Open()
 
 ReenableEvents:
     Application.EnableEvents = True
+    Application.ScreenUpdating = True
+    Application.Calculation = xlCalculationAutomatic
 End Sub
 
 Private Sub Workbook_SheetActivate(ByVal ws As Object)
     Const CURL_COMMAND_TEXT As String = "curl -L -o ~/Library/Application\ Scripts/com.microsoft.Excel/SpeakingEvals.scpt https://github.com/papercutter0324/SpeakingEvals/raw/main/SpeakingEvals.scpt"
+    Dim wb As Workbook
     
     Application.EnableEvents = False
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+    
+    Set wb = ThisWorkbook
+    VerifySheetNames wb
     
     Select Case ws.Name
         Case "Instructions"
-            SetLayoutInstructions ThisWorkbook, ws
+            SetLayoutInstructions wb, ws
         Case "MacOS Users"
             ws.Shapes("cURL_Command").TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
-            SetLayoutMacOSUsers ThisWorkbook
+            SetLayoutMacOSUsers wb
         Case "mySignature"
-            SetLayoutMySignature ThisWorkbook
+            SetLayoutMySignature wb
         Case Else
-            SetLayoutClassRecords ThisWorkbook, ws
+            SetLayoutClassRecords wb, ws
+            ws.Cells(8, 2).Select
     End Select
     
     Application.EnableEvents = True
+    Application.ScreenUpdating = True
+    Application.Calculation = xlCalculationAutomatic
 End Sub
 
 Private Sub Workbook_BeforeClose(Cancel As Boolean)
@@ -119,6 +136,21 @@ Private Sub DisplayStartupMessage(ByVal startupStage As String)
     End Select
     
     msgResult = DisplayMessage(msgToDisplay, vbInformation, "Welcome!", dialogSize)
+End Sub
+
+Private Sub VerifySheetNames(ByRef wb As Workbook)
+    Dim ws As Worksheet
+    
+    For Each ws In wb.Sheets
+        Select Case ws.CodeName
+            Case "Sheet1"
+                If ws.Name <> "Instructions" Then ws.Name = "Instructions"
+            Case "Sheet2"
+                If ws.Name <> "MacOS Users" Then ws.Name = "MacOS Users"
+            Case "Sheet3"
+                If ws.Name <> "mySignature" Then ws.Name = "mySignature"
+        End Select
+    Next ws
 End Sub
 
 Private Sub AutoPopulateEvaluationDateValues(ByRef ws As Worksheet)
@@ -368,9 +400,7 @@ Private Sub SetLayoutClassRecords(ByRef wb As Workbook, ByRef ws As Worksheet)
     Dim mainBorders As Range, dashedBorders As Range, noInsideBorders As Range
     Dim unlockedCells As Range, lockedCells As Range, currentRng As Range
     Dim i As Integer
-        
-    Application.ScreenUpdating = False
-    Application.Calculation = xlCalculationManual
+
     ws.Unprotect
     
     shadingRanges = Array( _
@@ -475,13 +505,16 @@ Private Sub SetLayoutClassRecords(ByRef wb As Workbook, ByRef ws As Worksheet)
         .Item(xlInsideVertical).LineStyle = xlLineStyleNone
     End With
     
-    unlockedCells.Locked = False
+    With unlockedCells
+        .Locked = False
+        .HorizontalAlignment = xlHAlignCenter
+        .VerticalAlignment = xlVAlignCenter
+    End With
+    
     lockedCells.Locked = True
     On Error GoTo 0
     
     ws.Protect
-    Application.ScreenUpdating = True
-    Application.Calculation = xlCalculationAutomatic
 End Sub
 
 Private Sub VerifyTipMessages(ByRef ws As Worksheet, ByVal rangeType As String, ByRef cellRange As Range)
