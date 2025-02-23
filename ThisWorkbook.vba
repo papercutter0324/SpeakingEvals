@@ -706,7 +706,7 @@ Sub Main()
         Dim msgResult As Integer
         
         Const REBOOT_MSG As String = "Please reboot your computer and try again."
-        Const REBOOT_MSG_MSGTYPE As Integer = vbOK + vbExclamation
+        Const REBOOT_MSG_MSGTYPE As Integer = vbOKOnly + vbExclamation
         Const REBOOT_MSG_TITLE As String = "Reboot Required!"
         
         Const NO_ARCHIVE_TOOL_MSG As String = ""
@@ -2670,14 +2670,14 @@ Private Function AreKoreanFilenamesSupported(Optional ByRef rebootRequired As Bo
                 ' Set ACP, MACCP, and OEMCP to 65001
                 cmdResult = ShellExecute(0, "runas", TERMINAL_CMD, REG_CMD, vbNullString, 1)
                 If cmdResult <= 32 Then
-                    msgResult = DisplayMessage(FAILED_TO_ENABLE_UNICODE, vbOK + vbExclamation, "Failed to Enable Unicode Support!")
+                    msgResult = DisplayMessage(FAILED_TO_ENABLE_UNICODE, vbOKOnly + vbExclamation, "Failed to Enable Unicode Support!")
                     AreKoreanFilenamesSupported = False
                 Else
                     rebootRequired = True
                     AreKoreanFilenamesSupported = True
                 End If
             Else
-                msgResult = DisplayMessage(PROCEED_WITHOUT_UNICODE, vbOK + vbExclamation, "Proceeding Without Unicode Support")
+                msgResult = DisplayMessage(PROCEED_WITHOUT_UNICODE, vbOKOnly + vbExclamation, "Proceeding Without Unicode Support")
                 AreKoreanFilenamesSupported = False
             End If
     End Select
