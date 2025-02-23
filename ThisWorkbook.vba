@@ -3,6 +3,11 @@ Option Explicit
 Const APPLE_SCRIPT_FILE As String = "SpeakingEvals.scpt"
 Const APPLE_SCRIPT_SPLIT_KEY = "-,-"
 
+#If Mac Then
+#Else
+
+#End If
+
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 '
 '  Auto-run Sub on Startup and Worksheet Switching
@@ -32,6 +37,7 @@ Private Sub Workbook_Open()
         
         Select Case ws.Name
             Case "Instructions"
+                ws.Cells(1, 3).Select
                 SetLayoutInstructions wb, ws
             Case "MacOS Users"
                 Set shps = ws.Shapes
@@ -99,7 +105,7 @@ Private Sub Workbook_SheetActivate(ByVal ws As Object)
         Case "mySignature"
             SetLayoutMySignature wb
         Case Else
-            SetLayoutClassRecords wb, ws
+            SetLayoutClassRecordsButtons ws
             ws.Cells(8, 2).Select
     End Select
     
@@ -194,67 +200,87 @@ Private Sub SetLayoutInstructions(ByRef wb As Workbook, ByRef ws As Worksheet)
     
     Set shp = ws.Shapes
     
-    shp("Title Bar - Instructions").Top = 15
-    shp("Title Bar - Instructions").Left = 15
-    shp("Title Bar - Instructions").Height = 58
-    shp("Title Bar - Instructions").Width = 1165
-    Set refShape = shp("Title Bar - Instructions")
+    With ws.Shapes
+        With .Item("Title Bar - Instructions")
+            .Top = 15
+            .Left = 15
+            .Height = 58
+            .Width = 1165
+        End With
+        Set refShape = .Item("Title Bar - Instructions")
     
-    shp("Message - Instructions").Top = refShape.Top + refShape.Height
-    shp("Message - Instructions").Left = refShape.Left
-    shp("Message - Instructions").Height = 610
-    shp("Message - Instructions").Width = refShape.Width
-    Set refShape = shp("Message - Instructions")
+        With .Item("Message - Instructions")
+            .Top = refShape.Top + refShape.Height
+            .Left = refShape.Left
+            .Height = 610
+            .Width = refShape.Width
+        End With
+        Set refShape = .Item("Message - Instructions")
     
-    shp("Title Bar - Seeing the Code").Top = refShape.Top + refShape.Height + 20
-    shp("Title Bar - Seeing the Code").Left = refShape.Left
-    shp("Title Bar - Seeing the Code").Height = shp("Title Bar - Instructions").Height
-    shp("Title Bar - Seeing the Code").Width = refShape.Width
-    Set refShape = shp("Title Bar - Seeing the Code")
+        With .Item("Title Bar - Seeing the Code")
+            .Top = refShape.Top + refShape.Height + 20
+            .Left = refShape.Left
+            .Height = shp("Title Bar - Instructions").Height
+            .Width = refShape.Width
+        End With
+        Set refShape = .Item("Title Bar - Seeing the Code")
     
-    shp("Message - Seeing the Code").Top = refShape.Top + refShape.Height
-    shp("Message - Seeing the Code").Left = refShape.Left
-    shp("Message - Seeing the Code").Height = 265
-    shp("Message - Seeing the Code").Width = refShape.Width
+        With .Item("Message - Seeing the Code")
+            .Top = refShape.Top + refShape.Height
+            .Left = refShape.Left
+            .Height = 265
+            .Width = refShape.Width
+        End With
     
-    Set refShape = shp("Title Bar - Instructions")
+        Set refShape = .Item("Title Bar - Instructions")
     
-    shp("Title Bar - Warning").Top = refShape.Top
-    shp("Title Bar - Warning").Left = refShape.Left + refShape.Width + 20
-    shp("Title Bar - Warning").Height = refShape.Height
-    shp("Title Bar - Warning").Width = 340
-    Set refShape = shp("Title Bar - Warning")
+        With .Item("Title Bar - Warning")
+            .Top = refShape.Top
+            .Left = refShape.Left + refShape.Width + 20
+            .Height = refShape.Height
+            .Width = 340
+        End With
+        Set refShape = .Item("Title Bar - Warning")
     
-    shp("Message - Warning").Top = refShape.Top + refShape.Height
-    shp("Message - Warning").Left = refShape.Left
-    shp("Message - Warning").Height = 150
-    shp("Message - Warning").Width = refShape.Width
-    Set refShape = shp("Message - Warning")
+        With .Item("Message - Warning")
+            .Top = refShape.Top + refShape.Height
+            .Left = refShape.Left
+            .Height = 150
+            .Width = refShape.Width
+        End With
+        Set refShape = .Item("Message - Warning")
     
-    shp("Title Bar - Important Files").Top = refShape.Top + refShape.Height + 20
-    shp("Title Bar - Important Files").Left = refShape.Left
-    shp("Title Bar - Important Files").Height = shp("Title Bar - Instructions").Height
-    shp("Title Bar - Important Files").Width = refShape.Width
-    Set refShape = shp("Title Bar - Important Files")
+        With .Item("Title Bar - Important Files")
+            .Top = refShape.Top + refShape.Height + 20
+            .Left = refShape.Left
+            .Height = shp("Title Bar - Instructions").Height
+            .Width = refShape.Width
+        End With
+        Set refShape = .Item("Title Bar - Important Files")
     
-    shp("Message - Important Files").Top = refShape.Top + refShape.Height
-    shp("Message - Important Files").Left = refShape.Left
-    shp("Message - Important Files").Height = 725
-    shp("Message - Important Files").Width = refShape.Width
+        With .Item("Message - Important Files")
+            .Top = refShape.Top + refShape.Height
+            .Left = refShape.Left
+            .Height = 725
+            .Width = refShape.Width
+        End With
     
-    Set refShape = shp("Message - Seeing the Code")
-    btnHeight = 70
-    btnWidth = 200
-    cellSpacing = (refShape.Width - 40 - (btnWidth * 5)) / 4
-    btnNamesArray = Array("Button_Speadsheet", "Button_Font", "Button_ReportTemplate", "Button_SignatureTemplate", "Button_SourceCode")
+        Set refShape = .Item("Message - Seeing the Code")
+        
+        btnHeight = 70
+        btnWidth = 200
+        cellSpacing = (refShape.Width - 40 - (btnWidth * 5)) / 4
+        btnNamesArray = Array("Button_Speadsheet", "Button_Font", "Button_ReportTemplate", "Button_SignatureTemplate", "Button_SourceCode")
     
-    For i = LBound(btnNamesArray) To UBound(btnNamesArray)
-        Set currentshp = shp(btnNamesArray(i))
-        currentshp.Height = btnHeight
-        currentshp.Width = btnWidth
-        currentshp.Left = refShape.Left + 20 + i * (btnWidth + cellSpacing)
-        currentshp.Top = refShape.Top + refShape.Height - btnHeight - 20
-    Next i
+        For i = LBound(btnNamesArray) To UBound(btnNamesArray)
+            With .Item(btnNamesArray(i))
+                .Height = btnHeight
+                .Width = btnWidth
+                .Left = refShape.Left + 20 + i * (btnWidth + cellSpacing)
+                .Top = refShape.Top + refShape.Height - btnHeight - 20
+            End With
+        Next i
+    End With
 End Sub
 
 Private Sub SetLayoutMacOSUsers(ByRef wb As Workbook)
@@ -264,49 +290,46 @@ Private Sub SetLayoutMacOSUsers(ByRef wb As Workbook)
     buttonNamesArray = Array("Button_SpeakingEvalsScpt_Installed", "Button_SpeakingEvalsScpt_Missing", "Button_DialogToolkit_Installed", _
                             "Button_DialogToolkit_Missing", "Button_EnhancedDialogs_Enable", "Button_EnhancedDialogs_Disable")
     
-    With wb.Sheets("MacOS Users")
-        .Unprotect
-        With .Shapes
-            With .Item("Title Bar")
-                .Height = 58
-                .Width = 1285
-                .Top = 15
-                .Left = 15
-            End With
-            
-            Set refShape = .Item("Title Bar")
-            With .Item("Message")
-                .Height = 680
-                .Width = refShape.Width
-                .Top = refShape.Top + refShape.Height
-                .Left = refShape.Left
-            End With
-                    
-            Set refShape = .Item("Message")
-            With .Item("cURL_Command")
-                .Height = 115
-                .Width = 560
-                .Top = refShape.Top
-                .Left = refShape.Left + refShape.Width - .Width
-            End With
-            
-            For i = LBound(buttonNamesArray) To UBound(buttonNamesArray)
-                Set currentBtn = .Item(buttonNamesArray(i))
-                currentBtn.Height = 70
-                currentBtn.Width = 200
-                currentBtn.Top = refShape.Top + refShape.Height - currentBtn.Height - 20
+    With wb.Sheets("MacOS Users").Shapes
+        With .Item("Title Bar")
+            .Height = 58
+            .Width = 1285
+            .Top = 15
+            .Left = 15
+        End With
+        
+        Set refShape = .Item("Title Bar")
+        With .Item("Message")
+            .Height = 680
+            .Width = refShape.Width
+            .Top = refShape.Top + refShape.Height
+            .Left = refShape.Left
+        End With
+                
+        Set refShape = .Item("Message")
+        With .Item("cURL_Command")
+            .Height = 115
+            .Width = 560
+            .Top = refShape.Top
+            .Left = refShape.Left + refShape.Width - .Width
+        End With
+        
+        For i = LBound(buttonNamesArray) To UBound(buttonNamesArray)
+            With .Item(buttonNamesArray(i))
+                .Height = 70
+                .Width = 200
+                .Top = refShape.Top + refShape.Height - .Height - 20
                 
                 Select Case buttonNamesArray(i)
                     Case "Button_SpeakingEvalsScpt_Installed", "Button_SpeakingEvalsScpt_Missing"
-                        currentBtn.Left = refShape.Left + 70
+                        .Left = refShape.Left + 70
                     Case "Button_DialogToolkit_Installed", "Button_DialogToolkit_Missing"
-                        currentBtn.Left = refShape.Left + 350
+                        .Left = refShape.Left + 350
                     Case "Button_EnhancedDialogs_Enable", "Button_EnhancedDialogs_Disable"
-                        currentBtn.Left = refShape.Left + 630
+                        .Left = refShape.Left + 630
                 End Select
-            Next i
-        End With
-        .Protect
+            End With
+        Next i
     End With
 End Sub
 
@@ -314,78 +337,74 @@ Private Sub SetLayoutMySignature(ByRef wb As Workbook)
     Dim maxHeight As Double, maxWidth As Double, aspectRatio As Double
     Dim refShape As Shape
     
-    With wb.Sheets("mySignature")
-        .Unprotect
-        With .Shapes
-            With .Item("Title Bar")
-                .Height = 58
-                .Width = 1270
-                .Top = 15
-                .Left = 15
-            End With
-            
-            Set refShape = .Item("Title Bar")
-            With .Item("Message")
-                .Height = 840
-                .Width = refShape.Width
-                .Top = refShape.Top + refShape.Height
-                .Left = refShape.Left
-            End With
-                    
-            With .Item("Signature Title Bar")
-                .Height = refShape.Height
-                .Width = 300
-                .Top = refShape.Top
-                .Left = refShape.Left + refShape.Width - .Width
-            End With
-            
-            Set refShape = .Item("Signature Title Bar")
-            With .Item("Signature Container")
-                .Height = 130
-                .Width = refShape.Width
-                .Top = refShape.Top + refShape.Height
-                .Left = refShape.Left
-            End With
-            
-            Set refShape = .Item("Signature Container")
-            maxHeight = refShape.Height - 20
-            maxWidth = refShape.Width - 30
-            
-            If DoesShapeExist(wb.Sheets("mySignature"), "mySignature_Placeholder") Then
-                With .Item("mySignature_Placeholder")
-                    aspectRatio = .Width / .Height
-                    
-                    If maxWidth / maxHeight > aspectRatio Then
-                        .Width = maxHeight * aspectRatio
-                        .Height = maxHeight
-                    Else
-                        .Width = maxWidth
-                        .Height = maxWidth / aspectRatio
-                    End If
-
-                    .Top = refShape.Top + (refShape.Height / 2) - (.Height / 2)
-                    .Left = refShape.Left + (refShape.Width / 2) - (.Width / 2)
-                End With
-            End If
-            
-            If DoesShapeExist(wb.Sheets("mySignature"), "mySignature") Then
-                With .Item("mySignature")
-                    aspectRatio = .Width / .Height
-                    
-                    If maxWidth / maxHeight > aspectRatio Then
-                        .Width = maxHeight * aspectRatio
-                        .Height = maxHeight
-                    Else
-                        .Width = maxWidth
-                        .Height = maxWidth / aspectRatio
-                    End If
-
-                    .Top = refShape.Top + (refShape.Height / 2) - (.Height / 2)
-                    .Left = refShape.Left + (refShape.Width / 2) - (.Width / 2)
-                End With
-            End If
+    With wb.Sheets("mySignature").Shapes
+        With .Item("Title Bar")
+            .Height = 58
+            .Width = 1270
+            .Top = 15
+            .Left = 15
         End With
-        .Protect
+        
+        Set refShape = .Item("Title Bar")
+        With .Item("Message")
+            .Height = 840
+            .Width = refShape.Width
+            .Top = refShape.Top + refShape.Height
+            .Left = refShape.Left
+        End With
+                
+        With .Item("Signature Title Bar")
+            .Height = refShape.Height
+            .Width = 300
+            .Top = refShape.Top
+            .Left = refShape.Left + refShape.Width - .Width
+        End With
+        
+        Set refShape = .Item("Signature Title Bar")
+        With .Item("Signature Container")
+            .Height = 130
+            .Width = refShape.Width
+            .Top = refShape.Top + refShape.Height
+            .Left = refShape.Left
+        End With
+        
+        Set refShape = .Item("Signature Container")
+        maxHeight = refShape.Height - 20
+        maxWidth = refShape.Width - 30
+        
+        If DoesShapeExist(wb.Sheets("mySignature"), "mySignature_Placeholder") Then
+            With .Item("mySignature_Placeholder")
+                aspectRatio = .Width / .Height
+                
+                If maxWidth / maxHeight > aspectRatio Then
+                    .Width = maxHeight * aspectRatio
+                    .Height = maxHeight
+                Else
+                    .Width = maxWidth
+                    .Height = maxWidth / aspectRatio
+                End If
+
+                .Top = refShape.Top + (refShape.Height / 2) - (.Height / 2)
+                .Left = refShape.Left + (refShape.Width / 2) - (.Width / 2)
+            End With
+        End If
+        
+        If DoesShapeExist(wb.Sheets("mySignature"), "mySignature") Then
+            With .Item("mySignature")
+                aspectRatio = .Width / .Height
+                
+                If maxWidth / maxHeight > aspectRatio Then
+                    .Width = maxHeight * aspectRatio
+                    .Height = maxHeight
+                Else
+                    .Width = maxWidth
+                    .Height = maxWidth / aspectRatio
+                End If
+
+                .Top = refShape.Top + (refShape.Height / 2) - (.Height / 2)
+                .Left = refShape.Left + (refShape.Width / 2) - (.Width / 2)
+            End With
+        End If
     End With
 End Sub
 
@@ -398,16 +417,10 @@ Private Function DoesShapeExist(ByVal ws As Worksheet, ByVal shapeName As String
 End Function
 
 Private Sub SetLayoutClassRecords(ByRef wb As Workbook, ByRef ws As Worksheet)
-    Dim btnGenerateProofs As Shape, btnGenerateReports As Shape, btnOpenTypingSite As Shape, btnRepairLayout As Shape
-    Dim shadingRanges As Variant, borderRanges As Variant, borderTypes As Variant, borderSetting As Variant
     Dim cellTop As Double, cellHeight As Double, cellLeft As Double, cellWidth As Double
-    Dim cellVerticalSpacing As Double, cellHorizontalSpacing As Double
-    Dim buttonHeight As Double, buttonWidth As Double
-    Dim mainBorders As Range, dashedBorders As Range, noInsideBorders As Range
-    Dim unlockedCells As Range, lockedCells As Range, currentRng As Range
+    Dim shadingRanges As Variant
+    Dim currentRng As Range
     Dim i As Integer
-
-    ws.Unprotect
     
     shadingRanges = Array( _
         Array("classInfoShadingRange", "A1:C6", RGB(255, 255, 255)), _
@@ -433,96 +446,113 @@ Private Sub SetLayoutClassRecords(ByRef wb As Workbook, ByRef ws As Worksheet)
         Array("notesValuesShadingRange", "K8:K32", RGB(221, 217, 196)) _
     )
     
-    For i = LBound(shadingRanges) To UBound(shadingRanges)
-        Set currentRng = ws.Range(shadingRanges(i)(1))
-        On Error Resume Next
-        If Not wb.Names(shadingRanges(i)(0)) Is Nothing Then wb.Names(shadingRanges(i)(0)).Delete
-        wb.Names.Add Name:=shadingRanges(i)(0), RefersTo:=currentRng
-        currentRng.Interior.Color = shadingRanges(i)(2)
-        VerifyValidationSettings ws, shadingRanges(i)(0), currentRng
-        On Error GoTo 0
-    Next i
-    
-    With ws
-        .Columns("A").ColumnWidth = 7
-        .Columns("B:C").ColumnWidth = 18
-        .Columns("D:I").ColumnWidth = 21
-        .Columns("J").ColumnWidth = 102.5
-        .Columns("K").ColumnWidth = 44.17
-        .Rows("1:6").RowHeight = 30
-        .Rows("7").RowHeight = 25
-        .Rows("8:32").RowHeight = 50
+    With wb.Names
+        For i = LBound(shadingRanges) To UBound(shadingRanges)
+            Set currentRng = ws.Range(shadingRanges(i)(1))
+            On Error Resume Next
+            If Not .Item(shadingRanges(i)(0)) Is Nothing Then .Item(shadingRanges(i)(0)).Delete
+            On Error GoTo 0
+            .Add Name:=shadingRanges(i)(0), RefersTo:=currentRng
+            currentRng.Interior.Color = shadingRanges(i)(2)
+            VerifyValidationSettings ws, shadingRanges(i)(0), currentRng
+        Next i
     End With
+
+    With ws
+        With .Columns
+            .Item("A").ColumnWidth = 7
+            .Item("B:C").ColumnWidth = 18
+            .Item("D:I").ColumnWidth = 21
+            .Item("J").ColumnWidth = 102.5
+            .Item("K").ColumnWidth = 44.17
+        End With
+
+        With .Rows
+            .Item("1:6").RowHeight = 30
+            .Item("7").RowHeight = 25
+            .Item("8:32").RowHeight = 50
+        End With
         
-    cellTop = ws.Cells(1, 10).Top
-    cellHeight = ws.Cells(1, 10).Height * 5
-    cellLeft = ws.Cells(1, 10).Left
-    cellWidth = ws.Cells(1, 10).Width
+        SetLayoutClassRecordsButtons ws
+        
+        ' Set thick borders
+        With .Range("A1:C6,A8:A32,B8:C32,D8:I32,J8:J32,K8:K32").Borders
+            .LineStyle = xlContinuous
+            .Weight = xlThick
+        End With
+            
+        ' Set inside dashed borders
+        With .Range("A1:C6,A8:A32,B8:C32,D8:I32,J8:J32,K8:K32").Borders
+            .Item(xlInsideHorizontal).LineStyle = xlDash
+            .Item(xlInsideHorizontal).Weight = xlThin
+            .Item(xlInsideVertical).LineStyle = xlLineStyleNone
+        End With
+            
+        ' Set inside no borders
+        With .Range("D1:I6,J1:J5,K1:K6").Borders
+            .Item(xlInsideHorizontal).LineStyle = xlLineStyleNone
+            .Item(xlInsideVertical).LineStyle = xlLineStyleNone
+        End With
+            
+        ' Set unlocked cells, font alignment, and text formatting
+        With .Range("C1:C6,B8:K32")
+            .Locked = False
+            .HorizontalAlignment = xlHAlignCenter
+            .VerticalAlignment = xlVAlignCenter
+            .WrapText = True
+            .NumberFormat = "@"
+        End With
+            
+        ' Set locked cells
+        .Range("A1:B6,D1:K6,A7:K7,A8:A32").Locked = True
+    End With
+End Sub
+
+Private Sub SetLayoutClassRecordsButtons(ByRef ws As Worksheet)
+    Dim cellTop As Double, cellHeight As Double, cellLeft As Double, cellWidth As Double
+    Dim buttonHeight As Double, buttonWidth As Double, cellVerticalSpacing As Double, cellHorizontalSpacing As Double
+    
+    With ws.Cells(1, 10)
+        cellTop = .Top
+        cellHeight = .Height * 5
+        cellLeft = .Left
+        cellWidth = .Width
+    End With
+    
     buttonHeight = 50
     buttonWidth = 187
     cellVerticalSpacing = (cellHeight - (2 * buttonHeight)) / 3
     cellHorizontalSpacing = (cellWidth - (2 * buttonWidth)) / 3
-        
-    Set btnGenerateProofs = ws.Shapes("Button_GenerateProofs")
-    Set btnGenerateReports = ws.Shapes("Button_GenerateReports")
-    Set btnOpenTypingSite = ws.Shapes("Button_OpenTypingSite")
-    Set btnRepairLayout = ws.Shapes("Button_RepairLayout")
-        
-    btnGenerateProofs.Height = buttonHeight
-    btnGenerateProofs.Width = buttonWidth
-    btnGenerateProofs.Top = cellTop + cellVerticalSpacing
-    btnGenerateProofs.Left = cellLeft + cellHorizontalSpacing
-        
-    btnGenerateReports.Height = buttonHeight
-    btnGenerateReports.Width = buttonWidth
-    btnGenerateReports.Top = cellTop + (cellVerticalSpacing * 2) + buttonHeight
-    btnGenerateReports.Left = cellLeft + cellHorizontalSpacing
 
-    btnOpenTypingSite.Height = buttonHeight
-    btnOpenTypingSite.Width = buttonWidth
-    btnOpenTypingSite.Top = cellTop + cellVerticalSpacing
-    btnOpenTypingSite.Left = cellLeft + (cellHorizontalSpacing * 2) + buttonWidth
-
-    btnRepairLayout.Height = buttonHeight
-    btnRepairLayout.Width = buttonWidth
-    btnRepairLayout.Top = cellTop + (cellVerticalSpacing * 2) + buttonHeight
-    btnRepairLayout.Left = cellLeft + (cellHorizontalSpacing * 2) + buttonWidth
+    With ws.Shapes
+        With .Item("Button_GenerateProofs")
+            .Height = buttonHeight
+            .Width = buttonWidth
+            .Top = cellTop + cellVerticalSpacing
+            .Left = cellLeft + cellHorizontalSpacing
+        End With
         
-    On Error Resume Next
-    Set mainBorders = ws.Range("A1:C6,A8:A32,B8:C32,D8:I32,J8:J32,K8:K32")
-    Set dashedBorders = ws.Range("A1:C6,A8:A32,B8:C32,D8:I32,J8:J32,K8:K32")
-    Set noInsideBorders = ws.Range("D1:I6,J1:J5,K1:K6")
-    Set unlockedCells = ws.Range("C1:C6,B8:K32")
-    Set lockedCells = ws.Range("A1:B6,D1:K6,A7:K7,A8:A32")
-    
-    With mainBorders.Borders
-        .LineStyle = xlContinuous
-        .Weight = xlThick
+        With .Item("Button_GenerateReports")
+            .Height = buttonHeight
+            .Width = buttonWidth
+            .Top = cellTop + (cellVerticalSpacing * 2) + buttonHeight
+            .Left = cellLeft + cellHorizontalSpacing
+        End With
+        
+        With .Item("Button_OpenTypingSite")
+            .Height = buttonHeight
+            .Width = buttonWidth
+            .Top = cellTop + cellVerticalSpacing
+            .Left = cellLeft + (cellHorizontalSpacing * 2) + buttonWidth
+        End With
+        
+        With .Item("Button_RepairLayout")
+            .Height = buttonHeight
+            .Width = buttonWidth
+            .Top = cellTop + (cellVerticalSpacing * 2) + buttonHeight
+            .Left = cellLeft + (cellHorizontalSpacing * 2) + buttonWidth
+        End With
     End With
-    
-    With dashedBorders.Borders
-        .Item(xlInsideHorizontal).LineStyle = xlDash
-        .Item(xlInsideHorizontal).Weight = xlThin
-        .Item(xlInsideVertical).LineStyle = xlLineStyleNone
-    End With
-    
-    With noInsideBorders.Borders
-        .Item(xlInsideHorizontal).LineStyle = xlLineStyleNone
-        .Item(xlInsideVertical).LineStyle = xlLineStyleNone
-    End With
-    
-    With unlockedCells
-        .Locked = False
-        .HorizontalAlignment = xlHAlignCenter
-        .VerticalAlignment = xlVAlignCenter
-        .WrapText = True
-        .NumberFormat = "@"
-    End With
-    
-    lockedCells.Locked = True
-    On Error GoTo 0
-    
-    ws.Protect
 End Sub
 
 Private Sub VerifyValidationSettings(ByRef ws As Worksheet, ByVal rangeType As String, ByRef cellRange As Range)
@@ -663,12 +693,41 @@ Sub Main()
                     "    Active Worksheet = " & ws.Name
     #End If
     
+    ' Check system requirements
     #If Mac Then
         Dim msgToDiplay As String
         
         If Not AreAppleScriptsInstalled(True) Then
             RemindUserToInstallSpeakingEvalsScpt
             Exit Sub
+        End If
+    #Else
+        Dim requirementsMet As Boolean, rebootRequired As Boolean
+        Dim msgResult As Integer
+        
+        Const REBOOT_MSG As String = "Please reboot your computer and try again."
+        Const REBOOT_MSG_MSGTYPE As Integer = vbOK + vbExclamation
+        Const REBOOT_MSG_TITLE As String = "Reboot Required!"
+        
+        Const NO_ARCHIVE_TOOL_MSG As String = ""
+        Const NO_ARCHIVE_TOOL_MSGTYPE As Integer = vbYesNo + vbExclamation
+        Const NO_ARCHIVE_TOOL_TITLE As String = "Reboot Required!"
+        
+        requirementsMet = AreKoreanFilenamesSupported(rebootRequired)
+        
+        If rebootRequired Then
+            msgResult = DisplayMessage(REBOOT_MSG, REBOOT_MSG_MSGTYPE, REBOOT_MSG_TITLE)
+            Exit Sub
+        End If
+        
+        If Not requirementsMet Then
+            If FindPathToArchiveTool = "" Then
+                msgResult = DisplayMessage(NO_ARCHIVE_TOOL_MSG, NO_ARCHIVE_TOOL_MSGTYPE, NO_ARCHIVE_TOOL_TITLE)
+                If msgResult = vbYes Then
+                    ' Decide / Test what to do in this case
+                    ' Let the user simple make the PDFs or abort?
+                End If
+            End If
         End If
     #End If
     
@@ -684,7 +743,9 @@ Sub Main()
             GenerateReports ws, clickedButtonName
             ws.Activate ' Ensure the right worksheet is being shown when finished.
         Case "Button_RepairLayout"
+            ws.Unprotect
             SetLayoutClassRecords ThisWorkbook, ws
+            ws.Protect
     End Select
     
 ReenableEvents:
@@ -771,10 +832,11 @@ Private Sub GenerateReports(ByRef ws As Worksheet, ByVal clickedButtonName As St
     Dim wordApp As Object, wordDoc As Object
     
     ' Variables for determining the code path and important states
-    Dim generateProcess As String, preexistingWordInstance As Boolean, saveResult As Boolean
+    Dim generateProcess As String, saveResult As Boolean
     
     ' Strings for generating important messages for the user
-    Dim resultMsg As String, msgToDisplay As String, msgTitle As String, msgType As Integer, msgResult As Variant, dialogSize As Integer
+    Dim resultMsg As String, msgToDisplay As String, msgTitle As String
+    Dim msgType As Integer, msgResult As Variant, dialogSize As Integer
     
     ' Strings for tracking important filenames and filepaths
     Dim resourcesFolder As String, templatePath As String, savePath As String
@@ -834,7 +896,7 @@ Private Sub GenerateReports(ByRef ws As Worksheet, ByVal clickedButtonName As St
         End If
     #End If
 
-    If IsTemplateAlreadyOpen(resourcesFolder, REPORT_TEMPLATE, preexistingWordInstance) Then
+    If IsTemplateAlreadyOpen(resourcesFolder, REPORT_TEMPLATE) Then
         ' I can probably set an error msg and send this to CleanUp
         Exit Sub
     End If
@@ -893,7 +955,7 @@ Private Sub GenerateReports(ByRef ws As Worksheet, ByVal clickedButtonName As St
         Debug.Print "    Save process complete."
     #End If
     
-    KillWord wordApp, wordDoc, preexistingWordInstance
+    KillWord wordApp, wordDoc
     resultMsg = MSG_SUCCESS
     
     If generateProcess = "FinalReports" Then
@@ -945,7 +1007,7 @@ CleanUp:
         #If PRINT_DEBUG_MESSAGES Then
             Debug.Print "Beginning final cleanup checks."
         #End If
-        KillWord wordApp, wordDoc, preexistingWordInstance
+        KillWord wordApp, wordDoc
     End If
 End Sub
 
@@ -1025,7 +1087,7 @@ Private Sub InsertSignature(ByRef wordDoc As Object)
     End With
 End Sub
 
-Private Sub KillWord(ByRef wordApp As Object, ByRef wordDoc As Object, ByVal preexistingWordInstance As Boolean)
+Private Sub KillWord(ByRef wordApp As Object, ByRef wordDoc As Object)
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "Attempting to close the open instance of MS Word."
     #End If
@@ -1040,26 +1102,22 @@ Private Sub KillWord(ByRef wordApp As Object, ByRef wordDoc As Object, ByVal pre
         #End If
     End If
     
-    If preexistingWordInstance Then
+    If Not wordApp Is Nothing Then
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    A preexisting instance of MS Word was detected. For safety, it will not be closed."
+            Debug.Print "    Attempting to close MS Word."
         #End If
-        Exit Sub
+        wordApp.Quit
+        Set wordApp = Nothing
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "    Status: " & (wordApp Is Nothing)
+        #End If
     End If
-    
-    If Not wordApp Is Nothing Then wordApp.Quit
-    Set wordApp = Nothing
-    
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    Attempting to close MS Word." & vbNewLine & _
-                    "    Status: " & (wordApp Is Nothing)
-    #End If
 
     #If Mac Then
         Dim closeResult As String
         
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Attempting extra step required to complete close MS Word on MacOS."
+            Debug.Print "    Attempting extra step required to completely close MS Word on MacOS."
         #End If
     
         closeResult = AppleScriptTask(APPLE_SCRIPT_FILE, "CloseWord", closeResult)
@@ -1208,48 +1266,52 @@ Private Sub WriteReport(ByRef ws As Object, ByRef wordApp As Object, ByRef wordD
         Debug.Print "        Preparing report data."
     #End If
     
-    ' Data applicable to all reports
-    nativeTeacher = ws.Cells(1, 3).Value
-    koreanTeacher = ws.Cells(2, 3).Value
-    classLevel = ws.Cells(3, 3).Value
-    classTime = ws.Cells(4, 3).Value & "-" & ws.Cells(5, 3).Value
-    evalDate = Format(ws.Cells(6, 3).Value, "MMM. YYYY")
-    
-    ' Data specific to each student
-    englishName = ws.Cells(currentRow, 2).Value
-    koreanName = ws.Cells(currentRow, 3).Value
-    grammarScore = ws.Cells(currentRow, 4).Value
-    pronunciationScore = ws.Cells(currentRow, 5).Value
-    fluencyScore = ws.Cells(currentRow, 6).Value
-    mannerScore = ws.Cells(currentRow, 7).Value
-    contentScore = ws.Cells(currentRow, 8).Value
-    effortScore = ws.Cells(currentRow, 9).Value
-    commentText = ws.Cells(currentRow, 10).Value
-    overallGrade = CalculateOverallGrade(ws, currentRow)
-    
-    ' fileName = koreanTeacher & "(" & classTime & ")" & " - " & koreanName & "(" & englishName & ")"
-    fileName = koreanName & "(" & englishName & ")" & " - " & ws.Cells(4, 3).Value
+    With ws.Cells
+        ' Data applicable to all reports
+        nativeTeacher = .Item(1, 3).Value
+        koreanTeacher = .Item(2, 3).Value
+        classLevel = .Item(3, 3).Value
+        classTime = .Item(4, 3).Value & "-" & .Item(5, 3).Value
+        evalDate = Format(.Item(6, 3).Value, "MMM. YYYY")
+        
+        ' Data specific to each student
+        englishName = .Item(currentRow, 2).Value
+        koreanName = .Item(currentRow, 3).Value
+        grammarScore = .Item(currentRow, 4).Value
+        pronunciationScore = .Item(currentRow, 5).Value
+        fluencyScore = .Item(currentRow, 6).Value
+        mannerScore = .Item(currentRow, 7).Value
+        contentScore = .Item(currentRow, 8).Value
+        effortScore = .Item(currentRow, 9).Value
+        commentText = .Item(currentRow, 10).Value
+        overallGrade = CalculateOverallGrade(ws, currentRow)
+        
+        ' Set report's filename
+        fileName = koreanName & "(" & englishName & ")" & " - " & .Item(4, 3).Value
+    End With
     
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "        Report filename: " & fileName & vbNewLine & _
                     "        Saving to: " & savePath
     #End If
     
-    With wordDoc
-        .Shapes("Report_Header").GroupItems("English_Name").TextFrame.TextRange.Text = englishName
-        .Shapes("Report_Header").GroupItems("Korean_Name").TextFrame.TextRange.Text = koreanName
-        .Shapes("Report_Header").GroupItems("Grade").TextFrame.TextRange.Text = classLevel
-        .Shapes("Report_Header").GroupItems("Native_Teacher").TextFrame.TextRange.Text = nativeTeacher
-        .Shapes("Report_Header").GroupItems("Korean_Teacher").TextFrame.TextRange.Text = koreanTeacher
-        .Shapes("Report_Header").GroupItems("Date").TextFrame.TextRange.Text = evalDate
-        .Shapes("Grammar_Scores").GroupItems("Grammar_" & grammarScore).TextFrame.TextRange.Text = grammarScore
-        .Shapes("Pronunciation_Scores").GroupItems("Pronunciation_" & pronunciationScore).TextFrame.TextRange.Text = pronunciationScore
-        .Shapes("Fluency_Scores").GroupItems("Fluency_" & fluencyScore).TextFrame.TextRange.Text = fluencyScore
-        .Shapes("Manner_Scores").GroupItems("Manner_" & mannerScore).TextFrame.TextRange.Text = mannerScore
-        .Shapes("Content_Scores").GroupItems("Content_" & contentScore).TextFrame.TextRange.Text = contentScore
-        .Shapes("Effort_Scores").GroupItems("Effort_" & effortScore).TextFrame.TextRange.Text = effortScore
-        .Shapes("Report_Footer").GroupItems("Comments").TextFrame.TextRange.Text = commentText
-        .Shapes("Report_Footer").GroupItems("Overall_Grade").TextFrame.TextRange.Text = overallGrade
+    With wordDoc.Shapes
+        With .Item("Report_Header").GroupItems
+            .Item("English_Name").TextFrame.TextRange.Text = englishName
+            .Item("Korean_Name").TextFrame.TextRange.Text = koreanName
+            .Item("Grade").TextFrame.TextRange.Text = classLevel
+            .Item("Native_Teacher").TextFrame.TextRange.Text = nativeTeacher
+            .Item("Korean_Teacher").TextFrame.TextRange.Text = koreanTeacher
+            .Item("Date").TextFrame.TextRange.Text = evalDate
+        End With
+        .Item("Grammar_Scores").GroupItems("Grammar_" & grammarScore).TextFrame.TextRange.Text = grammarScore
+        .Item("Pronunciation_Scores").GroupItems("Pronunciation_" & pronunciationScore).TextFrame.TextRange.Text = pronunciationScore
+        .Item("Fluency_Scores").GroupItems("Fluency_" & fluencyScore).TextFrame.TextRange.Text = fluencyScore
+        .Item("Manner_Scores").GroupItems("Manner_" & mannerScore).TextFrame.TextRange.Text = mannerScore
+        .Item("Content_Scores").GroupItems("Content_" & contentScore).TextFrame.TextRange.Text = contentScore
+        .Item("Effort_Scores").GroupItems("Effort_" & effortScore).TextFrame.TextRange.Text = effortScore
+        .Item("Report_Footer").GroupItems("Comments").TextFrame.TextRange.Text = commentText
+        .Item("Report_Footer").GroupItems("Overall_Grade").TextFrame.TextRange.Text = overallGrade
     End With
     
     On Error Resume Next
@@ -1257,15 +1319,33 @@ Private Sub WriteReport(ByRef ws As Object, ByRef wordApp As Object, ByRef wordD
     saveResult = SaveToFile(wordDoc, generateProcess, savePath, fileName)
 End Sub
 
-Private Sub ZipReports(ByRef ws As Worksheet, ByVal savePath As String, ByRef saveResult As Boolean)
+Private Sub ZipReports(ByRef ws As Worksheet, ByVal savePath As Variant, ByRef saveResult As Boolean)
     Dim zipPath As Variant, zipName As Variant, pdfPath As Variant
+    Dim classLevel As String, classKT As String, classDays As String
     Dim errDescription As String
     
     On Error Resume Next
     If Right(savePath, 1) <> Application.PathSeparator Then savePath = savePath & Application.PathSeparator
     
-    zipName = ws.Cells(3, 3).Value & " (" & ws.Cells(2, 3).Value & " " & ws.Cells(4, 3).Value & ").zip"
-    zipPath = savePath & zipName
+    With ws.Cells
+        classLevel = .Item(3, 3).Value
+        classKT = .Item(2, 3).Value
+        classDays = .Item(4, 3).Value
+    End With
+    
+    zipName = classLevel & " (" & classKT & " - " & classDays & ").zip"
+    
+    #If Mac Then
+        zipPath = savePath & zipName
+    #Else
+        Dim fso As Object
+        Set fso = CreateObject("Scripting.FileSystemObject")
+        
+        zipPath = GetTempFilePath(zipName)
+        
+        ' Remove old copy if present
+        If fso.FileExists(zipPath) Then fso.DeleteFile zipPath, True
+    #End If
     
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "Attempting to create a ZIP file of all generated reports for this class." & vbNewLine & _
@@ -1276,6 +1356,7 @@ Private Sub ZipReports(ByRef ws As Worksheet, ByVal savePath As String, ByRef sa
     #If Mac Then
         Dim scriptResult As String
         
+        ' Add in support for 7zip to help reduce seemingly empty file problems
         scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "CreateZipFile", savePath & APPLE_SCRIPT_SPLIT_KEY & zipPath)
         
         If scriptResult <> "Success" Then
@@ -1287,28 +1368,54 @@ Private Sub ZipReports(ByRef ws As Worksheet, ByVal savePath As String, ByRef sa
         End If
     #Else
         Dim shellApp As Object
+        Dim archiverPath As String, archiverName As String, zipCommand As String
         
-        ' Remove old copy if present
-        If Len(Dir(zipPath)) > 0 Then Kill zipPath
+        archiverPath = FindPathToArchiveTool(archiverName)
         
-        ' Create an empty ZIP file
-        Open zipPath For Output As #1
-        Print #1, "PK" & Chr(5) & Chr(6) & String(18, vbNullChar)
-        Close #1
+        ' Set the zip command
+        Select Case archiverName
+            Case "7Zip", "Local 7zip"
+                zipCommand = Chr(34) & archiverPath & Chr(34) & " a " & Chr(34) & zipPath & Chr(34) & " " & Chr(34) & savePath & "*.pdf" & Chr(34)
+            Case "WinRAR"
+                zipCommand = Chr(34) & archiverPath & Chr(34) & " a " & Chr(34) & zipPath & Chr(34) & " " & Chr(34) & savePath & "*.pdf" & Chr(34)
+        End Select
         
-        Set shellApp = CreateObject("Shell.Application")
-        pdfPath = Dir(savePath & "*.pdf") ' Only target PDF files
+        ' Zip the files
+        Select Case archiverName
+            Case "7Zip", "Local 7zip", "WinRAR"
+                Shell zipCommand, vbNormalFocus
+            Case Else
+                Set shellApp = CreateObject("Shell.Application")
+                
+                ' Simplify the filename in case Hangul in filenames isn't fully supported
+                zipName = classLevel & " (" & classDays & ").zip"
+                zipPath = GetTempFilePath(zipName)
         
-        Do While pdfPath <> ""
-            shellApp.Namespace(zipPath).CopyHere savePath & pdfPath
-            Application.Wait Now + TimeValue("0:00:01") ' Delay to allow compression
-            ' Add a line to delete the PDF file
-            pdfPath = Dir ' Get the next PDF file
-        Loop
+                ' Retry removing old copy if present
+                If fso.FileExists(zipPath) Then fso.DeleteFile zipPath, True
+                
+                ' Create an empty ZIP file
+                Open zipPath For Output As #1
+                Print #1, "PK" & Chr(5) & Chr(6) & String(18, vbNullChar)
+                Close #1
+                                
+                ' Add the contents of savePath to the zip file
+                shellApp.Namespace(zipPath).CopyHere shellApp.Namespace(savePath).Items
+        End Select
         
-        Set shellApp = Nothing
+        ' Wait a few seconds for the compression to finish
+        Application.Wait (Now + TimeValue("0:00:02"))
+        
+        ' Copy the final zip into the class's subfolder
+        Set fso = CreateObject("Scripting.FileSystemObject")
+        If fso.FileExists(zipPath) Then fso.CopyFile zipPath, savePath & zipName, True
+        
+        ' Report if process was successful
         If Err.Number <> 0 Then errDescription = Err.Description
         saveResult = (Err.Number = 0)
+        
+        ' Clear out PDFs
+        If saveResult Then DeletePDFs savePath
     #End If
     
     #If PRINT_DEBUG_MESSAGES Then
@@ -1320,6 +1427,10 @@ Private Sub ZipReports(ByRef ws As Worksheet, ByVal savePath As String, ByRef sa
         End If
     #End If
     On Error GoTo 0
+End Sub
+
+Private Sub DeletePDFs(ByVal targetFolder As String)
+
 End Sub
 
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -1943,7 +2054,7 @@ Private Function GetTempFilePath(ByVal fileName As String) As String
     #End If
 End Function
 
-Private Function IsTemplateAlreadyOpen(ByVal resourcesFolder As String, ByVal REPORT_TEMPLATE As String, ByRef preexistingWordInstance As Boolean) As Boolean
+Private Function IsTemplateAlreadyOpen(ByVal resourcesFolder As String, ByVal REPORT_TEMPLATE As String) As Boolean
     Dim wordApp As Object, wordDoc As Object
     Dim templatePath As String, templateIsOpen As Boolean
     Dim pathOfOpenDoc As String
@@ -1963,7 +2074,6 @@ Private Function IsTemplateAlreadyOpen(ByVal resourcesFolder As String, ByVal RE
                         "    Checking if template is open."
         #End If
         
-        preexistingWordInstance = True
         templatePath = resourcesFolder & Application.PathSeparator & REPORT_TEMPLATE
         
         For Each wordDoc In wordApp.Documents
@@ -2457,7 +2567,7 @@ ErrorHandler:
     CheckForDotNet35 = False
 End Function
 
-Private Function DownloadUsingCurl(ByVal templatePath As String, ByVal REPORT_TEMPLATE_URL As String) As Boolean
+Private Function DownloadUsingCurl(ByVal destinationPath As String, ByVal downloadURL As String) As Boolean
     Dim objShell As Object, fso As Object
     Dim downloadCommand As String
     
@@ -2465,34 +2575,31 @@ Private Function DownloadUsingCurl(ByVal templatePath As String, ByVal REPORT_TE
     Set objShell = CreateObject("WScript.Shell")
     Set fso = CreateObject("Scripting.FileSystemObject")
     
-    downloadCommand = "cmd /c curl.exe -o """ & templatePath & """ """ & REPORT_TEMPLATE_URL & """"
+    downloadCommand = "cmd /c curl.exe -o """ & destinationPath & """ """ & downloadURL & """"
     objShell.Run downloadCommand, 0, True
-    DownloadUsingCurl = fso.FileExists(templatePath)
+    DownloadUsingCurl = fso.FileExists(destinationPath)
     
     #If PRINT_DEBUG_MESSAGES Then
-        If Not DownloadUsingCurl Then Debug.Print "    curl download failed for " & REPORT_TEMPLATE_URL
+        If Not DownloadUsingCurl Then Debug.Print "    curl download failed for " & downloadURL
     #End If
-    
-    Set objShell = Nothing
-    Set fso = Nothing
     On Error GoTo 0
 End Function
 
-Private Function DownloadUsingDotNet35(ByVal templatePath As String, ByVal REPORT_TEMPLATE_URL As String) As Boolean
+Private Function DownloadUsingDotNet35(ByVal destinationPath As String, ByVal downloadURL As String) As Boolean
     Dim xmlHTTP As Object, fileStream As Object
     
     On Error Resume Next
     Set xmlHTTP = CreateObject("MSXML2.ServerXMLHTTP.6.0")
     Set fileStream = CreateObject("ADODB.Stream")
     
-    xmlHTTP.Open "Get", REPORT_TEMPLATE_URL, False
+    xmlHTTP.Open "Get", downloadURL, False
     xmlHTTP.Send
     
     If xmlHTTP.status = 200 Then
         fileStream.Open
         fileStream.Type = 1 ' Binary
         fileStream.Write xmlHTTP.responseBody
-        fileStream.SaveToFile templatePath, 2 ' Overwrite existing, if somehow present
+        fileStream.SaveToFile destinationPath, 2 ' Overwrite existing, if somehow present
         fileStream.Close
         DownloadUsingDotNet35 = True
     Else
@@ -2501,9 +2608,200 @@ Private Function DownloadUsingDotNet35(ByVal templatePath As String, ByVal REPOR
         #End If
         DownloadUsingDotNet35 = False
     End If
-    
-    Set xmlHTTP = Nothing
-    Set fileStream = Nothing
     On Error GoTo 0
 End Function
+
+Private Function AreKoreanFilenamesSupported(Optional ByRef rebootRequired As Boolean = False) As Boolean
+    Dim wsh As Object, msgResult As Integer
+    Dim nonUnicodeLangLocale As String, nonUnicodeLangLocaleName As String, acpCodePage As Long
+    #If VBA7 Then
+        Dim cmdResult As LongPtr
+    #Else
+        Dim cmdResult As Long
+    #End If
+    
+    Const KOREAN_LOCALE As String = "00000412"
+    Const KOREAN_LOCALE_NAME As String = "ko-KR"
+    Const KOREAN_ACP_CODE_PAGE As Integer = 949
+    Const UNICODE_CODE_PAGE As Long = 65001
+    
+    Const TERMINAL_CMD As String = "C:\Windows\System32\cmd.exe"
+    Const REG_ACP_KEY As String = "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Nls\CodePage\ACP"
+    Const REG_LOCALE_KEY As String = "HKEY_CURRENT_USER\Control Panel\International\Locale"
+    Const REG_LOCALE_NAME_KEY As String = "HKEY_CURRENT_USER\Control Panel\International\LocaleName"
+    Const REG_CMD As String = "/c reg add ""HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Nls\CodePage"" /v ACP /t REG_SZ /d 65001 /f & " & _
+                                 "reg add ""HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Nls\CodePage"" /v MACCP /t REG_SZ /d 65001 /f & " & _
+                                 "reg add ""HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Nls\CodePage"" /v OEMCP /t REG_SZ /d 65001 /f"
+    
+    Const REQUEST_TO_ENABLE_UNICODE_SUPPORT As String = "Support for creating files with Korean filenames is required in order to " & _
+                                                        "correctly generate the Speaking Evaluation reports." & vbNewLine & vbNewLine & _
+                                                        "Would you like to enable this setting now?" & vbNewLine & "(A reboot will be required.)"
+    Const FAILED_TO_ENABLE_UNICODE As String = "Please try to enable 'Unicode UTF-8 for worldwide language support' manually." & vbNewLine & vbNewLine & _
+                                               "You can find this setting by going to:" & vbNewLine & "Settings > Time & Language > Language & Region " & _
+                                               "> Administrative language settings > Change system locale..."
+    Const PROCEED_WITHOUT_UNICODE As String = "Unicode support has not been enabled. Creation of the reports will attempt to continue but may fail, " & _
+                                              "and a zip file containing all the reports might not be created." & vbNewLine & vbNewLine & "Please read " & _
+                                              "the final message window carefully, check that each report was named correctly, and verify that there " & _
+                                              "are no errors with their contents."
+    
+    On Error Resume Next
+    Set wsh = CreateObject("WScript.Shell")
+    acpCodePage = wsh.RegRead(REG_ACP_KEY)
+    nonUnicodeLangLocale = wsh.RegRead(REG_LOCALE_KEY)
+    nonUnicodeLangLocaleName = wsh.RegRead(REG_LOCALE_NAME_KEY)
+    
+    If Err.Number <> 0 Then
+        Err.Clear
+        AreKoreanFilenamesSupported = False
+        Exit Function
+    End If
+    On Error GoTo 0
+    
+    Select Case True
+        ' Language settings support Korean input and filenames
+        Case (nonUnicodeLangLocale = KOREAN_LOCALE), (nonUnicodeLangLocaleName = KOREAN_LOCALE_NAME), (acpCodePage = KOREAN_ACP_CODE_PAGE)
+            AreKoreanFilenamesSupported = True
+        ' Use Unicode UTF-8 for worldwide language support is enabled
+        Case (acpCodePage = UNICODE_CODE_PAGE)
+            AreKoreanFilenamesSupported = True
+        Case Else
+            msgResult = DisplayMessage(REQUEST_TO_ENABLE_UNICODE_SUPPORT, vbYesNo + vbExclamation, "Hangul Support Required!")
+            If msgResult = vbYes Then
+                ' Set ACP, MACCP, and OEMCP to 65001
+                cmdResult = ShellExecute(0, "runas", TERMINAL_CMD, REG_CMD, vbNullString, 1)
+                If cmdResult <= 32 Then
+                    msgResult = DisplayMessage(FAILED_TO_ENABLE_UNICODE, vbOK + vbExclamation, "Failed to Enable Unicode Support!")
+                    AreKoreanFilenamesSupported = False
+                Else
+                    rebootRequired = True
+                    AreKoreanFilenamesSupported = True
+                End If
+            Else
+                msgResult = DisplayMessage(PROCEED_WITHOUT_UNICODE, vbOK + vbExclamation, "Proceeding Without Unicode Support")
+                AreKoreanFilenamesSupported = False
+            End If
+    End Select
+End Function
+
+Private Function FindPathToArchiveTool(Optional ByRef archiverName As String = "") As String
+    Dim wshShell As Object, regValue As String
+    Dim defaultPaths As Variant, archiverNames As Variant, exeNames As Variant, regKeys As Variant
+    Dim i As Integer, downloadResult As Boolean
+    Dim resourcesFolder As String
+    
+    Const REG_KEY_7ZIP As String = "HKEY_LOCAL_MACHINE\SOFTWARE\7-Zip\Path"
+    Const REG_KEY_7ZIP_32BIT As String = "HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\7-Zip\Path"
+    Const REG_KEY_WINRAR As String = "HKEY_LOCAL_MACHINE\SOFTWARE\WinRAR\Path"
+    Const REG_KEY_WINRAR_32BIT As String = "HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\WinRAR\Path"
+    
+    Const ARCHIVER_NAME_7ZIP As String = "7Zip"
+    Const ARCHIVER_NAME_WINRAR As String = "WinRAR"
+    
+    Const EXE_NAME_7ZIP As String = "7z.exe"
+    Const EXE_NAME_WINRAR As String = "Rar.exe"
+    
+    Const DEFAULT_PATH_7ZIP As String = "C:\Program Files\7-Zip\"
+    Const DEFAULT_PATH_7ZIP_32Bit As String = "C:\Program Files (x86)\7-Zip\"
+    Const DEFAULT_PATH_WINRAR As String = "C:\Program Files\WinRAR\"
+    Const DEFAULT_PATH_WINRAR_32Bit As String = "C:\Program Files (x86)\WinRAR\"
+    
+    Const RESOURCES_7ZIP_FILENAME As String = "7za.exe"
+    Const RESOURCES_7ZIP_ARCHIVER_NAME As String = "Local 7zip"
+    
+    defaultPaths = Array(DEFAULT_PATH_7ZIP, DEFAULT_PATH_7ZIP_32Bit, DEFAULT_PATH_WINRAR, DEFAULT_PATH_WINRAR_32Bit)
+    archiverNames = Array(ARCHIVER_NAME_7ZIP, ARCHIVER_NAME_7ZIP, ARCHIVER_NAME_WINRAR, ARCHIVER_NAME_WINRAR)
+    exeNames = Array(EXE_NAME_7ZIP, EXE_NAME_7ZIP, EXE_NAME_WINRAR, EXE_NAME_WINRAR)
+    regKeys = Array(REG_KEY_7ZIP, REG_KEY_7ZIP_32BIT, REG_KEY_WINRAR, REG_KEY_WINRAR_32BIT)
+    
+    Set wshShell = CreateObject("WScript.Shell")
+    
+    ' First check default installation locations
+    For i = LBound(defaultPaths) To UBound(defaultPaths)
+        If Dir(defaultPaths(i) & exeNames(i)) <> "" Then
+            archiverName = archiverNames(i)
+            FindPathToArchiveTool = defaultPaths(i) & exeNames(i)
+            Exit Function
+        End If
+    Next i
+    
+    ' If not found, check the registry for paths to custom locations
+    On Error Resume Next
+    For i = LBound(regKeys) To UBound(regKeys)
+        regValue = wshShell.RegRead(regKeys(i))
+        If Err.Number = 0 And regValue <> "" Then
+            If Right(regValue, 1) <> "\" Then regValue = regValue & "\"
+            
+            ' Verify executable exists before returning path
+            If Dir(regValue & exeNames(i)) <> "" Then
+                archiverName = archiverNames(i)
+                FindPathToArchiveTool = regValue & exeNames(i)
+                Exit Function
+            End If
+        End If
+        Err.Clear
+    Next i
+    On Error GoTo 0
+    
+    resourcesFolder = ThisWorkbook.Path & Application.PathSeparator & "Resources"
+    ConvertOneDriveToLocalPath resourcesFolder
+    
+    Download7Zip resourcesFolder, downloadResult
+    
+    If downloadResult Then
+        archiverName = RESOURCES_7ZIP_ARCHIVER_NAME
+        FindPathToArchiveTool = resourcesFolder & Application.PathSeparator & RESOURCES_7ZIP_FILENAME
+    Else
+        FindPathToArchiveTool = ""
+    End If
+End Function
 #End If
+
+Private Sub Download7Zip(ByVal resourcesFolder As String, ByRef downloadResult As Boolean)
+    Dim destinationPath As String, downloadURL As String
+    
+    Const GIT_REPO_URL As String = "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/"
+    
+    #If Mac Then
+        Dim scriptResult As Boolean
+        
+        Const FILE_NAME As String = "7zz"
+        
+        destinationPath = resourcesFolder & FILE_NAME
+        downloadURL = GIT_REPO_URL & FILE_NAME
+        
+        On Error Resume Next
+        scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DownloadFile", destinationPath & APPLE_SCRIPT_SPLIT_KEY & downloadURL)
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print IIf(Err.Number = 0, "    Download successful.", "    Error: " & Err.Description)
+        #End If
+        
+        If scriptResult Then downloadResult = RequestFileAndFolderAccess(templatePath)
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "    File access " & IIf(downloadResult, "granted.", "denied.")
+        #End If
+        On Error GoTo 0
+    #Else
+        Dim fileToDownload As String
+        
+        Const FILE_NAME As String = "7za.exe"
+        
+        fileToDownload = IIf(Environ("PROCESSOR_ARCHITECTURE") = "AMD64", "7za(x64).exe", "7za(x86).exe")
+        destinationPath = resourcesFolder & Application.PathSeparator & FILE_NAME
+        downloadURL = GIT_REPO_URL & fileToDownload
+        
+        If Dir(destinationPath) <> "" Then
+            ' Add a hash check to verify the file
+            downloadResult = True
+            Exit Sub
+        End If
+        
+        Select Case True
+            Case CheckForCurl()
+                downloadResult = DownloadUsingCurl(destinationPath, downloadURL)
+            Case CheckForDotNet35()
+                downloadResult = DownloadUsingDotNet35(destinationPath, downloadURL)
+            Case Else
+                downloadResult = False
+        End Select
+    #End If
+End Sub
