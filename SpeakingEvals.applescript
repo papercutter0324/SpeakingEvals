@@ -2,7 +2,7 @@
 Helper Scripts for the DYB Speaking Evaluations Excel spreadsheet
 
 Version: 1.2.0
-Build:   20250209
+Build:   20250226
 Warren Feltmate
 © 2025
 *)
@@ -11,7 +11,7 @@ Warren Feltmate
 
 on GetScriptVersionNumber(paramString)
 	--- Use build number to determine if an update is available
-	return 20250209
+	return 20250226
 end GetScriptVersionNumber
 
 on GetMacOSVersion(paramString)
@@ -95,6 +95,16 @@ end CloseWord
 
 -- File Manipulation
 
+on ChangeFilePermissions(paramString)
+	set {newPermissions, filePath} to SplitString(paramString, "-,-")
+	try
+		do shell script "chmod" & space & newPermissions & space & quoted form of filePath
+		return true
+	on error
+		return false
+	end try
+end ChangeFilePermissions
+
 on CompareMD5Hashes(paramString)
 	-- This will check the file integrity of the downloaded template against the known good value.
 	set {filePath, validHash} to SplitString(paramString, "-,-")
@@ -122,7 +132,16 @@ on CopyFile(filePaths)
 	end try
 end CopyFile
 
-on CreateZipFile(paramString)
+on CreateZipWithLocal7Zip(zipCommand)
+	try
+		do shell script zipCommand
+		return "Success"
+	on error
+		return errMsg
+	end try
+end CreateZipWithLocal7Zip
+
+on CreateZipWithDefaultArchiver(paramString)
 	-- Create a ZIP file of all the PDFs in the target folder. Makes it simpler for you to send them to your KTs.
 	set {savePath, zipPath} to SplitString(paramString, "-,-")
 	try
@@ -131,7 +150,7 @@ on CreateZipFile(paramString)
 	on error
 		return errMsg
 	end try
-end CreateZipFile
+end CreateZipWithDefaultArchiver
 
 on DeleteFile(filePath)
 	--Self-explanatory. This will delete the target file, skipping the Trash.
