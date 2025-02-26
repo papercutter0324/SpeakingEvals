@@ -1,7 +1,7 @@
 (*
 Helper Scripts for the DYB Speaking Evaluations Excel spreadsheet
 
-Version: 1.2.0
+Version: 1.3.0
 Build:   20250226
 Warren Feltmate
 © 2025
