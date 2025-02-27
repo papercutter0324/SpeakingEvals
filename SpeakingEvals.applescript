@@ -1,8 +1,8 @@
 (*
 Helper Scripts for the DYB Speaking Evaluations Excel spreadsheet
 
-Version: 1.3.0
-Build:   20250226
+Version: 1.3.1
+Build:   20250227
 Warren Feltmate
 © 2025
 *)
@@ -11,7 +11,7 @@ Warren Feltmate
 
 on GetScriptVersionNumber(paramString)
 	--- Use build number to determine if an update is available
-	return 20250226
+	return 20250227
 end GetScriptVersionNumber
 
 on GetMacOSVersion(paramString)
@@ -98,6 +98,7 @@ end CloseWord
 on ChangeFilePermissions(paramString)
 	set {newPermissions, filePath} to SplitString(paramString, "-,-")
 	try
+		do shell script "xattr -d com.apple.quarantine" & space & quoted form of filePath
 		do shell script "chmod" & space & newPermissions & space & quoted form of filePath
 		return true
 	on error
