@@ -133,6 +133,15 @@ on CopyFile(filePaths)
 	end try
 end CopyFile
 
+on CreateZipWithDitto(zipCommand)
+	try
+		do shell script zipCommand
+		return "Success"
+	on error
+		return errMsg
+	end try
+end CreateZipWithDitto
+
 on CreateZipWithLocal7Zip(zipCommand)
 	try
 		do shell script zipCommand
