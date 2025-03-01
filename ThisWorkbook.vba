@@ -13,59 +13,68 @@ Private Sub Workbook_Open()
     Const CURL_COMMAND_TEXT As String = "curl -L -o ~/Library/Application\ Scripts/com.microsoft.Excel/SpeakingEvals.scpt https://github.com/papercutter0324/SpeakingEvals/raw/main/SpeakingEvals.scpt"
     Dim wb As Workbook, ws As Worksheet, shps As Shapes
     Dim startupMessageToDisplay As String
+    Dim startTime As Double
+    
+    Set wb = ThisWorkbook
+    wb.Sheets("Instructions").Activate
+    
+    #If Mac Then
+        wb.Sheets("MacOS Users").Visible = xlSheetVisible
+    #Else
+        wb.Sheets("MacOS Users").Visible = xlSheetHidden
+    #End If
+    
+    startTime = Timer
+    While Timer - startTime < 2
+        DoEvents
+    Wend
         
     Application.EnableEvents = False
     Application.ScreenUpdating = False
     Application.Calculation = xlCalculationManual
     
-    Set wb = ThisWorkbook
-    
     startupMessageToDisplay = "Initial"
     DisplayStartupMessage startupMessageToDisplay
     
     VerifySheetNames wb
-    wb.Sheets("Instructions").Activate
     
     On Error GoTo ReenableEvents
     For Each ws In wb.Worksheets
-        ws.Unprotect
-        
-        Select Case ws.Name
-            Case "Instructions"
-                ws.Cells(1, 3).Select
-                SetLayoutInstructions wb, ws
-            Case "MacOS Users"
-                Set shps = ws.Shapes
-                shps("cURL_Command").TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
-                
-                #If Mac Then
-                    Dim scriptResult As Boolean
-                    scriptResult = AreAppleScriptsInstalled
-                #Else
-                    shps("Button_SpeakingEvalsScpt_Missing").Visible = True
-                    shps("Button_DialogToolkit_Missing").Visible = True
-                    shps("Button_EnhancedDialogs_Disable").Visible = True
-                    shps("Button_SpeakingEvalsScpt_Installed").Visible = False
-                    shps("Button_DialogToolkit_Installed").Visible = False
-                    shps("Button_EnhancedDialogs_Enable").Visible = False
-                #End If
-                
-                Set shps = Nothing
-                SetLayoutMacOSUsers wb
-                #If Mac Then
-                    ws.Visible = xlSheetVisible
-                #Else
-                    ws.Visible = xlSheetHidden
-                #End If
-            Case "mySignature"
-                SetLayoutMySignature wb
-            Case Else
-                AutoPopulateEvaluationDateValues ws
-                SetLayoutClassRecords wb, ws
-        End Select
-        
-        ws.Protect
-        ws.EnableSelection = xlUnlockedCells
+        With ws
+            .Unprotect
+            
+            Select Case .Name
+                Case "Instructions"
+                    .Cells(1, 3).Select
+                    SetLayoutInstructions wb, ws
+                Case "MacOS Users"
+                    Set shps = .Shapes
+                    shps("cURL_Command").TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
+                    
+                    #If Mac Then
+                        Dim scriptResult As Boolean
+                        scriptResult = AreAppleScriptsInstalled
+                    #Else
+                        shps("Button_SpeakingEvalsScpt_Missing").Visible = True
+                        shps("Button_DialogToolkit_Missing").Visible = True
+                        shps("Button_EnhancedDialogs_Disable").Visible = True
+                        shps("Button_SpeakingEvalsScpt_Installed").Visible = False
+                        shps("Button_DialogToolkit_Installed").Visible = False
+                        shps("Button_EnhancedDialogs_Enable").Visible = False
+                    #End If
+                    
+                    Set shps = Nothing
+                    SetLayoutMacOSUsers wb
+                Case "mySignature"
+                    SetLayoutMySignature wb
+                Case Else
+                    AutoPopulateEvaluationDateValues ws
+                    SetLayoutClassRecords wb, ws
+            End Select
+            
+            .Protect
+            .EnableSelection = xlUnlockedCells
+        End With
     Next ws
     
     startupMessageToDisplay = "Complete"
@@ -167,8 +176,6 @@ Private Sub AutoPopulateEvaluationDateValues(ByRef ws As Worksheet)
     Dim messageText As String, msgResult As Variant
     
     On Error Resume Next
-    Application.EnableEvents = False
-    
     If ws.Range("A6").Value = "Evaluation Date:" Then
         Set dateCell = ws.Range("C6")
 
@@ -188,8 +195,6 @@ Private Sub AutoPopulateEvaluationDateValues(ByRef ws As Worksheet)
             dateCell.Value = ""
         End If
     End If
-    
-    Application.EnableEvents = True
     On Error GoTo 0
 End Sub
 
@@ -410,10 +415,8 @@ Private Sub SetLayoutMySignature(ByRef wb As Workbook)
 End Sub
 
 Private Function DoesShapeExist(ByVal ws As Worksheet, ByVal shapeName As String) As Boolean
-    Dim shp As Shape
     On Error Resume Next
-    Set shp = ws.Shapes(shapeName)
-    DoesShapeExist = Not shp Is Nothing
+    DoesShapeExist = Not ws.Shapes(shapeName) Is Nothing
     On Error GoTo 0
 End Function
 
@@ -688,7 +691,13 @@ End Sub
 
 Sub Main()
     Dim ws As Worksheet: Set ws = ActiveSheet
-    Dim clickedButtonName As String: clickedButtonName = Application.Caller
+    Dim clickedButtonName As String
+    
+    With Application
+        clickedButtonName = .Caller
+        .EnableEvents = False
+        .ScreenUpdating = False
+    End With
     
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "Beginning tasks." & vbNewLine & _
@@ -734,7 +743,6 @@ Sub Main()
     #End If
     
     On Error GoTo ReenableEvents
-    Application.EnableEvents = False
     
     Select Case clickedButtonName
         #If Mac Then
@@ -751,7 +759,10 @@ Sub Main()
     End Select
     
 ReenableEvents:
-    Application.EnableEvents = True
+    With Application
+        .EnableEvents = True
+        .ScreenUpdating = True
+    End With
 End Sub
 
 Private Function CalculateOverallGrade(ByRef ws As Worksheet, ByVal currentRow As Integer) As String
@@ -794,11 +805,9 @@ Private Sub ExportSignatureFromExcel(ByVal SIGNATURE_SHAPE_NAME As String, signa
     Dim signSheet As Worksheet, tempSheet As Worksheet
     Dim signatureshp As Shape, chrtObj As ChartObject
     
-    Application.ScreenUpdating = False
     Application.DisplayAlerts = False
-    Application.EnableEvents = False
     
-    Set tempSheet = Sheets.Add(After:=Sheets(Sheets.Count))
+    Set tempSheet = ThisWorkbook.Sheets.Add(After:=Sheets(Sheets.Count))
     tempSheet.Name = "Temp_signature"
     
     Set signatureshp = ThisWorkbook.Worksheets("mySignature").Shapes(SIGNATURE_SHAPE_NAME)
@@ -829,9 +838,7 @@ Private Sub ExportSignatureFromExcel(ByVal SIGNATURE_SHAPE_NAME As String, signa
     On Error GoTo 0
     
     tempSheet.Delete
-    Application.EnableEvents = True
     Application.DisplayAlerts = True
-    Application.ScreenUpdating = True
 End Sub
 
 Private Sub GenerateReports(ByRef ws As Worksheet, ByVal clickedButtonName As String)
@@ -960,7 +967,7 @@ Private Sub GenerateReports(ByRef ws As Worksheet, ByVal clickedButtonName As St
             Debug.Print "    Current report: " & i & " of " & (lastRow - firstStudentRecord + 1)
         #End If
         ClearAllTextBoxes wordDoc
-        WriteReport ws, wordApp, wordDoc, generateProcess, currentRow, savePath, saveResult
+        WriteDocReport ws, wordApp, wordDoc, generateProcess, currentRow, savePath, saveResult
     Next currentRow
     
     If Not saveResult Then
@@ -1199,26 +1206,26 @@ Private Function LoadWord(ByRef wordApp As Object, ByRef wordDoc As Object, ByVa
     #End If
     
     ' Make the process visible so users understand their computer isn't frozen
-    wordApp.Visible = True
-    wordApp.ScreenUpdating = True
+    With wordApp
+        .Visible = True
+        .ScreenUpdating = True
     
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    Visible: " & wordApp.Visible & vbNewLine & _
-                    "    Show Updating: " & wordApp.ScreenUpdating
-    #End If
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "    Visible: " & .Visible & vbNewLine & _
+                        "    Show Updating: " & .ScreenUpdating
+        #End If
+    End With
     
     If Not wordApp Is Nothing Then
         Set wordDoc = wordApp.Documents.Open(templatePath)
-        If Val(wordApp.Version) > 15 And wordDoc.AutoSaveOn Then
-            On Error Resume Next
+        If Val(wordApp.Version) > 15 Then
             #If PRINT_DEBUG_MESSAGES Then
                 Debug.Print "    Attempting to disable AutoSave."
             #End If
-            wordDoc.AutoSaveOn = False
+            DisableAutoSave wordDoc
             #If PRINT_DEBUG_MESSAGES Then
                 Debug.Print "    AutoSave status: " & wordDoc.AutoSaveOn
             #End If
-            On Error GoTo ErrorHandler
         End If
     End If
     
@@ -1242,7 +1249,13 @@ ErrorHandler:
     LoadWord = False
 End Function
 
-Private Function SaveToFile(ByRef wordDoc As Object, ByVal saveRoutine As String, ByVal savePath As String, ByVal fileName As String) As Boolean
+Private Sub DisableAutoSave(ByRef wordDoc As Object)
+    On Error Resume Next
+    If wordDoc.AutoSaveOn Then wordDoc.AutoSaveOn = False
+    On Error GoTo 0
+End Sub
+
+Private Function SaveToFile(ByRef wordApp As Object, ByRef wordDoc As Object, ByVal saveRoutine As String, ByVal savePath As String, ByVal fileName As String) As Boolean
     Dim tempFile As String, destFile As String
     Dim scriptResult As Boolean
     
@@ -1282,11 +1295,13 @@ Private Function SaveToFile(ByRef wordDoc As Object, ByVal saveRoutine As String
         End If
     #End If
     
+    If Val(wordApp.Version) > 15 Then DisableAutoSave wordDoc
+    
     SaveToFile = (Err.Number = 0)
     On Error GoTo 0
 End Function
 
-Private Sub WriteReport(ByRef ws As Object, ByRef wordApp As Object, ByRef wordDoc As Object, ByVal generateProcess As String, ByVal currentRow As Integer, ByVal savePath As String, ByRef saveResult As Boolean)
+Private Sub WriteDocReport(ByRef ws As Object, ByRef wordApp As Object, ByRef wordDoc As Object, ByVal generateProcess As String, ByVal currentRow As Integer, ByVal savePath As String, ByRef saveResult As Boolean)
     Dim nativeTeacher As String, koreanTeacher As String, classLevel As String, classTime As String, evalDate As String
     Dim englishName As String, koreanName As String, grammarScore As String, pronunciationScore As String, fluencyScore As String
     Dim mannerScore As String, contentScore As String, effortScore As String, commentText As String, overallGrade As String
@@ -1334,6 +1349,7 @@ Private Sub WriteReport(ByRef ws As Object, ByRef wordApp As Object, ByRef wordD
             .Item("Korean_Teacher").TextFrame.TextRange.Text = koreanTeacher
             .Item("Date").TextFrame.TextRange.Text = evalDate
         End With
+        
         .Item("Grammar_Scores").GroupItems("Grammar_" & grammarScore).TextFrame.TextRange.Text = grammarScore
         .Item("Pronunciation_Scores").GroupItems("Pronunciation_" & pronunciationScore).TextFrame.TextRange.Text = pronunciationScore
         .Item("Fluency_Scores").GroupItems("Fluency_" & fluencyScore).TextFrame.TextRange.Text = fluencyScore
@@ -1342,11 +1358,83 @@ Private Sub WriteReport(ByRef ws As Object, ByRef wordApp As Object, ByRef wordD
         .Item("Effort_Scores").GroupItems("Effort_" & effortScore).TextFrame.TextRange.Text = effortScore
         .Item("Report_Footer").GroupItems("Comments").TextFrame.TextRange.Text = commentText
         .Item("Report_Footer").GroupItems("Overall_Grade").TextFrame.TextRange.Text = overallGrade
+    
+        On Error Resume Next
+        If .Item("Signature") Is Nothing Then InsertSignature wordDoc
+        On Error GoTo 0
     End With
     
-    On Error Resume Next
-    If wordDoc.Shapes("Signature") Is Nothing Then InsertSignature wordDoc
-    saveResult = SaveToFile(wordDoc, generateProcess, savePath, fileName)
+    saveResult = SaveToFile(wordApp, wordDoc, generateProcess, savePath, fileName)
+End Sub
+
+Private Sub WritePptReport(ByRef ws As Object, ByRef pptApp As Object, ByRef pptDoc As Object, ByVal generateProcess As String, ByVal currentRow As Integer, ByVal savePath As String, ByRef saveResult As Boolean)
+    Dim englishName As String, koreanName As String, classLevel As String, nativeTeacher As String, koreanTeacher As String, evalDate As String
+    Dim commentText As String, classTime As String, fileName As String
+    Dim scoreCategories As Variant, scoreValues As Variant
+    Dim i As Integer
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "        Preparing report data."
+    #End If
+    
+    With ws.Cells
+        ' Header values
+        englishName = .Item(currentRow, 2).Value
+        koreanName = .Item(currentRow, 3).Value
+        classLevel = .Item(3, 3).Value
+        nativeTeacher = .Item(1, 3).Value
+        koreanTeacher = .Item(2, 3).Value
+        evalDate = Format(.Item(6, 3).Value, "MMM. YYYY")
+
+        ' Scores and comment values
+        scoreCategories = Array("Grammar_", "Pronunciation_", "Fluency_", "Manner_", "Content_", "Effort_", "Result_")
+        scoreValues = Array(.Item(currentRow, 4).Value, .Item(currentRow, 5).Value, .Item(currentRow, 6).Value, _
+                           .Item(currentRow, 7).Value, .Item(currentRow, 8).Value, .Item(currentRow, 9).Value, _
+                           CalculateOverallGrade(ws, currentRow))
+        commentText = .Item(currentRow, 10).Value
+
+        ' Set report's filename
+        classTime = .Item(4, 3).Value & "-" & .Item(5, 3).Value
+        fileName = koreanName & "(" & englishName & ")" & " - " & .Item(4, 3).Value
+    End With
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "        Report filename: " & fileName & vbNewLine & _
+                   "        Saving to: " & savePath
+    #End If
+    
+    With pptDoc.Shapes
+        With .Item("Report_Header").GroupItems
+            .Item("English_Name").TextFrame.TextRange.Text = englishName
+            .Item("Korean_Name").TextFrame.TextRange.Text = koreanName
+            .Item("Grade").TextFrame.TextRange.Text = classLevel
+            .Item("Native_Teacher").TextFrame.TextRange.Text = nativeTeacher
+            .Item("Korean_Teacher").TextFrame.TextRange.Text = koreanTeacher
+            .Item("Date").TextFrame.TextRange.Text = evalDate
+        End With
+        
+        For i = LBound(scoreCategories) To UBound(scoreCategories)
+            ToggleScoreVisibility pptDoc, scoreCategories(i), scoreValues(i)
+        Next i
+
+        .Item("Comments").TextFrame.TextRange.Text = commentText
+
+        On Error Resume Next
+        If .Item("Signature") Is Nothing Then InsertSignature pptDoc
+        On Error GoTo 0
+    End With
+    
+    saveResult = SaveToFile(pptApp, pptDoc, generateProcess, savePath, fileName)
+End Sub
+
+Private Sub ToggleScoreVisibility(ByRef pptDoc As Object, ByVal scoreCategory As String, ByVal scoreValue As String)
+    With pptDoc.Shapes.GroupItems(scoreCategory & "Scores")
+        .Item(scoreCategory & "A+").Visible = IIf(scoreValue = "A+", msoTrue, msoFalse)
+        .Item(scoreCategory & "A").Visible = IIf(scoreValue = "A", msoTrue, msoFalse)
+        .Item(scoreCategory & "B+").Visible = IIf(scoreValue = "B+", msoTrue, msoFalse)
+        .Item(scoreCategory & "B").Visible = IIf(scoreValue = "B", msoTrue, msoFalse)
+        .Item(scoreCategory & "C").Visible = IIf(scoreValue = "C", msoTrue, msoFalse)
+    End With
 End Sub
 
 Private Sub ZipReports(ByRef ws As Worksheet, ByVal savePath As Variant, ByRef saveResult As Boolean)
@@ -1410,17 +1498,9 @@ Private Sub ZipReports(ByRef ws As Worksheet, ByVal savePath As Variant, ByRef s
         
         archiverPath = FindPathToArchiveTool(archiverName)
         
-        ' Doubecheck theWinRAR command. See if it really is the same or a typo was made.
         Select Case archiverName
             Case "7Zip", "Local 7zip"
                 zipCommand = Chr(34) & archiverPath & Chr(34) & " a " & Chr(34) & zipPath & Chr(34) & " " & Chr(34) & savePath & "*.pdf" & Chr(34)
-            Case "WinRAR"
-                zipCommand = Chr(34) & archiverPath & Chr(34) & " a " & Chr(34) & zipPath & Chr(34) & " " & Chr(34) & savePath & "*.pdf" & Chr(34)
-        End Select
-        
-        ' Zip the files
-        Select Case archiverName
-            Case "7Zip", "Local 7zip", "WinRAR"
                 Shell zipCommand, vbNormalFocus
             Case Else
                 Set shellApp = CreateObject("Shell.Application")
@@ -1441,14 +1521,16 @@ Private Sub ZipReports(ByRef ws As Worksheet, ByVal savePath As Variant, ByRef s
                 shellApp.Namespace(zipPath).CopyHere shellApp.Namespace(savePath).Items
         End Select
         
-        ' Wait for the zip file to be created, but no longer than 10 seconds
-        Do While Not fso.FileExists(zipPath) And Timer - startTime < 10
-            Application.Wait (Now + TimeValue("0:00:01")) ' Wait 1 second before checking again
-        Loop
+        
+        Do ' Wait for the zip file to be created, but no longer than 10 seconds
+            Application.Wait (Now + TimeValue("0:00:01"))
+        Loop While Not fso.FileExists(zipPath) And Timer - startTime < 10
         
         ' Copy the zip file and report if process was successful
         If fso.FileExists(zipPath) Then
+            Application.Wait (Now + TimeValue("0:00:04")) ' Wait a couple seconds for the file to be released
             fso.CopyFile zipPath, savePath & zipName, True
+            Kill zipPath
             saveResult = True
         Else
             If Err.Number <> 0 Then errDescription = Err.Description
@@ -1545,7 +1627,6 @@ Private Function ValidateData(ByRef currentCell As Range, ByVal dataType As Stri
         isDeclared = True
     End If
     
-    Application.EnableEvents = False
     dataValue = Trim$(currentCell.Value)
     
     Select Case dataType
@@ -1572,7 +1653,6 @@ Private Function ValidateData(ByRef currentCell As Range, ByVal dataType As Stri
         Case Else
             ValidateData = False
     End Select
-    Application.EnableEvents = True
 End Function
 
 Private Function IsValueValid(ByRef dataArray As Variant, ByVal dataValue As String) As Boolean
@@ -1682,9 +1762,11 @@ Private Sub ClearAllTextBoxes(wordDoc As Object)
     For Each shp In wordDoc.Shapes
         If shp.Type = msoGroup Then
             For Each grpItem In shp.GroupItems
-                If grpItem.Type = msoTextBox Or grpItem.Type = msoAutoShape Then
-                    grpItem.TextFrame.TextRange.Text = ""
-                End If
+                With grpItem
+                    If .Type = msoTextBox Or .Type = msoAutoShape Then
+                        .TextFrame.TextRange.Text = ""
+                    End If
+                End With
             Next grpItem
         End If
     Next shp
@@ -2465,29 +2547,32 @@ Private Function RequestFileAndFolderAccess(Optional ByVal filePath As Variant =
 End Function
 
 Private Sub SetVisibilityOfMacSettingsShapes(ByVal isAppleScriptInstalled As Boolean, ByVal isDialogToolkitInstalled As Boolean)
-    Dim ws As Worksheet, shps As Shapes
+    Dim ws As Worksheet
     Dim enhancedDialogsStatus As String
     Dim enhancedDialogsAreDisabled As Boolean
     
     Set ws = ThisWorkbook.Sheets("MacOS Users")
-    Set shps = ws.Shapes
-    
-    shps("Button_SpeakingEvalsScpt_Missing").Visible = Not isAppleScriptInstalled
-    shps("Button_SpeakingEvalsScpt_Installed").Visible = isAppleScriptInstalled
-    shps("Button_DialogToolkit_Missing").Visible = Not isDialogToolkitInstalled
-    shps("Button_DialogToolkit_Installed").Visible = isDialogToolkitInstalled
-    
-    enhancedDialogsStatus = ws.Cells(1, 1).Value
-    enhancedDialogsAreDisabled = Not isDialogToolkitInstalled Or enhancedDialogsStatus = "Enhanced Dialogs: Disabled" Or enhancedDialogsStatus = ""
-    
-    shps("Button_EnhancedDialogs_Disable").Visible = enhancedDialogsAreDisabled
-    shps("Button_EnhancedDialogs_Enable").Visible = Not enhancedDialogsAreDisabled
+
+    With ws.Shapes
+        .Item("Button_SpeakingEvalsScpt_Missing").Visible = Not isAppleScriptInstalled
+        .Item("Button_SpeakingEvalsScpt_Installed").Visible = isAppleScriptInstalled
+        .Item("Button_DialogToolkit_Missing").Visible = Not isDialogToolkitInstalled
+        .Item("Button_DialogToolkit_Installed").Visible = isDialogToolkitInstalled
+        
+        enhancedDialogsStatus = ws.Cells(1, 1).Value
+        enhancedDialogsAreDisabled = Not isDialogToolkitInstalled Or enhancedDialogsStatus = "Enhanced Dialogs: Disabled" Or enhancedDialogsStatus = ""
+        
+        .Item("Button_EnhancedDialogs_Disable").Visible = enhancedDialogsAreDisabled
+        .Item("Button_EnhancedDialogs_Enable").Visible = Not enhancedDialogsAreDisabled
+    End With
     
     If enhancedDialogsAreDisabled And enhancedDialogsStatus <> "Enhanced Dialogs: Disabled" Then
-        ws.Unprotect
-        ws.Cells(1, 1).Value = "Enhanced Dialogs: Disabled"
-        ws.Protect
-        ws.EnableSelection = xlUnlockedCells
+        With ws
+            .Unprotect
+            .Cells(1, 1).Value = "Enhanced Dialogs: Disabled"
+            .Protect
+            .EnableSelection = xlUnlockedCells
+        End With
     End If
 End Sub
 
@@ -2533,14 +2618,15 @@ Private Sub ToogleMacSettingsButtons(ByRef ws As Worksheet, ByVal clickedButtonN
         Debug.Print "    Updating persistant status value."
     #End If
     
-    ws.Unprotect
-    ws.Cells(1, 1).Value = IIf(ws.Shapes("Button_EnhancedDialogs_Enable").Visible, SCRIPT_ENABLED, SCRIPT_DISABLED)
-    ws.Protect
-    ws.EnableSelection = xlUnlockedCells
-    
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    Value: """ & ws.Cells(1, 1).Value & """"
-    #End If
+    With ws
+        .Unprotect
+        .Cells(1, 1).Value = IIf(.Shapes("Button_EnhancedDialogs_Enable").Visible, SCRIPT_ENABLED, SCRIPT_DISABLED)
+        .Protect
+        .EnableSelection = xlUnlockedCells
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "    Value: """ & .Cells(1, 1).Value & """"
+        #End If
+    End With
 End Sub
 #Else
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -2729,15 +2815,15 @@ Private Function FindPathToArchiveTool(Optional ByRef archiverName As String = "
     Dim i As Integer, downloadResult As Boolean
     Dim resourcesFolder As String
     
+    Const RESOURCES_7ZIP_FILENAME As String = "7za.exe"
+    Const RESOURCES_7ZIP_ARCHIVER_NAME As String = "Local 7zip"
+    
     resourcesFolder = ThisWorkbook.Path & Application.PathSeparator & "Resources"
     ConvertOneDriveToLocalPath resourcesFolder
     
     ' Declare OS specific variables, constants, and arrays
     #If Mac Then
         Dim scriptResultBoolean As Boolean
-        
-        Const RESOURCES_7ZIP_FILENAME As String = "7zz"
-        Const RESOURCES_7ZIP_ARCHIVER_NAME As String = "Local 7zip"
     #Else
         Dim wshShell As Object
         Dim defaultPaths As Variant, archiverNames As Variant, exeNames As Variant, regKeys As Variant
@@ -2745,27 +2831,18 @@ Private Function FindPathToArchiveTool(Optional ByRef archiverName As String = "
     
         Const REG_KEY_7ZIP As String = "HKEY_LOCAL_MACHINE\SOFTWARE\7-Zip\Path"
         Const REG_KEY_7ZIP_32BIT As String = "HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\7-Zip\Path"
-        Const REG_KEY_WINRAR As String = "HKEY_LOCAL_MACHINE\SOFTWARE\WinRAR\Path"
-        Const REG_KEY_WINRAR_32BIT As String = "HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\WinRAR\Path"
         
         Const ARCHIVER_NAME_7ZIP As String = "7Zip"
-        Const ARCHIVER_NAME_WINRAR As String = "WinRAR"
         
         Const EXE_NAME_7ZIP As String = "7z.exe"
-        Const EXE_NAME_WINRAR As String = "Rar.exe"
         
         Const DEFAULT_PATH_7ZIP As String = "C:\Program Files\7-Zip\"
         Const DEFAULT_PATH_7ZIP_32Bit As String = "C:\Program Files (x86)\7-Zip\"
-        Const DEFAULT_PATH_WINRAR As String = "C:\Program Files\WinRAR\"
-        Const DEFAULT_PATH_WINRAR_32Bit As String = "C:\Program Files (x86)\WinRAR\"
         
-        Const RESOURCES_7ZIP_FILENAME As String = "7za.exe"
-        Const RESOURCES_7ZIP_ARCHIVER_NAME As String = "Local 7zip"
-        
-        defaultPaths = Array(DEFAULT_PATH_7ZIP, DEFAULT_PATH_7ZIP_32Bit, DEFAULT_PATH_WINRAR, DEFAULT_PATH_WINRAR_32Bit)
-        archiverNames = Array(ARCHIVER_NAME_7ZIP, ARCHIVER_NAME_7ZIP, ARCHIVER_NAME_WINRAR, ARCHIVER_NAME_WINRAR)
-        exeNames = Array(EXE_NAME_7ZIP, EXE_NAME_7ZIP, EXE_NAME_WINRAR, EXE_NAME_WINRAR)
-        regKeys = Array(REG_KEY_7ZIP, REG_KEY_7ZIP_32BIT, REG_KEY_WINRAR, REG_KEY_WINRAR_32BIT)
+        defaultPaths = Array(DEFAULT_PATH_7ZIP, DEFAULT_PATH_7ZIP_32Bit)
+        archiverNames = Array(ARCHIVER_NAME_7ZIP, ARCHIVER_NAME_7ZIP)
+        exeNames = Array(EXE_NAME_7ZIP, EXE_NAME_7ZIP)
+        regKeys = Array(REG_KEY_7ZIP, REG_KEY_7ZIP_32BIT)
     #End If
     
     ' Find available archive utility
