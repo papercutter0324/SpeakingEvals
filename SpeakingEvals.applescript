@@ -1,8 +1,8 @@
 (*
 Helper Scripts for the DYB Speaking Evaluations Excel spreadsheet
 
-Version: 1.3.2
-Build:   20250306
+Version: 1.3.3
+Build:   20250307
 Warren Feltmate
 © 2025
 *)
@@ -11,7 +11,7 @@ Warren Feltmate
 
 on GetScriptVersionNumber(paramString)
 	--- Use build number to determine if an update is available
-	return 20250306
+	return 20250307
 end GetScriptVersionNumber
 
 on GetMacOSVersion(paramString)
