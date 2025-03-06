@@ -1,8 +1,8 @@
 (*
 Helper Scripts for the DYB Speaking Evaluations Excel spreadsheet
 
-Version: 1.3.1
-Build:   20250227
+Version: 1.3.2
+Build:   20250306
 Warren Feltmate
 © 2025
 *)
@@ -11,7 +11,7 @@ Warren Feltmate
 
 on GetScriptVersionNumber(paramString)
 	--- Use build number to determine if an update is available
-	return 20250227
+	return 20250306
 end GetScriptVersionNumber
 
 on GetMacOSVersion(paramString)
@@ -76,6 +76,23 @@ on IsAppLoaded(appName)
 	end try
 end IsAppLoaded
 
+on ClosePowerPoint(paramString)
+	-- This will completely close MS PowerPoint, even from the Dock. This reduces the chances of errors on subsequent runs.
+	try
+		tell application "System Events"
+			if (name of every process) contains "Microsoft PowerPoint" then
+				tell application "Microsoft PowerPoint" to quit
+				set closeResult to "PowerPoint has successfully been closed."
+			else
+				set closeResult to "PowerPoint is not currently running."
+			end if
+			return closeResult
+		end tell
+	on error
+		return "There was an error trying to close PowerPoint."
+	end try
+end ClosePowerPoint
+
 on CloseWord(paramString)
 	-- This will completely close MS Word, even from the Dock. This reduces the chances of errors on subsequent runs.
 	try
@@ -97,8 +114,17 @@ end CloseWord
 
 on ChangeFilePermissions(paramString)
 	set {newPermissions, filePath} to SplitString(paramString, "-,-")
+	
+	-- Check if quarantine status is set; remove if necessary
 	try
-		do shell script "xattr -d com.apple.quarantine" & space & quoted form of filePath
+		set quarantineStatus to do shell script "xattr -p com.apple.quarantine" & space & quoted form of filePath
+		if quarantineStatus is not "" then
+			do shell script "xattr -d com.apple.quarantine" & space & quoted form of filePath
+		end if
+	end try
+	
+	-- Change file permissions
+	try
 		do shell script "chmod" & space & newPermissions & space & quoted form of filePath
 		return true
 	on error
@@ -132,15 +158,6 @@ on CopyFile(filePaths)
 		return false
 	end try
 end CopyFile
-
-on CreateZipWithDitto(zipCommand)
-	try
-		do shell script zipCommand
-		return "Success"
-	on error
-		return errMsg
-	end try
-end CreateZipWithDitto
 
 on CreateZipWithLocal7Zip(zipCommand)
 	try
@@ -233,7 +250,7 @@ on ClearFolder(folderToEmpty)
 	try
 		do shell script "find" & space & (quoted form of folderToEmpty) & space & "-type f -name '*.pdf' -delete"
 		do shell script "find" & space & (quoted form of folderToEmpty) & space & "-type f -name '*.zip' -delete"
-		do shell script "find" & space & (quoted form of folderToEmpty) & space & "-type f -name '*.docx' -delete"
+		do shell script "find" & space & (quoted form of folderToEmpty) & space & "-type f -name '*.pptx' -delete"
 		return true
 	on error
 		return false
