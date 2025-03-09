@@ -53,7 +53,7 @@ Private Sub Workbook_Open()
                     
                     #If Mac Then
                         Dim scriptResult As Boolean
-                        scriptResult = AreAppleScriptsInstalled
+                        scriptResult = AreAppleScriptsInstalled()
                     #Else
                         shps("Button_SpeakingEvalsScpt_Missing").Visible = True
                         shps("Button_DialogToolkit_Missing").Visible = True
@@ -142,7 +142,7 @@ Private Sub DisplayStartupMessage(ByVal startupStage As String)
         Case "Initial"
             msgToDisplay = "Please wait while a self-check is performed and any errors " & vbNewLine & _
                            "are fixed. All existing data will be preserved." & vbNewLine & vbNewLine & _
-                           "This should only take about one minute to complete."
+                           "This should take less than a minute to complete."
             dialogSize = 430
         Case "Complete"
             msgToDisplay = "Process complete!"
@@ -368,28 +368,22 @@ Private Sub SetLayoutMySignature(ByRef wb As Workbook)
         Set refShape = .Item("Signature Title Bar")
         
         With .Item("Signature Container")
-            .Height = 130
+            .Height = 86
             .Width = refShape.Width
             .Top = refShape.Top + refShape.Height
             .Left = refShape.Left
         End With
         Set refShape = .Item("Signature Container")
         
-        maxHeight = refShape.Height - 20
-        maxWidth = refShape.Width - 30
+        maxHeight = 68.2
+        maxWidth = 286
         
         If DoesShapeExist(wb.Sheets("mySignature"), "mySignature_Placeholder") Then
             With .Item("mySignature_Placeholder")
-                aspectRatio = .Width / .Height
-                
-                If maxWidth / maxHeight > aspectRatio Then
-                    .Width = maxHeight * aspectRatio
-                    .Height = maxHeight
-                Else
-                    .Width = maxWidth
-                    .Height = maxWidth / aspectRatio
-                End If
-
+                .LockAspectRatio = msoFalse
+                .Height = maxHeight
+                .Width = maxWidth
+                .LockAspectRatio = msoTrue
                 .Top = refShape.Top + (refShape.Height / 2) - (.Height / 2)
                 .Left = refShape.Left + (refShape.Width / 2) - (.Width / 2)
             End With
@@ -690,8 +684,9 @@ End Sub
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Sub Main()
-    Dim ws As Worksheet: Set ws = ActiveSheet
-    Dim clickedButtonName As String
+    Dim ws As Worksheet, clickedButtonName As String
+    
+    Set ws = ActiveSheet
     
     With Application
         clickedButtonName = .Caller
@@ -770,7 +765,7 @@ Private Function CalculateOverallGrade(ByRef ws As Worksheet, ByVal currentRow A
     Dim totalScore As Double, avgScore As Double
     Dim roundedScore As Integer, numericScore As Integer
     
-    Set scoreRange = ws.Range("D" & currentRow & ":I" & currentRow)
+    Set scoreRange = ws.Range("D" & currentRow & ":" & "I" & currentRow)
     totalScore = 0
     
     For Each gradeCell In scoreRange
@@ -802,8 +797,7 @@ Private Function CalculateOverallGrade(ByRef ws As Worksheet, ByVal currentRow A
 End Function
 
 Private Sub ExportSignatureFromExcel(ByVal SIGNATURE_SHAPE_NAME As String, signatureImagePath As String)
-    Dim signSheet As Worksheet, tempSheet As Worksheet
-    Dim signatureshp As Shape, chrtObj As ChartObject
+    Dim signSheet As Worksheet, tempSheet As Worksheet, signatureshp As Shape, chrtObj As ChartObject
     
     Application.DisplayAlerts = False
     
@@ -842,18 +836,18 @@ Private Sub ExportSignatureFromExcel(ByVal SIGNATURE_SHAPE_NAME As String, signa
 End Sub
 
 Private Sub GenerateReports(ByRef ws As Worksheet, ByVal clickedButtonName As String)
-    Const REPORT_TEMPLATE As String = "Speaking Evaluation Template.docx"
+    Const REPORT_TEMPLATE As String = "SpeakingEvaluationTemplate.pptx"
     Const ERR_RESOURCES_FOLDER As String = "resourcesFolder"
     Const ERR_INCOMPLETE_RECORDS As String = "incompleteRecords"
-    Const ERR_LOADING_WORD As String = "loadingWord"
+    Const ERR_LOADING_POWERPOINT As String = "loadingPowerPoint"
     Const ERR_LOADING_TEMPLATE As String = "loadingTemplate"
     Const ERR_MISSING_SHAPES As String = "missingTemplateShapes"
     Const MSG_SAVE_FAILED As String = "exportFailed"
     Const MSG_ZIP_FAILED As String = "zipFailed"
     Const MSG_SUCCESS As String = "exportSuccessful"
 
-    ' Objects to open Word and modify the template
-    Dim wordApp As Object, wordDoc As Object
+    ' Objects to open PowerPoint and modify the template
+    Dim pptApp As Object, pptDoc As Object
     
     ' Variables for determining the code path and important states
     Dim generateProcess As String, saveResult As Boolean
@@ -919,8 +913,16 @@ Private Sub GenerateReports(ByRef ws As Worksheet, ByVal clickedButtonName As St
             GoTo CleanUp
         End If
     #End If
+    
+    If Not InstallFonts() Then
+        ' Throw an error
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "Font required for reports not installed. Please install manually before continuing."
+        #End If
+        GoTo CleanUp
+    End If
 
-    If IsTemplateAlreadyOpen(resourcesFolder, REPORT_TEMPLATE) Then
+    If IsPptTemplateAlreadyOpen(resourcesFolder, REPORT_TEMPLATE) Then
         ' I can probably set an error msg and send this to CleanUp
         Exit Sub
     End If
@@ -942,18 +944,13 @@ Private Sub GenerateReports(ByRef ws As Worksheet, ByVal clickedButtonName As St
         GoTo CleanUp
     End If
 
-    If Not LoadWord(wordApp, wordDoc, templatePath) Then
-        resultMsg = ERR_LOADING_WORD
+    If Not LoadPowerPoint(pptApp, pptDoc, templatePath) Then
+        resultMsg = ERR_LOADING_POWERPOINT
         GoTo CleanUp
     End If
     
-    If wordDoc Is Nothing Then
+    If pptDoc Is Nothing Then
         resultMsg = ERR_LOADING_TEMPLATE
-        GoTo CleanUp
-    End If
-    
-    If Not VerifyAllDocShapesExist(wordDoc) Then
-        resultMsg = ERR_MISSING_SHAPES
         GoTo CleanUp
     End If
     
@@ -966,8 +963,7 @@ Private Sub GenerateReports(ByRef ws As Worksheet, ByVal clickedButtonName As St
             i = i + 1
             Debug.Print "    Current report: " & i & " of " & (lastRow - firstStudentRecord + 1)
         #End If
-        ClearAllTextBoxes wordDoc
-        WriteDocReport ws, wordApp, wordDoc, generateProcess, currentRow, savePath, saveResult
+        WritePptReport ws, pptApp, pptDoc, generateProcess, currentRow, savePath, saveResult
     Next currentRow
     
     If Not saveResult Then
@@ -979,7 +975,7 @@ Private Sub GenerateReports(ByRef ws As Worksheet, ByVal clickedButtonName As St
         Debug.Print "    Save process complete."
     #End If
     
-    KillWord wordApp, wordDoc
+    KillPowerPoint pptApp, pptDoc
     resultMsg = MSG_SUCCESS
     
     If generateProcess = "FinalReports" Then
@@ -999,8 +995,8 @@ CleanUp:
             msgTitle = "Missing Data!"
             msgType = vbExclamation
             dialogSize = 230
-        Case ERR_LOADING_WORD, ERR_LOADING_TEMPLATE
-            msgToDisplay = "There was an error opening MS Word and/or the template. This is sometimes normal MS Office behaviour, so please wait a couple seconds and try again."
+        Case ERR_LOADING_POWERPOINT, ERR_LOADING_TEMPLATE
+            msgToDisplay = "There was an error opening MS PowerPoint and/or the template. This is sometimes normal MS Office behaviour, so please wait a couple seconds and try again."
             msgTitle = "Error!"
             msgType = vbExclamation
             dialogSize = 360
@@ -1027,25 +1023,25 @@ CleanUp:
     End Select
     
     If resultMsg <> "" Then msgResult = DisplayMessage(msgToDisplay, msgType, msgTitle, dialogSize)
-    If Not wordApp Is Nothing Then
+    If Not pptApp Is Nothing Then
         #If PRINT_DEBUG_MESSAGES Then
             Debug.Print "Beginning final cleanup checks."
         #End If
-        KillWord wordApp, wordDoc
+        KillPowerPoint pptApp, pptDoc
     End If
 End Sub
 
-Private Sub InsertSignature(ByRef wordDoc As Object)
+Private Sub InsertSignature(ByRef pptDoc As Object)
     Dim sigShape As Object, sigWidth As Double, sigHeight As Double, sigAspectRatio As Double
     Dim signatureFound As Boolean
     
     Const SIGNATURE_SHAPE_NAME As String = "mySignature"
     
     ' These numbers make no sense, but they work.
-    Const ABSOLUTE_LEFT As Double = 332.4
-    Const ABSOLUTE_TOP As Double = 684
-    Const MAX_WIDTH As Double = 144
-    Const MAX_HEIGHT As Double = 40
+    Const ABSOLUTE_LEFT As Double = 375
+    Const ABSOLUTE_TOP As Double = 727.5
+    Const MAX_WIDTH As Double = 130
+    Const MAX_HEIGHT As Double = 31
     
     Static signaturePath As String
     Static signatureImagePath As String
@@ -1057,13 +1053,9 @@ Private Sub InsertSignature(ByRef wordDoc As Object)
     End If
     
     On Error Resume Next
-    Set sigShape = wordDoc.Shapes(SIGNATURE_SHAPE_NAME)
-    On Error GoTo 0
+    Set sigShape = pptDoc.Slides(1).Shapes(SIGNATURE_SHAPE_NAME)
     If Not sigShape Is Nothing Then Exit Sub
-    
-    On Error Resume Next
     useEmbeddedSignature = (Not ThisWorkbook.Sheets("mySignature").Shapes(SIGNATURE_SHAPE_NAME) Is Nothing)
-    On Error GoTo 0
      
     If useEmbeddedSignature Then
         ExportSignatureFromExcel SIGNATURE_SHAPE_NAME, signatureImagePath
@@ -1071,11 +1063,9 @@ Private Sub InsertSignature(ByRef wordDoc As Object)
         signatureImagePath = GetSignatureFile(signaturePath)
         If signatureImagePath = "" Then Exit Sub
     End If
-
-    On Error Resume Next
-    Set sigShape = wordDoc.Shapes.AddPicture(fileName:=signatureImagePath, _
-                                             LinkToFile:=False, _
-                                             SaveWithDocument:=True)
+    
+    Set sigShape = pptDoc.Slides(1).Shapes.AddPicture(fileName:=signatureImagePath, LinkToFile:=msoFalse, SaveWithDocument:=msoTrue, _
+                                                      Left:=ABSOLUTE_LEFT, Top:=ABSOLUTE_TOP)
     If Err.Number <> 0 Then
         #If PRINT_DEBUG_MESSAGES Then
             Debug.Print "Error inserting ignature."
@@ -1101,12 +1091,8 @@ Private Sub InsertSignature(ByRef wordDoc As Object)
     ' Position and resize the image
     With sigShape
         .LockAspectRatio = msoTrue
-        .Left = ABSOLUTE_LEFT
-        .Top = ABSOLUTE_TOP
         .Width = sigWidth
         .Height = sigHeight
-        .RelativeHorizontalPosition = 1
-        .RelativeVerticalPosition = 1
     End With
 End Sub
 
@@ -1124,29 +1110,29 @@ Private Function GetSignatureFile(ByVal signaturePath As String) As String
     #End If
 End Function
 
-Private Sub KillWord(ByRef wordApp As Object, ByRef wordDoc As Object)
+Private Sub KillPowerPoint(ByRef pptApp As Object, ByRef pptDoc As Object)
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "Attempting to close the open instance of MS Word."
+        Debug.Print "Attempting to close the open instance of MS PowerPoint."
     #End If
     
     On Error Resume Next
-    If Not wordDoc Is Nothing Then
-        wordDoc.Close SaveChanges:=False
-        Set wordDoc = Nothing
+    If Not pptDoc Is Nothing Then
+        pptDoc.Close SaveChanges:=False
+        Set pptDoc = Nothing
         #If PRINT_DEBUG_MESSAGES Then
             Debug.Print "    Attempting to close the template." & vbNewLine & _
-                        "    Status: " & (wordDoc Is Nothing)
+                        "    Status: " & (pptDoc Is Nothing)
         #End If
     End If
     
-    If Not wordApp Is Nothing Then
+    If Not pptApp Is Nothing Then
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Attempting to close MS Word."
+            Debug.Print "    Attempting to close MS PowerPoint."
         #End If
-        wordApp.Quit
-        Set wordApp = Nothing
+        pptApp.Quit
+        Set pptApp = Nothing
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Status: " & (wordApp Is Nothing)
+            Debug.Print "    Status: " & (pptApp Is Nothing)
         #End If
     End If
 
@@ -1154,10 +1140,10 @@ Private Sub KillWord(ByRef wordApp As Object, ByRef wordDoc As Object)
         Dim closeResult As String
         
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Attempting extra step required to completely close MS Word on MacOS."
+            Debug.Print "    Attempting extra step required to completely close MS PowerPoint on MacOS."
         #End If
     
-        closeResult = AppleScriptTask(APPLE_SCRIPT_FILE, "CloseWord", closeResult)
+        closeResult = AppleScriptTask(APPLE_SCRIPT_FILE, "ClosePowerPoint", closeResult)
 
         #If PRINT_DEBUG_MESSAGES Then
             Debug.Print "    Status: " & closeResult
@@ -1166,124 +1152,119 @@ Private Sub KillWord(ByRef wordApp As Object, ByRef wordDoc As Object)
     On Error GoTo 0
 End Sub
 
-Private Function LoadWord(ByRef wordApp As Object, ByRef wordDoc As Object, ByVal templatePath As String) As Boolean
+Private Function LoadPowerPoint(ByRef pptApp As Object, ByRef pptDoc As Object, ByVal templatePath As String) As Boolean
     Dim openDoc As Object
     
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "Attempting to open an instance of MS Word."
+        Debug.Print "Attempting to open an instance of MS PowerPoint."
     #End If
     
     On Error Resume Next
-    Set wordApp = GetObject(, "Word.Application")
+    Set pptApp = GetObject(, "PowerPoint.Application")
     Err.Clear
     On Error GoTo ErrorHandler
     
-    ' Open a new instance of Word if needed
+    ' Open a new instance of PowerPoint if needed
     #If Mac Then
         Dim appleScriptResult As String, msgToDisplay As String, msgResult As Variant
         
-        If wordApp Is Nothing Then
-            appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "LoadApplication", "Microsoft Word")
+        If pptApp Is Nothing Then
+            appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "LoadApplication", "Microsoft PowerPoint")
             
             #If PRINT_DEBUG_MESSAGES Then
                 If appleScriptResult <> "" Then Debug.Print appleScriptResult
             #End If
             
-            appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "IsAppLoaded", "Microsoft Word")
+            appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "IsAppLoaded", "Microsoft PowerPoint")
             
             #If PRINT_DEBUG_MESSAGES Then
                 Debug.Print "    " & appleScriptResult
             #End If
             
-            Set wordApp = GetObject(, "Word.Application")
+            Set pptApp = GetObject(, "PowerPoint.Application")
         End If
     #Else
-        If wordApp Is Nothing Then Set wordApp = CreateObject("Word.Application")
+        If pptApp Is Nothing Then Set pptApp = CreateObject("PowerPoint.Application")
     #End If
     
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    MS Word loaded: " & (Not wordApp Is Nothing)
+        Debug.Print "    MS PowerPoint loaded: " & (Not pptApp Is Nothing)
     #End If
     
     ' Make the process visible so users understand their computer isn't frozen
-    With wordApp
+    With pptApp
         .Visible = True
-        .ScreenUpdating = True
-    
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Visible: " & .Visible & vbNewLine & _
-                        "    Show Updating: " & .ScreenUpdating
-        #End If
     End With
     
-    If Not wordApp Is Nothing Then
-        Set wordDoc = wordApp.Documents.Open(templatePath)
-        If Val(wordApp.Version) > 15 Then
+    If Not pptApp Is Nothing Then
+        Set pptDoc = pptApp.Presentations.Open(templatePath)
+        If Val(pptApp.Version) > 15 Then
             #If PRINT_DEBUG_MESSAGES Then
                 Debug.Print "    Attempting to disable AutoSave."
             #End If
-            DisableAutoSave wordDoc
+            DisableAutoSave pptDoc
             #If PRINT_DEBUG_MESSAGES Then
-                Debug.Print "    AutoSave status: " & wordDoc.AutoSaveOn
+                Debug.Print "    AutoSave status: " & pptDoc.AutoSaveOn
             #End If
         End If
     End If
     
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    Template loaded: " & (Not wordDoc Is Nothing)
+        Debug.Print "    Template loaded: " & (Not pptDoc Is Nothing)
     #End If
     
-    LoadWord = (Not wordApp Is Nothing)
+    LoadPowerPoint = (Not pptApp Is Nothing)
     Exit Function
 ErrorHandler:
     #If Mac Then
-        msgToDisplay = "An error occurred while trying to load Microsoft Word. This is usually a result of a quirk in MacOS. Try creating the reports again, and it should work fine." & vbNewLine & vbNewLine & _
+        msgToDisplay = "An error occurred while trying to load Microsoft PowerPoint. This is usually a result of a quirk in MacOS. Try creating the reports again, and it should work fine." & vbNewLine & vbNewLine & _
                         "If the problem persists, please take a picture of the following error message and ask your team leader to send it to Warren at Bundang." & vbNewLine & vbNewLine & _
-                        "VBA Error " & Err.Number & ": " & Err.Description
-        #If Mac Then
-            msgToDisplay = msgToDisplay & vbNewLine & "AppleScript Error: " & appleScriptResult
-        #End If
-        
-        msgResult = DisplayMessage(msgToDisplay, vbOKOnly, "Error Loading Word", 470)
+                        "VBA Error " & Err.Number & ": " & Err.Description & vbNewLine & "AppleScript Error: " & appleScriptResult
+        msgResult = DisplayMessage(msgToDisplay, vbOKOnly, "Error Loading PowerPoint", 470)
     #End If
-    LoadWord = False
+    LoadPowerPoint = False
 End Function
 
-Private Sub DisableAutoSave(ByRef wordDoc As Object)
+Private Sub DisableAutoSave(ByRef pptDoc As Object)
     On Error Resume Next
-    If wordDoc.AutoSaveOn Then wordDoc.AutoSaveOn = False
+    If pptDoc.AutoSaveOn Then pptDoc.AutoSaveOn = False
     On Error GoTo 0
 End Sub
 
-Private Function SaveToFile(ByRef wordApp As Object, ByRef wordDoc As Object, ByVal saveRoutine As String, ByVal savePath As String, ByVal fileName As String) As Boolean
+Private Function SavePptToFile(ByRef pptApp As Object, ByRef pptDoc As Object, ByVal saveRoutine As String, ByVal savePath As String, ByVal fileName As String) As Boolean
     Dim tempFile As String, destFile As String
-    Dim scriptResult As Boolean
     
-    scriptResult = False
+    #If Mac Then
+        Dim scriptResult As Boolean
+    #Else
+        Dim fso As Object
+        Set fso = CreateObject("Scripting.FileSystemObject")
+    #End If
+    
+    fileName = fileName & IIf(saveRoutine = "Proofs", ".pptx", ".pdf")
+    tempFile = GetTempFilePath(fileName)
+    destFile = savePath & fileName
     
     On Error Resume Next
-    If saveRoutine = "Proofs" Then
-        tempFile = GetTempFilePath(fileName & ".docx")
-        destFile = savePath & fileName & ".docx"
-        
-        ' Saving to the temp folder and then moving prevents a file permission issue with iCloud and having to wait for each upload with OneDrive
-        #If Mac Then
-            wordDoc.SaveAs2 fileName:=tempFile, FileFormat:=16, AddtoRecentFiles:=False, EmbedTrueTypeFonts:=True
-            scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "CopyFile", tempFile & APPLE_SCRIPT_SPLIT_KEY & destFile)
-        #Else
-            Dim fso As Object
-            Set fso = CreateObject("Scripting.FileSystemObject")
-            
-            wordDoc.SaveAs2 fileName:=tempFile, FileFormat:=16, AddtoRecentFiles:=False, EmbedTrueTypeFonts:=True
-            If fso.FileExists(tempFile) Then fso.CopyFile tempFile, destFile, True
-        #End If
-    Else
-        #If Mac Then
-            wordDoc.SaveAs2 fileName:=(savePath & fileName & ".pdf"), FileFormat:=17, AddtoRecentFiles:=False, EmbedTrueTypeFonts:=True
-        #Else
-            wordDoc.ExportAsFixedFormat OutputFileName:=(savePath & fileName & ".pdf"), ExportFormat:=17, BitmapMissingFonts:=True
-        #End If
-    End If
+    DeleteFile tempFile
+    
+    Select Case saveRoutine
+        Case "Proofs"
+            pptDoc.SaveCopyAs tempFile
+        Case Else
+            #If Mac Then
+                scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "SavePptAsPdf", tempFile)
+            #Else
+                pptDoc.ExportAsFixedFormat Path:=tempFile, FixedFormatType:=2, Intent:=1, PrintRange:=Nothing, BitmapMissingFonts:=True
+            #End If
+    End Select
+    
+    #If Mac Then
+        scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "CopyFile", tempFile & APPLE_SCRIPT_SPLIT_KEY & destFile)
+    #Else
+        If fso.FileExists(tempFile) Then fso.CopyFile tempFile, destFile, True
+    #End If
+    On Error GoTo 0
     
     #If PRINT_DEBUG_MESSAGES Then
         If Err.Number = 0 Then
@@ -1295,77 +1276,11 @@ Private Function SaveToFile(ByRef wordApp As Object, ByRef wordDoc As Object, By
         End If
     #End If
     
-    If Val(wordApp.Version) > 15 Then DisableAutoSave wordDoc
+    If Val(pptApp.Version) > 15 Then DisableAutoSave pptDoc
     
-    SaveToFile = (Err.Number = 0)
+    SavePptToFile = (Err.Number = 0)
     On Error GoTo 0
 End Function
-
-Private Sub WriteDocReport(ByRef ws As Object, ByRef wordApp As Object, ByRef wordDoc As Object, ByVal generateProcess As String, ByVal currentRow As Integer, ByVal savePath As String, ByRef saveResult As Boolean)
-    Dim nativeTeacher As String, koreanTeacher As String, classLevel As String, classTime As String, evalDate As String
-    Dim englishName As String, koreanName As String, grammarScore As String, pronunciationScore As String, fluencyScore As String
-    Dim mannerScore As String, contentScore As String, effortScore As String, commentText As String, overallGrade As String
-    Dim fileName As String
-    
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "        Preparing report data."
-    #End If
-    
-    With ws.Cells
-        ' Data applicable to all reports
-        nativeTeacher = .Item(1, 3).Value
-        koreanTeacher = .Item(2, 3).Value
-        classLevel = .Item(3, 3).Value
-        classTime = .Item(4, 3).Value & "-" & .Item(5, 3).Value
-        evalDate = Format(.Item(6, 3).Value, "MMM. YYYY")
-        
-        ' Data specific to each student
-        englishName = .Item(currentRow, 2).Value
-        koreanName = .Item(currentRow, 3).Value
-        grammarScore = .Item(currentRow, 4).Value
-        pronunciationScore = .Item(currentRow, 5).Value
-        fluencyScore = .Item(currentRow, 6).Value
-        mannerScore = .Item(currentRow, 7).Value
-        contentScore = .Item(currentRow, 8).Value
-        effortScore = .Item(currentRow, 9).Value
-        commentText = .Item(currentRow, 10).Value
-        overallGrade = CalculateOverallGrade(ws, currentRow)
-        
-        ' Set report's filename
-        fileName = koreanName & "(" & englishName & ")" & " - " & .Item(4, 3).Value
-    End With
-    
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "        Report filename: " & fileName & vbNewLine & _
-                    "        Saving to: " & savePath
-    #End If
-    
-    With wordDoc.Shapes
-        With .Item("Report_Header").GroupItems
-            .Item("English_Name").TextFrame.TextRange.Text = englishName
-            .Item("Korean_Name").TextFrame.TextRange.Text = koreanName
-            .Item("Grade").TextFrame.TextRange.Text = classLevel
-            .Item("Native_Teacher").TextFrame.TextRange.Text = nativeTeacher
-            .Item("Korean_Teacher").TextFrame.TextRange.Text = koreanTeacher
-            .Item("Date").TextFrame.TextRange.Text = evalDate
-        End With
-        
-        .Item("Grammar_Scores").GroupItems("Grammar_" & grammarScore).TextFrame.TextRange.Text = grammarScore
-        .Item("Pronunciation_Scores").GroupItems("Pronunciation_" & pronunciationScore).TextFrame.TextRange.Text = pronunciationScore
-        .Item("Fluency_Scores").GroupItems("Fluency_" & fluencyScore).TextFrame.TextRange.Text = fluencyScore
-        .Item("Manner_Scores").GroupItems("Manner_" & mannerScore).TextFrame.TextRange.Text = mannerScore
-        .Item("Content_Scores").GroupItems("Content_" & contentScore).TextFrame.TextRange.Text = contentScore
-        .Item("Effort_Scores").GroupItems("Effort_" & effortScore).TextFrame.TextRange.Text = effortScore
-        .Item("Report_Footer").GroupItems("Comments").TextFrame.TextRange.Text = commentText
-        .Item("Report_Footer").GroupItems("Overall_Grade").TextFrame.TextRange.Text = overallGrade
-    
-        On Error Resume Next
-        If .Item("Signature") Is Nothing Then InsertSignature wordDoc
-        On Error GoTo 0
-    End With
-    
-    saveResult = SaveToFile(wordApp, wordDoc, generateProcess, savePath, fileName)
-End Sub
 
 Private Sub WritePptReport(ByRef ws As Object, ByRef pptApp As Object, ByRef pptDoc As Object, ByVal generateProcess As String, ByVal currentRow As Integer, ByVal savePath As String, ByRef saveResult As Boolean)
     Dim englishName As String, koreanName As String, classLevel As String, nativeTeacher As String, koreanTeacher As String, evalDate As String
@@ -1400,17 +1315,18 @@ Private Sub WritePptReport(ByRef ws As Object, ByRef pptApp As Object, ByRef ppt
     
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "        Report filename: " & fileName & vbNewLine & _
-                   "        Saving to: " & savePath
+                    "        Saving to: " & savePath
     #End If
     
-    With pptDoc.Shapes
+    On Error Resume Next
+    With pptDoc.Slides(1).Shapes
         With .Item("Report_Header").GroupItems
-            .Item("English_Name").TextFrame.TextRange.Text = englishName
-            .Item("Korean_Name").TextFrame.TextRange.Text = koreanName
-            .Item("Grade").TextFrame.TextRange.Text = classLevel
-            .Item("Native_Teacher").TextFrame.TextRange.Text = nativeTeacher
-            .Item("Korean_Teacher").TextFrame.TextRange.Text = koreanTeacher
-            .Item("Date").TextFrame.TextRange.Text = evalDate
+             .Item("English_Name").TextFrame.TextRange.Text = englishName
+             .Item("Korean_Name").TextFrame.TextRange.Text = koreanName
+             .Item("Grade_Level").TextFrame.TextRange.Text = classLevel
+             .Item("Native_Teacher").TextFrame.TextRange.Text = nativeTeacher
+             .Item("Korean_Teacher").TextFrame.TextRange.Text = koreanTeacher
+             .Item("Eval_Date").TextFrame.TextRange.Text = evalDate
         End With
         
         For i = LBound(scoreCategories) To UBound(scoreCategories)
@@ -1423,12 +1339,13 @@ Private Sub WritePptReport(ByRef ws As Object, ByRef pptApp As Object, ByRef ppt
         If .Item("Signature") Is Nothing Then InsertSignature pptDoc
         On Error GoTo 0
     End With
+    On Error GoTo 0
     
-    saveResult = SaveToFile(pptApp, pptDoc, generateProcess, savePath, fileName)
+    saveResult = SavePptToFile(pptApp, pptDoc, generateProcess, savePath, fileName)
 End Sub
 
 Private Sub ToggleScoreVisibility(ByRef pptDoc As Object, ByVal scoreCategory As String, ByVal scoreValue As String)
-    With pptDoc.Shapes.GroupItems(scoreCategory & "Scores")
+    With pptDoc.Slides(1).Shapes(scoreCategory & "Scores").GroupItems
         .Item(scoreCategory & "A+").Visible = IIf(scoreValue = "A+", msoTrue, msoFalse)
         .Item(scoreCategory & "A").Visible = IIf(scoreValue = "A", msoTrue, msoFalse)
         .Item(scoreCategory & "B+").Visible = IIf(scoreValue = "B+", msoTrue, msoFalse)
@@ -1521,14 +1438,13 @@ Private Sub ZipReports(ByRef ws As Worksheet, ByVal savePath As Variant, ByRef s
                 shellApp.Namespace(zipPath).CopyHere shellApp.Namespace(savePath).Items
         End Select
         
-        
         Do ' Wait for the zip file to be created, but no longer than 10 seconds
             Application.Wait (Now + TimeValue("0:00:01"))
         Loop While Not fso.FileExists(zipPath) And Timer - startTime < 10
         
         ' Copy the zip file and report if process was successful
         If fso.FileExists(zipPath) Then
-            Application.Wait (Now + TimeValue("0:00:04")) ' Wait a couple seconds for the file to be released
+            Application.Wait (Now + TimeValue("0:00:02")) ' Wait a couple seconds for the file to be released
             fso.CopyFile zipPath, savePath & zipName, True
             Kill zipPath
             saveResult = True
@@ -1553,7 +1469,30 @@ Private Sub ZipReports(ByRef ws As Worksheet, ByVal savePath As Variant, ByRef s
 End Sub
 
 Private Sub DeletePDFs(ByVal targetFolder As String)
-
+    #If Mac Then
+    #Else
+        Dim fso As Object, objFile As Object, objFolder As Object
+    
+        If Right(targetFolder, 1) <> Application.PathSeparator Then targetFolder = targetFolder & Application.PathSeparator
+        
+        Set fso = CreateObject("Scripting.FileSystemObject")
+        Set objFolder = fso.GetFolder(targetFolder)
+        
+        On Error Resume Next
+        For Each objFile In objFolder.Files
+            If LCase(fso.GetExtensionName(objFile.Name)) = "pdf" Then
+                objFile.Delete True
+                #If PRINT_DEBUG_MESSAGES Then
+                    If Err.Number <> 0 Then
+                        Debug.Print "Error deleting: " & objFile.Name & vbNewLine & _
+                                    "Error: " & Err.Description
+                        Err.Clear
+                    End If
+                #End If
+            End If
+        Next objFile
+        On Error GoTo 0
+    #End If
 End Sub
 
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -1752,32 +1691,8 @@ End Function
 '
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-Private Sub ClearAllTextBoxes(wordDoc As Object)
-    Dim shp As Object, grpItem As Object
-    
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "        Clearing text from textboxes."
-    #End If
-    
-    For Each shp In wordDoc.Shapes
-        If shp.Type = msoGroup Then
-            For Each grpItem In shp.GroupItems
-                With grpItem
-                    If .Type = msoTextBox Or .Type = msoAutoShape Then
-                        .TextFrame.TextRange.Text = ""
-                    End If
-                End With
-            Next grpItem
-        End If
-    Next shp
-    
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "        Complete."
-    #End If
-End Sub
-
 Private Function DownloadReportTemplate(ByVal templatePath As String) As Boolean
-    Const REPORT_TEMPLATE_URL As String = "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Speaking%20Evaluation%20Template.docx"
+    Const REPORT_TEMPLATE_URL As String = "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/SpeakingEvaluationTemplate.pptx"
     Dim downloadResult As Boolean
     
     #If Mac Then
@@ -1814,7 +1729,7 @@ Private Function LocateTemplate(ByVal resourcesFolder As String, ByVal REPORT_TE
     Dim msgToDisplay As String, msgResult As Variant
     
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "Attempting to load the Speaking Evaluation Template.docx."
+        Debug.Print "Attempting to load the SpeakingEvaluationTemplate.pptx."
     #End If
     
     templatePath = resourcesFolder & Application.PathSeparator & REPORT_TEMPLATE
@@ -1822,14 +1737,16 @@ Private Function LocateTemplate(ByVal resourcesFolder As String, ByVal REPORT_TE
     
     DeleteFile tempTemplatePath ' Removing existing file to avoid problems overwriting
 
-    If Not VerifyTemplateHash(templatePath) And Not DownloadReportTemplate(templatePath) Then
-        msgToDisplay = "No template was found. Process canceled."
-        msgResult = DisplayMessage(msgToDisplay, vbOKOnly, "Template Not Found", 150)
-        LocateTemplate = ""
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Unable to locate a copy of the template."
-        #End If
-        Exit Function
+    If Not VerifyTemplateHash(templatePath) Then
+        If Not DownloadReportTemplate(templatePath) Then
+            msgToDisplay = "No template was found. Process canceled."
+            msgResult = DisplayMessage(msgToDisplay, vbOKOnly, "Template Not Found", 150)
+            LocateTemplate = ""
+            #If PRINT_DEBUG_MESSAGES Then
+                Debug.Print "    Unable to locate a copy of the template."
+            #End If
+            Exit Function
+        End If
     End If
 
     #If PRINT_DEBUG_MESSAGES Then
@@ -1849,42 +1766,8 @@ Private Function LocateTemplate(ByVal resourcesFolder As String, ByVal REPORT_TE
     End If
 End Function
 
-Private Function VerifyAllDocShapesExist(ByRef wordDoc As Object) As Boolean
-    Dim shp As Shape, shapeNames As Variant
-    Dim msgToDisplay As String, msgResult As Variant
-    Dim i As Integer
-    
-    shapeNames = Array("English_Name", "Korean_Name", "Grade", "Native_Teacher", "Korean_Teacher", "Date", _
-                       "Grammar_A+", "Grammar_A", "Grammar_B+", "Grammar_B", "Grammar_C", _
-                       "Pronunciation_A+", "Pronunciation_A", "Pronunciation_B+", "Pronunciation_B", "Pronunciation_C", _
-                       "Fluency_A+", "Fluency_A", "Fluency_B+", "Fluency_B", "Fluency_C", _
-                       "Manner_A+", "Manner_A", "Manner_B+", "Manner_B", "Manner_C", _
-                       "Content_A+", "Content_A", "Content_B+", "Content_B", "Content_C", _
-                       "Effort_A+", "Effort_A", "Effort_B+", "Effort_B", "Effort_C", _
-                       "Comments", "Overall_Grade")
-                       
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "Verifying all template shapes are present."
-    #End If
-    
-    For i = LBound(shapeNames) To UBound(shapeNames)
-        If Not WordDocShapeExists(wordDoc, shapeNames(i)) Then
-            #If PRINT_DEBUG_MESSAGES Then
-                Debug.Print "    Missing shape: " & shapeNames(i)
-            #End If
-            
-            msgToDisplay = "There is a critical error with the template. Please redownload a copy of the original and try again."
-            msgResult = DisplayMessage(msgToDisplay, vbOKOnly, "Error!", 300)
-            VerifyAllDocShapesExist = False
-            Exit Function
-        End If
-    Next i
-                       
-    VerifyAllDocShapesExist = True
-End Function
-
 Private Function VerifyTemplateHash(ByVal templatePath As String) As Boolean
-    Const TEMPLATE_HASH As String = "C0343895A881DF739B2B974635A100A6"
+    Const TEMPLATE_HASH As String = "97ca281d7fca39beb3f07555e6acde26"
     
     #If Mac Then
         VerifyTemplateHash = AppleScriptTask(APPLE_SCRIPT_FILE, "CompareMD5Hashes", templatePath & APPLE_SCRIPT_SPLIT_KEY & TEMPLATE_HASH)
@@ -1911,34 +1794,6 @@ ErrorHandler:
     #End If
     VerifyTemplateHash = False
     Resume CleanUp
-End Function
-
-Private Function WordDocShapeExists(ByRef wordDoc As Object, ByVal shapeName As String) As Boolean
-    Dim shp As Object, grpItem As Object
-    
-    On Error Resume Next
-    For Each shp In wordDoc.Shapes
-        If shp.Type = msoGroup Then
-            For Each grpItem In shp.GroupItems
-                If grpItem.Name = shapeName Then
-                    WordDocShapeExists = True
-                    
-                    #If PRINT_DEBUG_MESSAGES Then
-                        Debug.Print "    " & shapeName & ": Present"
-                    #End If
-                    
-                    Exit Function
-                End If
-            Next grpItem
-        End If
-    Next shp
-    On Error GoTo 0
-    
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    " & shapeName & ": Missing"
-    #End If
-    
-    WordDocShapeExists = False
 End Function
 
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -2177,8 +2032,8 @@ Private Function GetTempFilePath(ByVal fileName As String) As String
     #End If
 End Function
 
-Private Function IsTemplateAlreadyOpen(ByVal resourcesFolder As String, ByVal REPORT_TEMPLATE As String) As Boolean
-    Dim wordApp As Object, wordDoc As Object
+Private Function IsPptTemplateAlreadyOpen(ByVal resourcesFolder As String, ByVal REPORT_TEMPLATE As String) As Boolean
+    Dim pptApp As Object, pptDoc As Object
     Dim templatePath As String, templateIsOpen As Boolean
     Dim pathOfOpenDoc As String
     Dim msgToDisplay As String
@@ -2188,36 +2043,36 @@ Private Function IsTemplateAlreadyOpen(ByVal resourcesFolder As String, ByVal RE
     #End If
     
     On Error Resume Next
-    Set wordApp = GetObject(, "Word.Application")
+    Set pptApp = GetObject(, "PowerPoint.Application")
     Err.Clear
     
-    If Not wordApp Is Nothing Then
+    If Not pptApp Is Nothing Then
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Found an open instance of MS Word." & vbNewLine & _
+            Debug.Print "    Found an open instance of MS PowerPoint." & vbNewLine & _
                         "    Checking if template is open."
         #End If
         
         templatePath = resourcesFolder & Application.PathSeparator & REPORT_TEMPLATE
         
-        For Each wordDoc In wordApp.Documents
-            pathOfOpenDoc = wordDoc.FullName
+        For Each pptDoc In pptApp.Presentations
+            pathOfOpenDoc = pptDoc.FullName
             ConvertOneDriveToLocalPath pathOfOpenDoc
             If StrComp(pathOfOpenDoc, templatePath, vbTextCompare) = 0 Then
                 templateIsOpen = True
                 #If PRINT_DEBUG_MESSAGES Then
                     Debug.Print "    Open instance of the template found. Asking if user wishes to automatically close and continue."
                 #End If
-                 msgToDisplay = "An open instance of MS Word has been detected. Please save any open files before continuing." & vbNewLine & vbNewLine & _
-                                "Click OK to automatically close Word and continue, or click Cancel to finish and save your work."
-                If DisplayMessage(msgToDisplay, vbOKCancel + vbCritical, "Error Loading Word", 310) = vbOK Then
-                    wordDoc.Close SaveChanges:=False
+                 msgToDisplay = "An open instance of MS PowerPoint has been detected. Please save any open files before continuing." & vbNewLine & vbNewLine & _
+                                "Click OK to automatically close PowerPoint and continue, or click Cancel to finish and save your work."
+                If DisplayMessage(msgToDisplay, vbOKCancel + vbCritical, "Error Loading PowerPoint", 310) = vbOK Then
+                    pptDoc.Close SaveChanges:=False
                     templateIsOpen = False
                     #If PRINT_DEBUG_MESSAGES Then
                         Debug.Print "    Open instance has been closed."
                     #End If
                 End If
             End If
-        Next wordDoc
+        Next pptDoc
     End If
     On Error GoTo 0
     
@@ -2225,9 +2080,9 @@ Private Function IsTemplateAlreadyOpen(ByVal resourcesFolder As String, ByVal RE
         Debug.Print "    Open instance: " & templateIsOpen
     #End If
     
-    Set wordDoc = Nothing
-    Set wordApp = Nothing
-    IsTemplateAlreadyOpen = templateIsOpen
+    Set pptDoc = Nothing
+    Set pptApp = Nothing
+    IsPptTemplateAlreadyOpen = templateIsOpen
 End Function
 
 Private Function MoveFile(ByVal initialPath As String, ByVal destinationPath As String) As Boolean
@@ -2510,7 +2365,7 @@ Private Sub RemoveDialogToolKit(ByVal resourcesFolder As String)
 End Sub
 
 Private Function RequestFileAndFolderAccess(Optional ByVal filePath As Variant = "") As Boolean
-    Dim workingFolder As Variant, resourcesFolder As Variant, excelTempFolder As Variant, wordTempFolder As Variant
+    Dim workingFolder As Variant, resourcesFolder As Variant, excelTempFolder As Variant, powerpointTempFolder As Variant
     Dim filePermissionCandidates As Variant, pathToRequest As Variant
     Dim fileAccessGranted As Boolean, allAccessHasBeenGranted As Boolean
     Dim i As Integer
@@ -2521,8 +2376,8 @@ Private Function RequestFileAndFolderAccess(Optional ByVal filePath As Variant =
             ConvertOneDriveToLocalPath workingFolder
             resourcesFolder = workingFolder & "/Resources"
             excelTempFolder = Environ("TMPDIR")
-            wordTempFolder = Replace(excelTempFolder, "Excel", "Word")
-            filePermissionCandidates = Array(workingFolder, resourcesFolder, excelTempFolder, wordTempFolder)
+            powerpointTempFolder = Replace(excelTempFolder, "Excel", "PowerPoint")
+            filePermissionCandidates = Array(workingFolder, resourcesFolder, excelTempFolder, powerpointTempFolder)
         Case Else
             ConvertOneDriveToLocalPath filePath ' Seems to be not needed?
             filePermissionCandidates = Array(filePath)
@@ -2722,7 +2577,7 @@ Private Function DownloadUsingDotNet35(ByVal destinationPath As String, ByVal do
     xmlHTTP.Open "Get", downloadURL, False
     xmlHTTP.Send
     
-    If xmlHTTP.status = 200 Then
+    If xmlHTTP.Status = 200 Then
         fileStream.Open
         fileStream.Type = 1 ' Binary
         fileStream.Write xmlHTTP.responseBody
@@ -2731,83 +2586,11 @@ Private Function DownloadUsingDotNet35(ByVal destinationPath As String, ByVal do
         DownloadUsingDotNet35 = True
     Else
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "HTTP request failed. Status: " & xmlHTTP.status & " - " & xmlHTTP.StatusText
+            Debug.Print "HTTP request failed. Status: " & xmlHTTP.Status & " - " & xmlHTTP.StatusText
         #End If
         DownloadUsingDotNet35 = False
     End If
     On Error GoTo 0
-End Function
-
-Private Function AreKoreanFilenamesSupported(Optional ByRef rebootRequired As Boolean = False) As Boolean
-    Dim wsh As Object, msgResult As Integer
-    Dim nonUnicodeLangLocale As String, nonUnicodeLangLocaleName As String, acpCodePage As Long
-    #If VBA7 Then
-        Dim cmdResult As LongPtr
-    #Else
-        Dim cmdResult As Long
-    #End If
-    
-    Const KOREAN_LOCALE As String = "00000412"
-    Const KOREAN_LOCALE_NAME As String = "ko-KR"
-    Const KOREAN_ACP_CODE_PAGE As Integer = 949
-    Const UNICODE_CODE_PAGE As Long = 65001
-    
-    Const TERMINAL_CMD As String = "C:\Windows\System32\cmd.exe"
-    Const REG_ACP_KEY As String = "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Nls\CodePage\ACP"
-    Const REG_LOCALE_KEY As String = "HKEY_CURRENT_USER\Control Panel\International\Locale"
-    Const REG_LOCALE_NAME_KEY As String = "HKEY_CURRENT_USER\Control Panel\International\LocaleName"
-    Const REG_CMD As String = "/c reg add ""HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Nls\CodePage"" /v ACP /t REG_SZ /d 65001 /f & " & _
-                                 "reg add ""HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Nls\CodePage"" /v MACCP /t REG_SZ /d 65001 /f & " & _
-                                 "reg add ""HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Nls\CodePage"" /v OEMCP /t REG_SZ /d 65001 /f"
-    
-    Const REQUEST_TO_ENABLE_UNICODE_SUPPORT As String = "Support for creating files with Korean filenames is required in order to " & _
-                                                        "correctly generate the Speaking Evaluation reports." & vbNewLine & vbNewLine & _
-                                                        "Would you like to enable this setting now?" & vbNewLine & "(A reboot will be required.)"
-    Const FAILED_TO_ENABLE_UNICODE As String = "Please try to enable 'Unicode UTF-8 for worldwide language support' manually." & vbNewLine & vbNewLine & _
-                                               "You can find this setting by going to:" & vbNewLine & "Settings > Time & Language > Language & Region " & _
-                                               "> Administrative language settings > Change system locale..."
-    Const PROCEED_WITHOUT_UNICODE As String = "Unicode support has not been enabled. Creation of the reports will attempt to continue but may fail, " & _
-                                              "and a zip file containing all the reports might not be created." & vbNewLine & vbNewLine & "Please read " & _
-                                              "the final message window carefully, check that each report was named correctly, and verify that there " & _
-                                              "are no errors with their contents."
-    
-    On Error Resume Next
-    Set wsh = CreateObject("WScript.Shell")
-    acpCodePage = wsh.RegRead(REG_ACP_KEY)
-    nonUnicodeLangLocale = wsh.RegRead(REG_LOCALE_KEY)
-    nonUnicodeLangLocaleName = wsh.RegRead(REG_LOCALE_NAME_KEY)
-    
-    If Err.Number <> 0 Then
-        Err.Clear
-        AreKoreanFilenamesSupported = False
-        Exit Function
-    End If
-    On Error GoTo 0
-    
-    Select Case True
-        ' Language settings support Korean input and filenames
-        Case (nonUnicodeLangLocale = KOREAN_LOCALE), (nonUnicodeLangLocaleName = KOREAN_LOCALE_NAME), (acpCodePage = KOREAN_ACP_CODE_PAGE)
-            AreKoreanFilenamesSupported = True
-        ' Use Unicode UTF-8 for worldwide language support is enabled
-        Case (acpCodePage = UNICODE_CODE_PAGE)
-            AreKoreanFilenamesSupported = True
-        Case Else
-            msgResult = DisplayMessage(REQUEST_TO_ENABLE_UNICODE_SUPPORT, vbYesNo + vbExclamation, "Hangul Support Required!")
-            If msgResult = vbYes Then
-                ' Set ACP, MACCP, and OEMCP to 65001
-                cmdResult = ShellExecute(0, "runas", TERMINAL_CMD, REG_CMD, vbNullString, 1)
-                If cmdResult <= 32 Then
-                    msgResult = DisplayMessage(FAILED_TO_ENABLE_UNICODE, vbOKOnly + vbExclamation, "Failed to Enable Unicode Support!")
-                    AreKoreanFilenamesSupported = False
-                Else
-                    rebootRequired = True
-                    AreKoreanFilenamesSupported = True
-                End If
-            Else
-                msgResult = DisplayMessage(PROCEED_WITHOUT_UNICODE, vbOKOnly + vbExclamation, "Proceeding Without Unicode Support")
-                AreKoreanFilenamesSupported = False
-            End If
-    End Select
 End Function
 #End If
 
@@ -2815,15 +2598,15 @@ Private Function FindPathToArchiveTool(Optional ByRef archiverName As String = "
     Dim i As Integer, downloadResult As Boolean
     Dim resourcesFolder As String
     
-    Const RESOURCES_7ZIP_FILENAME As String = "7za.exe"
-    Const RESOURCES_7ZIP_ARCHIVER_NAME As String = "Local 7zip"
-    
     resourcesFolder = ThisWorkbook.Path & Application.PathSeparator & "Resources"
     ConvertOneDriveToLocalPath resourcesFolder
     
     ' Declare OS specific variables, constants, and arrays
     #If Mac Then
         Dim scriptResultBoolean As Boolean
+        
+        Const RESOURCES_7ZIP_FILENAME As String = "7zz"
+        Const RESOURCES_7ZIP_ARCHIVER_NAME As String = "Local 7zip"
     #Else
         Dim wshShell As Object
         Dim defaultPaths As Variant, archiverNames As Variant, exeNames As Variant, regKeys As Variant
@@ -2838,6 +2621,9 @@ Private Function FindPathToArchiveTool(Optional ByRef archiverName As String = "
         
         Const DEFAULT_PATH_7ZIP As String = "C:\Program Files\7-Zip\"
         Const DEFAULT_PATH_7ZIP_32Bit As String = "C:\Program Files (x86)\7-Zip\"
+        
+        Const RESOURCES_7ZIP_FILENAME As String = "7za.exe"
+        Const RESOURCES_7ZIP_ARCHIVER_NAME As String = "Local 7zip"
         
         defaultPaths = Array(DEFAULT_PATH_7ZIP, DEFAULT_PATH_7ZIP_32Bit)
         archiverNames = Array(ARCHIVER_NAME_7ZIP, ARCHIVER_NAME_7ZIP)
@@ -2955,3 +2741,31 @@ Private Sub Download7Zip(ByVal resourcesFolder As String, ByRef downloadResult A
         End Select
     #End If
 End Sub
+
+Private Function InstallFonts() As Boolean
+    Const FONT_NAME As String = "Autumn in September.ttf"
+    Const FONT_URL = "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/font.ttf"
+    
+    #If Mac Then
+        InstallFonts = AppleScriptTask(APPLE_SCRIPT_FILE, "InstallFonts", FONT_NAME & APPLE_SCRIPT_SPLIT_KEY & FONT_URL)
+    #Else
+        Dim fso As Object, fontPath As String
+        
+        Set fso = CreateObject("Scripting.FileSystemObject")
+        fontPath = Environ("LOCALAPPDATA") & "\Microsoft\Windows\Fonts\" & FONT_NAME
+        
+        If fso.FileExists(fontPath) Then
+            InstallFonts = True
+            Exit Function
+        End If
+        
+        Select Case True
+            Case CheckForCurl()
+                InstallFonts = DownloadUsingCurl(fontPath, FONT_URL)
+            Case CheckForCurl()
+                InstallFonts = DownloadUsingDotNet35(fontPath, FONT_URL)
+            Case Else
+                InstallFonts = False
+        End Select
+    #End If
+End Function
