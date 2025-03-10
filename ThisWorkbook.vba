@@ -1,14 +1,96 @@
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'
+' Global Declarations and Main Sub
+'
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 Option Explicit
 #Const PRINT_DEBUG_MESSAGES = True
 Const APPLE_SCRIPT_FILE As String = "SpeakingEvals.scpt"
 Const APPLE_SCRIPT_SPLIT_KEY = "-,-"
 
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-'
-'  Auto-run Sub on Startup and Worksheet Switching
-'
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+Sub Main()
+    Dim ws As Worksheet, clickedButtonName As String
+    
+    Set ws = ActiveSheet
+    
+    With Application
+        clickedButtonName = .Caller
+        .EnableEvents = False
+        .ScreenUpdating = False
+    End With
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Beginning tasks." & vbNewLine & _
+                    "    Active Worksheet = " & ws.Name
+    #End If
+    
+    ' Check system requirements
+    #If Mac Then
+        Dim msgToDiplay As String
+        
+        If Not AreAppleScriptsInstalled(True) Then
+            RemindUserToInstallSpeakingEvalsScpt
+            Exit Sub
+        End If
+    #Else
+        'Dim requirementsMet As Boolean, rebootRequired As Boolean
+        'Dim msgResult As Integer
+        
+        'Const REBOOT_MSG As String = "Please reboot your computer and try again."
+        'Const REBOOT_MSG_MSGTYPE As Integer = vbOKOnly + vbExclamation
+        'Const REBOOT_MSG_TITLE As String = "Reboot Required!"
+        
+        'Const NO_ARCHIVE_TOOL_MSG As String = ""
+        'Const NO_ARCHIVE_TOOL_MSGTYPE As Integer = vbYesNo + vbExclamation
+        'Const NO_ARCHIVE_TOOL_TITLE As String = "Reboot Required!"
+        
+        'requirementsMet = AreKoreanFilenamesSupported(rebootRequired)
+        
+        'If rebootRequired Then
+        '    msgResult = DisplayMessage(REBOOT_MSG, REBOOT_MSG_MSGTYPE, REBOOT_MSG_TITLE)
+        '    Exit Sub
+        'End If
+        
+        'If Not requirementsMet Then
+        '    If FindPathToArchiveTool = "" Then
+        '        msgResult = DisplayMessage(NO_ARCHIVE_TOOL_MSG, NO_ARCHIVE_TOOL_MSGTYPE, NO_ARCHIVE_TOOL_TITLE)
+        '        If msgResult = vbYes Then
+        '            ' Decide / Test what to do in this case
+        '            ' Let the user simple make the PDFs or abort?
+        '        End If
+        '    End If
+        'End If
+    #End If
+    
+    On Error GoTo ReenableEvents
+    
+    Select Case clickedButtonName
+        #If Mac Then
+        Case "Button_EnhancedDialogs_Enable", "Button_EnhancedDialogs_Disable"
+            ToogleMacSettingsButtons ws, clickedButtonName
+        #End If
+        Case "Button_GenerateReports", "Button_GenerateProofs"
+            GenerateReports ws, clickedButtonName
+            ws.Activate ' Ensure the right worksheet is being shown when finished.
+        Case "Button_RepairLayout"
+            ws.Unprotect
+            SetLayoutClassRecords ThisWorkbook, ws
+            ws.Protect
+    End Select
+    
+ReenableEvents:
+    With Application
+        .EnableEvents = True
+        .ScreenUpdating = True
+    End With
+End Sub
 
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'
+'  Worksheet & Data Validation
+'
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 Private Sub Workbook_Open()
     Const CURL_COMMAND_TEXT As String = "curl -L -o ~/Library/Application\ Scripts/com.microsoft.Excel/SpeakingEvals.scpt https://github.com/papercutter0324/SpeakingEvals/raw/main/SpeakingEvals.scpt"
     Dim wb As Workbook, ws As Worksheet, shps As Shapes
@@ -679,162 +761,9 @@ End Sub
 
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 '
-'  Main Subs and Functions
+' Report Generation
 '
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-Sub Main()
-    Dim ws As Worksheet, clickedButtonName As String
-    
-    Set ws = ActiveSheet
-    
-    With Application
-        clickedButtonName = .Caller
-        .EnableEvents = False
-        .ScreenUpdating = False
-    End With
-    
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "Beginning tasks." & vbNewLine & _
-                    "    Active Worksheet = " & ws.Name
-    #End If
-    
-    ' Check system requirements
-    #If Mac Then
-        Dim msgToDiplay As String
-        
-        If Not AreAppleScriptsInstalled(True) Then
-            RemindUserToInstallSpeakingEvalsScpt
-            Exit Sub
-        End If
-    #Else
-        'Dim requirementsMet As Boolean, rebootRequired As Boolean
-        'Dim msgResult As Integer
-        
-        'Const REBOOT_MSG As String = "Please reboot your computer and try again."
-        'Const REBOOT_MSG_MSGTYPE As Integer = vbOKOnly + vbExclamation
-        'Const REBOOT_MSG_TITLE As String = "Reboot Required!"
-        
-        'Const NO_ARCHIVE_TOOL_MSG As String = ""
-        'Const NO_ARCHIVE_TOOL_MSGTYPE As Integer = vbYesNo + vbExclamation
-        'Const NO_ARCHIVE_TOOL_TITLE As String = "Reboot Required!"
-        
-        'requirementsMet = AreKoreanFilenamesSupported(rebootRequired)
-        
-        'If rebootRequired Then
-        '    msgResult = DisplayMessage(REBOOT_MSG, REBOOT_MSG_MSGTYPE, REBOOT_MSG_TITLE)
-        '    Exit Sub
-        'End If
-        
-        'If Not requirementsMet Then
-        '    If FindPathToArchiveTool = "" Then
-        '        msgResult = DisplayMessage(NO_ARCHIVE_TOOL_MSG, NO_ARCHIVE_TOOL_MSGTYPE, NO_ARCHIVE_TOOL_TITLE)
-        '        If msgResult = vbYes Then
-        '            ' Decide / Test what to do in this case
-        '            ' Let the user simple make the PDFs or abort?
-        '        End If
-        '    End If
-        'End If
-    #End If
-    
-    On Error GoTo ReenableEvents
-    
-    Select Case clickedButtonName
-        #If Mac Then
-        Case "Button_EnhancedDialogs_Enable", "Button_EnhancedDialogs_Disable"
-            ToogleMacSettingsButtons ws, clickedButtonName
-        #End If
-        Case "Button_GenerateReports", "Button_GenerateProofs"
-            GenerateReports ws, clickedButtonName
-            ws.Activate ' Ensure the right worksheet is being shown when finished.
-        Case "Button_RepairLayout"
-            ws.Unprotect
-            SetLayoutClassRecords ThisWorkbook, ws
-            ws.Protect
-    End Select
-    
-ReenableEvents:
-    With Application
-        .EnableEvents = True
-        .ScreenUpdating = True
-    End With
-End Sub
-
-Private Function CalculateOverallGrade(ByRef ws As Worksheet, ByVal currentRow As Integer) As String
-    Dim scoreRange As Range, gradeCell As Range
-    Dim totalScore As Double, avgScore As Double
-    Dim roundedScore As Integer, numericScore As Integer
-    
-    Set scoreRange = ws.Range("D" & currentRow & ":" & "I" & currentRow)
-    totalScore = 0
-    
-    For Each gradeCell In scoreRange
-        Select Case gradeCell.Value
-            Case "A+": numericScore = 5
-            Case "A": numericScore = 4
-            Case "B+": numericScore = 3
-            Case "B": numericScore = 2
-            Case "C": numericScore = 1
-        End Select
-        totalScore = totalScore + numericScore
-    Next gradeCell
-    
-    ' Be a little generous with the score rounding. They're young afterall.
-    avgScore = totalScore / 6
-    If avgScore - Int(avgScore) >= 0.4 Then
-        roundedScore = Int(avgScore) + 1
-    Else
-        roundedScore = Int(avgScore)
-    End If
-    
-    Select Case roundedScore
-        Case 5: CalculateOverallGrade = "A+"
-        Case 4: CalculateOverallGrade = "A"
-        Case 3: CalculateOverallGrade = "B+"
-        Case 2: CalculateOverallGrade = "B"
-        Case 1: CalculateOverallGrade = "C"
-    End Select
-End Function
-
-Private Sub ExportSignatureFromExcel(ByVal SIGNATURE_SHAPE_NAME As String, signatureImagePath As String)
-    Dim signSheet As Worksheet, tempSheet As Worksheet, signatureshp As Shape, chrtObj As ChartObject
-    
-    Application.DisplayAlerts = False
-    
-    Set tempSheet = ThisWorkbook.Sheets.Add(After:=Sheets(Sheets.Count))
-    tempSheet.Name = "Temp_signature"
-    
-    Set signatureshp = ThisWorkbook.Worksheets("mySignature").Shapes(SIGNATURE_SHAPE_NAME)
-    signatureshp.Copy
-    
-    signatureImagePath = GetTempFilePath("tempSignature.png")
-    ConvertOneDriveToLocalPath signatureImagePath
-    
-    On Error Resume Next
-    Kill signatureImagePath
-    Err.Clear
-    
-    Set chrtObj = tempSheet.ChartObjects.Add(Left:=tempSheet.Range("B2").Left, _
-                                             Top:=tempSheet.Range("B2").Top, _
-                                             Width:=signatureshp.Width, _
-                                             Height:=signatureshp.Height)
-    With chrtObj
-        .Activate
-        DoEvents
-        .Chart.Paste
-        Application.Wait Now + TimeValue("00:00:01")
-        .Chart.ChartArea.Format.Line.Visible = msoFalse
-        DoEvents
-        .Chart.Export signatureImagePath, "png"
-        DoEvents
-        .Delete
-    End With
-    On Error GoTo 0
-    
-    tempSheet.Delete
-    Application.DisplayAlerts = True
-End Sub
-
 Private Sub GenerateReports(ByRef ws As Worksheet, ByVal clickedButtonName As String)
     Const REPORT_TEMPLATE As String = "SpeakingEvaluationTemplate.pptx"
     Const ERR_RESOURCES_FOLDER As String = "resourcesFolder"
@@ -887,7 +816,7 @@ Private Sub GenerateReports(ByRef ws As Worksheet, ByVal clickedButtonName As St
     ConvertOneDriveToLocalPath resourcesFolder
     
     #If Mac Then
-        If Not RequestFileAndFolderAccess Then
+        If Not RequestFileAndFolderAccess(resourcesFolder) Then
             ' Create an error msg
             ' GoTo CleanUp
         End If
@@ -938,7 +867,7 @@ Private Sub GenerateReports(ByRef ws As Worksheet, ByVal clickedButtonName As St
         GoTo CleanUp
     End If
 
-    savePath = SetSaveLocation(ws, generateProcess)
+    savePath = SetSaveLocation(ws, generateProcess, resourcesFolder)
     If savePath = "" Then
         ' Set an error msg
         GoTo CleanUp
@@ -979,7 +908,7 @@ Private Sub GenerateReports(ByRef ws As Worksheet, ByVal clickedButtonName As St
     resultMsg = MSG_SUCCESS
     
     If generateProcess = "FinalReports" Then
-        ZipReports ws, savePath, saveResult
+        ZipReports ws, savePath, saveResult, resourcesFolder
         If Not saveResult Then resultMsg = MSG_ZIP_FAILED
     End If
     
@@ -1029,127 +958,6 @@ CleanUp:
         #End If
         KillPowerPoint pptApp, pptDoc
     End If
-End Sub
-
-Private Sub InsertSignature(ByRef pptDoc As Object)
-    Dim sigShape As Object, sigWidth As Double, sigHeight As Double, sigAspectRatio As Double
-    Dim signatureFound As Boolean
-    
-    Const SIGNATURE_SHAPE_NAME As String = "mySignature"
-    
-    ' These numbers make no sense, but they work.
-    Const ABSOLUTE_LEFT As Double = 375
-    Const ABSOLUTE_TOP As Double = 727.5
-    Const MAX_WIDTH As Double = 130
-    Const MAX_HEIGHT As Double = 31
-    
-    Static signaturePath As String
-    Static signatureImagePath As String
-    Static useEmbeddedSignature As Boolean
-    
-    If signaturePath = "" Then
-        signaturePath = ThisWorkbook.Path & Application.PathSeparator
-        ConvertOneDriveToLocalPath signaturePath
-    End If
-    
-    On Error Resume Next
-    Set sigShape = pptDoc.Slides(1).Shapes(SIGNATURE_SHAPE_NAME)
-    If Not sigShape Is Nothing Then Exit Sub
-    useEmbeddedSignature = (Not ThisWorkbook.Sheets("mySignature").Shapes(SIGNATURE_SHAPE_NAME) Is Nothing)
-     
-    If useEmbeddedSignature Then
-        ExportSignatureFromExcel SIGNATURE_SHAPE_NAME, signatureImagePath
-    Else
-        signatureImagePath = GetSignatureFile(signaturePath)
-        If signatureImagePath = "" Then Exit Sub
-    End If
-    
-    Set sigShape = pptDoc.Slides(1).Shapes.AddPicture(fileName:=signatureImagePath, LinkToFile:=msoFalse, SaveWithDocument:=msoTrue, _
-                                                      Left:=ABSOLUTE_LEFT, Top:=ABSOLUTE_TOP)
-    If Err.Number <> 0 Then
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "Error inserting ignature."
-        #End If
-        Exit Sub
-    End If
-    On Error GoTo 0
-    
-    sigShape.Name = SIGNATURE_SHAPE_NAME
-    
-    ' Maintain the aspect ratio and resize if needed
-    sigAspectRatio = sigShape.Width / sigShape.Height
-    If MAX_WIDTH / MAX_HEIGHT > sigAspectRatio Then
-        ' Adjust width to fit within max height
-        sigWidth = MAX_HEIGHT * sigAspectRatio
-        sigHeight = MAX_HEIGHT
-    Else
-        ' Adjust height to fit within max width
-        sigWidth = MAX_WIDTH
-        sigHeight = MAX_WIDTH / sigAspectRatio
-    End If
-
-    ' Position and resize the image
-    With sigShape
-        .LockAspectRatio = msoTrue
-        .Width = sigWidth
-        .Height = sigHeight
-    End With
-End Sub
-
-Private Function GetSignatureFile(ByVal signaturePath As String) As String
-    #If Mac Then
-        GetSignatureFile = AppleScriptTask(APPLE_SCRIPT_FILE, "FindSignature", signaturePath)
-    #Else
-        If Dir(signaturePath & "mySignature.png") <> "" Then
-            GetSignatureFile = signaturePath & "mySignature.png"
-        ElseIf Dir(signaturePath & "mySignature.jpg") <> "" Then
-            GetSignatureFile = signaturePath & "mySignature.jpg"
-        Else
-            GetSignatureFile = ""
-        End If
-    #End If
-End Function
-
-Private Sub KillPowerPoint(ByRef pptApp As Object, ByRef pptDoc As Object)
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "Attempting to close the open instance of MS PowerPoint."
-    #End If
-    
-    On Error Resume Next
-    If Not pptDoc Is Nothing Then
-        pptDoc.Close SaveChanges:=False
-        Set pptDoc = Nothing
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Attempting to close the template." & vbNewLine & _
-                        "    Status: " & (pptDoc Is Nothing)
-        #End If
-    End If
-    
-    If Not pptApp Is Nothing Then
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Attempting to close MS PowerPoint."
-        #End If
-        pptApp.Quit
-        Set pptApp = Nothing
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Status: " & (pptApp Is Nothing)
-        #End If
-    End If
-
-    #If Mac Then
-        Dim closeResult As String
-        
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Attempting extra step required to completely close MS PowerPoint on MacOS."
-        #End If
-    
-        closeResult = AppleScriptTask(APPLE_SCRIPT_FILE, "ClosePowerPoint", closeResult)
-
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Status: " & closeResult
-        #End If
-    #End If
-    On Error GoTo 0
 End Sub
 
 Private Function LoadPowerPoint(ByRef pptApp As Object, ByRef pptDoc As Object, ByVal templatePath As String) As Boolean
@@ -1225,11 +1033,235 @@ ErrorHandler:
     LoadPowerPoint = False
 End Function
 
-Private Sub DisableAutoSave(ByRef pptDoc As Object)
+Private Sub WritePptReport(ByRef ws As Object, ByRef pptApp As Object, ByRef pptDoc As Object, ByVal generateProcess As String, ByVal currentRow As Integer, ByVal savePath As String, ByRef saveResult As Boolean)
+    Dim englishName As String, koreanName As String, classLevel As String, nativeTeacher As String, koreanTeacher As String, evalDate As String
+    Dim commentText As String, classTime As String, fileName As String
+    Dim scoreCategories As Variant, scoreValues As Variant
+    Dim i As Integer
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "        Preparing report data."
+    #End If
+    
+    With ws.Cells
+        ' Header values
+        englishName = .Item(currentRow, 2).Value
+        koreanName = .Item(currentRow, 3).Value
+        classLevel = .Item(3, 3).Value
+        nativeTeacher = .Item(1, 3).Value
+        koreanTeacher = .Item(2, 3).Value
+        evalDate = Format(.Item(6, 3).Value, "MMM. YYYY")
+
+        ' Scores and comment values
+        scoreCategories = Array("Grammar_", "Pronunciation_", "Fluency_", "Manner_", "Content_", "Effort_", "Result_")
+        scoreValues = Array(.Item(currentRow, 4).Value, .Item(currentRow, 5).Value, .Item(currentRow, 6).Value, _
+                           .Item(currentRow, 7).Value, .Item(currentRow, 8).Value, .Item(currentRow, 9).Value, _
+                           CalculateOverallGrade(ws, currentRow))
+        commentText = .Item(currentRow, 10).Value
+
+        ' Set report's filename
+        classTime = .Item(4, 3).Value & "-" & .Item(5, 3).Value
+        If Len(englishName) > 10 Then
+            fileName = koreanName & "(" & Trim(Left(englishName, 10)) & ")" & " - " & .Item(4, 3).Value
+        Else
+            fileName = koreanName & "(" & englishName & ")" & " - " & .Item(4, 3).Value
+        End If
+    End With
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "        Report filename: " & fileName & vbNewLine & _
+                    "        Saving to: " & savePath
+    #End If
+    
     On Error Resume Next
-    If pptDoc.AutoSaveOn Then pptDoc.AutoSaveOn = False
+    With pptDoc.Slides(1).Shapes
+        With .Item("Report_Header").GroupItems
+             .Item("English_Name").TextFrame.TextRange.Text = englishName
+             .Item("Korean_Name").TextFrame.TextRange.Text = koreanName
+             .Item("Grade_Level").TextFrame.TextRange.Text = classLevel
+             .Item("Native_Teacher").TextFrame.TextRange.Text = nativeTeacher
+             .Item("Korean_Teacher").TextFrame.TextRange.Text = koreanTeacher
+             .Item("Eval_Date").TextFrame.TextRange.Text = evalDate
+        End With
+        
+        For i = LBound(scoreCategories) To UBound(scoreCategories)
+            ToggleScoreVisibility pptDoc, scoreCategories(i), scoreValues(i)
+        Next i
+
+        .Item("Comments").TextFrame.TextRange.Text = commentText
+
+        On Error Resume Next
+        If .Item("Signature") Is Nothing Then InsertSignature pptDoc
+        On Error GoTo 0
+    End With
     On Error GoTo 0
+    
+    saveResult = SavePptToFile(pptApp, pptDoc, generateProcess, savePath, fileName)
 End Sub
+
+Private Function CalculateOverallGrade(ByRef ws As Worksheet, ByVal currentRow As Integer) As String
+    Dim scoreRange As Range, gradeCell As Range
+    Dim totalScore As Double, avgScore As Double
+    Dim roundedScore As Integer, numericScore As Integer
+    
+    Set scoreRange = ws.Range("D" & currentRow & ":" & "I" & currentRow)
+    totalScore = 0
+    
+    For Each gradeCell In scoreRange
+        Select Case gradeCell.Value
+            Case "A+": numericScore = 5
+            Case "A": numericScore = 4
+            Case "B+": numericScore = 3
+            Case "B": numericScore = 2
+            Case "C": numericScore = 1
+        End Select
+        totalScore = totalScore + numericScore
+    Next gradeCell
+    
+    ' Be a little generous with the score rounding. They're young afterall.
+    avgScore = totalScore / 6
+    If avgScore - Int(avgScore) >= 0.4 Then
+        roundedScore = Int(avgScore) + 1
+    Else
+        roundedScore = Int(avgScore)
+    End If
+    
+    Select Case roundedScore
+        Case 5: CalculateOverallGrade = "A+"
+        Case 4: CalculateOverallGrade = "A"
+        Case 3: CalculateOverallGrade = "B+"
+        Case 2: CalculateOverallGrade = "B"
+        Case 1: CalculateOverallGrade = "C"
+    End Select
+End Function
+
+Private Sub ToggleScoreVisibility(ByRef pptDoc As Object, ByVal scoreCategory As String, ByVal scoreValue As String)
+    With pptDoc.Slides(1).Shapes(scoreCategory & "Scores").GroupItems
+        .Item(scoreCategory & "A+").Visible = IIf(scoreValue = "A+", msoTrue, msoFalse)
+        .Item(scoreCategory & "A").Visible = IIf(scoreValue = "A", msoTrue, msoFalse)
+        .Item(scoreCategory & "B+").Visible = IIf(scoreValue = "B+", msoTrue, msoFalse)
+        .Item(scoreCategory & "B").Visible = IIf(scoreValue = "B", msoTrue, msoFalse)
+        .Item(scoreCategory & "C").Visible = IIf(scoreValue = "C", msoTrue, msoFalse)
+    End With
+End Sub
+
+Private Sub InsertSignature(ByRef pptDoc As Object)
+    Dim sigShape As Object, sigWidth As Double, sigHeight As Double, sigAspectRatio As Double
+    Dim signatureFound As Boolean
+    
+    Const SIGNATURE_SHAPE_NAME As String = "mySignature"
+    
+    ' These numbers make no sense, but they work.
+    Const ABSOLUTE_LEFT As Double = 375
+    Const ABSOLUTE_TOP As Double = 727.5
+    Const MAX_WIDTH As Double = 130
+    Const MAX_HEIGHT As Double = 31
+    
+    Static signaturePath As String
+    Static signatureImagePath As String
+    Static useEmbeddedSignature As Boolean
+    
+    If signaturePath = "" Then
+        signaturePath = ThisWorkbook.Path & Application.PathSeparator
+        ConvertOneDriveToLocalPath signaturePath
+    End If
+    
+    On Error Resume Next
+    Set sigShape = pptDoc.Slides(1).Shapes(SIGNATURE_SHAPE_NAME)
+    If Not sigShape Is Nothing Then Exit Sub
+    useEmbeddedSignature = (Not ThisWorkbook.Sheets("mySignature").Shapes(SIGNATURE_SHAPE_NAME) Is Nothing)
+     
+    If useEmbeddedSignature Then
+        ExportSignatureFromExcel SIGNATURE_SHAPE_NAME, signatureImagePath
+    Else
+        signatureImagePath = GetSignatureFile(signaturePath)
+        If signatureImagePath = "" Then Exit Sub
+    End If
+    
+    Set sigShape = pptDoc.Slides(1).Shapes.AddPicture(fileName:=signatureImagePath, LinkToFile:=msoFalse, SaveWithDocument:=msoTrue, _
+                                                      Left:=ABSOLUTE_LEFT, Top:=ABSOLUTE_TOP)
+    If Err.Number <> 0 Then
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "Error inserting ignature."
+        #End If
+        Exit Sub
+    End If
+    On Error GoTo 0
+    
+    sigShape.Name = SIGNATURE_SHAPE_NAME
+    
+    ' Maintain the aspect ratio and resize if needed
+    sigAspectRatio = sigShape.Width / sigShape.Height
+    If MAX_WIDTH / MAX_HEIGHT > sigAspectRatio Then
+        ' Adjust width to fit within max height
+        sigWidth = MAX_HEIGHT * sigAspectRatio
+        sigHeight = MAX_HEIGHT
+    Else
+        ' Adjust height to fit within max width
+        sigWidth = MAX_WIDTH
+        sigHeight = MAX_WIDTH / sigAspectRatio
+    End If
+
+    ' Position and resize the image
+    With sigShape
+        .LockAspectRatio = msoTrue
+        .Width = sigWidth
+        .Height = sigHeight
+    End With
+End Sub
+
+Private Sub ExportSignatureFromExcel(ByVal SIGNATURE_SHAPE_NAME As String, signatureImagePath As String)
+    Dim signSheet As Worksheet, tempSheet As Worksheet, signatureshp As Shape, chrtObj As ChartObject
+    
+    Application.DisplayAlerts = False
+    
+    Set tempSheet = ThisWorkbook.Sheets.Add(After:=Sheets(Sheets.Count))
+    tempSheet.Name = "Temp_signature"
+    
+    Set signatureshp = ThisWorkbook.Worksheets("mySignature").Shapes(SIGNATURE_SHAPE_NAME)
+    signatureshp.Copy
+    
+    signatureImagePath = GetTempFilePath("tempSignature.png")
+    ConvertOneDriveToLocalPath signatureImagePath
+    
+    On Error Resume Next
+    Kill signatureImagePath
+    Err.Clear
+    
+    Set chrtObj = tempSheet.ChartObjects.Add(Left:=tempSheet.Range("B2").Left, _
+                                             Top:=tempSheet.Range("B2").Top, _
+                                             Width:=signatureshp.Width, _
+                                             Height:=signatureshp.Height)
+    With chrtObj
+        .Activate
+        DoEvents
+        .Chart.Paste
+        Application.Wait Now + TimeValue("00:00:01")
+        .Chart.ChartArea.Format.Line.Visible = msoFalse
+        DoEvents
+        .Chart.Export signatureImagePath, "png"
+        DoEvents
+        .Delete
+    End With
+    On Error GoTo 0
+    
+    tempSheet.Delete
+    Application.DisplayAlerts = True
+End Sub
+
+Private Function GetSignatureFile(ByVal signaturePath As String) As String
+    #If Mac Then
+        GetSignatureFile = AppleScriptTask(APPLE_SCRIPT_FILE, "FindSignature", signaturePath)
+    #Else
+        If Dir(signaturePath & "mySignature.png") <> "" Then
+            GetSignatureFile = signaturePath & "mySignature.png"
+        ElseIf Dir(signaturePath & "mySignature.jpg") <> "" Then
+            GetSignatureFile = signaturePath & "mySignature.jpg"
+        Else
+            GetSignatureFile = ""
+        End If
+    #End If
+End Function
 
 Private Function SavePptToFile(ByRef pptApp As Object, ByRef pptDoc As Object, ByVal saveRoutine As String, ByVal savePath As String, ByVal fileName As String) As Boolean
     Dim tempFile As String, destFile As String
@@ -1282,79 +1314,55 @@ Private Function SavePptToFile(ByRef pptApp As Object, ByRef pptDoc As Object, B
     On Error GoTo 0
 End Function
 
-Private Sub WritePptReport(ByRef ws As Object, ByRef pptApp As Object, ByRef pptDoc As Object, ByVal generateProcess As String, ByVal currentRow As Integer, ByVal savePath As String, ByRef saveResult As Boolean)
-    Dim englishName As String, koreanName As String, classLevel As String, nativeTeacher As String, koreanTeacher As String, evalDate As String
-    Dim commentText As String, classTime As String, fileName As String
-    Dim scoreCategories As Variant, scoreValues As Variant
-    Dim i As Integer
-    
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "        Preparing report data."
-    #End If
-    
-    With ws.Cells
-        ' Header values
-        englishName = .Item(currentRow, 2).Value
-        koreanName = .Item(currentRow, 3).Value
-        classLevel = .Item(3, 3).Value
-        nativeTeacher = .Item(1, 3).Value
-        koreanTeacher = .Item(2, 3).Value
-        evalDate = Format(.Item(6, 3).Value, "MMM. YYYY")
+Private Sub DisableAutoSave(ByRef pptDoc As Object)
+    On Error Resume Next
+    If pptDoc.AutoSaveOn Then pptDoc.AutoSaveOn = False
+    On Error GoTo 0
+End Sub
 
-        ' Scores and comment values
-        scoreCategories = Array("Grammar_", "Pronunciation_", "Fluency_", "Manner_", "Content_", "Effort_", "Result_")
-        scoreValues = Array(.Item(currentRow, 4).Value, .Item(currentRow, 5).Value, .Item(currentRow, 6).Value, _
-                           .Item(currentRow, 7).Value, .Item(currentRow, 8).Value, .Item(currentRow, 9).Value, _
-                           CalculateOverallGrade(ws, currentRow))
-        commentText = .Item(currentRow, 10).Value
-
-        ' Set report's filename
-        classTime = .Item(4, 3).Value & "-" & .Item(5, 3).Value
-        fileName = koreanName & "(" & englishName & ")" & " - " & .Item(4, 3).Value
-    End With
-    
+Private Sub KillPowerPoint(ByRef pptApp As Object, ByRef pptDoc As Object)
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "        Report filename: " & fileName & vbNewLine & _
-                    "        Saving to: " & savePath
+        Debug.Print "Attempting to close the open instance of MS PowerPoint."
     #End If
     
     On Error Resume Next
-    With pptDoc.Slides(1).Shapes
-        With .Item("Report_Header").GroupItems
-             .Item("English_Name").TextFrame.TextRange.Text = englishName
-             .Item("Korean_Name").TextFrame.TextRange.Text = koreanName
-             .Item("Grade_Level").TextFrame.TextRange.Text = classLevel
-             .Item("Native_Teacher").TextFrame.TextRange.Text = nativeTeacher
-             .Item("Korean_Teacher").TextFrame.TextRange.Text = koreanTeacher
-             .Item("Eval_Date").TextFrame.TextRange.Text = evalDate
-        End With
-        
-        For i = LBound(scoreCategories) To UBound(scoreCategories)
-            ToggleScoreVisibility pptDoc, scoreCategories(i), scoreValues(i)
-        Next i
-
-        .Item("Comments").TextFrame.TextRange.Text = commentText
-
-        On Error Resume Next
-        If .Item("Signature") Is Nothing Then InsertSignature pptDoc
-        On Error GoTo 0
-    End With
-    On Error GoTo 0
+    If Not pptDoc Is Nothing Then
+        pptDoc.Close SaveChanges:=False
+        Set pptDoc = Nothing
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "    Attempting to close the template." & vbNewLine & _
+                        "    Status: " & (pptDoc Is Nothing)
+        #End If
+    End If
     
-    saveResult = SavePptToFile(pptApp, pptDoc, generateProcess, savePath, fileName)
+    If Not pptApp Is Nothing Then
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "    Attempting to close MS PowerPoint."
+        #End If
+        pptApp.Quit
+        Set pptApp = Nothing
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "    Status: " & (pptApp Is Nothing)
+        #End If
+    End If
+
+    #If Mac Then
+        Dim closeResult As String
+        
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "    Attempting extra step required to completely close MS PowerPoint on MacOS."
+        #End If
+    
+        closeResult = AppleScriptTask(APPLE_SCRIPT_FILE, "ClosePowerPoint", closeResult)
+
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "    Status: " & closeResult
+        #End If
+    #End If
+    On Error GoTo 0
 End Sub
 
-Private Sub ToggleScoreVisibility(ByRef pptDoc As Object, ByVal scoreCategory As String, ByVal scoreValue As String)
-    With pptDoc.Slides(1).Shapes(scoreCategory & "Scores").GroupItems
-        .Item(scoreCategory & "A+").Visible = IIf(scoreValue = "A+", msoTrue, msoFalse)
-        .Item(scoreCategory & "A").Visible = IIf(scoreValue = "A", msoTrue, msoFalse)
-        .Item(scoreCategory & "B+").Visible = IIf(scoreValue = "B+", msoTrue, msoFalse)
-        .Item(scoreCategory & "B").Visible = IIf(scoreValue = "B", msoTrue, msoFalse)
-        .Item(scoreCategory & "C").Visible = IIf(scoreValue = "C", msoTrue, msoFalse)
-    End With
-End Sub
-
-Private Sub ZipReports(ByRef ws As Worksheet, ByVal savePath As Variant, ByRef saveResult As Boolean)
+Private Sub ZipReports(ByRef ws As Worksheet, ByVal savePath As Variant, ByRef saveResult As Boolean, ByVal resourcesFolder As String)
     Dim zipCommand As String, zipPath As Variant, zipName As Variant, pdfPath As Variant
     Dim classLevel As String, classKT As String, classDays As String
     Dim errDescription As String
@@ -1392,7 +1400,7 @@ Private Sub ZipReports(ByRef ws As Worksheet, ByVal savePath As Variant, ByRef s
     #If Mac Then
         Dim scriptResultString As String, scriptResultBoolean As Boolean
         
-        archiverPath = FindPathToArchiveTool
+        archiverPath = FindPathToArchiveTool(resourcesFolder)
             
         Select Case archiverPath
             Case ""
@@ -1413,7 +1421,7 @@ Private Sub ZipReports(ByRef ws As Worksheet, ByVal savePath As Variant, ByRef s
         Dim shellApp As Object, archiverName As String, startTime As Double
         startTime = Timer
         
-        archiverPath = FindPathToArchiveTool(archiverName)
+        archiverPath = FindPathToArchiveTool(resourcesFolder, archiverName)
         
         Select Case archiverName
             Case "7Zip", "Local 7zip"
@@ -1497,10 +1505,9 @@ End Sub
 
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 '
-' Student Records Validation
+' Data Validation
 '
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
 Private Function VerifyRecordsAreComplete(ByRef ws As Worksheet, ByRef lastRow As Long, ByRef firstStudentRecord As Integer) As Boolean
     Const CLASS_INFO_FIRST_ROW As Integer = 1
     Const CLASS_INFO_LAST_ROW As Integer = 6
@@ -1588,7 +1595,7 @@ Private Function ValidateData(ByRef currentCell As Range, ByVal dataType As Stri
                 ValidateData = False
             End If
         Case "Comments"
-            ValidateData = (Len(dataValue) < 316)
+            ValidateData = (Len(dataValue) < 960)
         Case Else
             ValidateData = False
     End Select
@@ -1687,11 +1694,72 @@ End Function
 
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 '
-' Report Template Management
+' Resources Management
 '
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+Private Sub Download7Zip(ByVal resourcesFolder As String, ByRef downloadResult As Boolean)
+    Dim destinationPath As String, downloadURL As String
+    
+    Const GIT_REPO_URL As String = "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/"
+    
+    #If Mac Then
+        Dim scriptResultBoolean As Boolean
+        
+        Const FILE_NAME As String = "7zz"
+        
+        destinationPath = resourcesFolder & Application.PathSeparator & FILE_NAME
+        downloadURL = GIT_REPO_URL & FILE_NAME
+        
+        scriptResultBoolean = AppleScriptTask(APPLE_SCRIPT_FILE, "DownloadFile", destinationPath & APPLE_SCRIPT_SPLIT_KEY & downloadURL)
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print IIf(scriptResultBoolean, "    Download successful.", "    Error: " & Err.Description)
+        #End If
+        
+        If scriptResultBoolean Then
+            downloadResult = RequestFileAndFolderAccess(resourcesFolder, destinationPath)
+            scriptResultBoolean = AppleScriptTask(APPLE_SCRIPT_FILE, "ChangeFilePermissions", "+x" & APPLE_SCRIPT_SPLIT_KEY & destinationPath)
+        End If
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print "    File access " & IIf(downloadResult, "granted.", "denied.")
+        #End If
+    #Else
+        Dim objWMI As Object, colProcessors As Object, objProcessor As Object
+        Dim architecture As String, fileToDownload As String
+        
+        Const FILE_NAME As String = "7za.exe"
+        
+        Set objWMI = GetObject("winmgmts:\\.\root\CIMV2")
+        Set colProcessors = objWMI.ExecQuery("SELECT Architecture FROM Win32_Processor")
+        
+        For Each objProcessor In colProcessors
+            Select Case objProcessor.architecture
+                Case 0: fileToDownload = "7za(x86).exe"
+                Case 9: fileToDownload = "7za(x64).exe"
+                Case 12: fileToDownload = "7za(ARM).exe"
+            End Select
+        Next
+        
+        destinationPath = resourcesFolder & Application.PathSeparator & FILE_NAME
+        downloadURL = GIT_REPO_URL & fileToDownload
+        
+        If Dir(destinationPath) <> "" Then
+            ' Add a hash check to verify the file
+            downloadResult = True
+            Exit Sub
+        End If
+        
+        Select Case True
+            Case CheckForCurl()
+                downloadResult = DownloadUsingCurl(destinationPath, downloadURL)
+            Case CheckForDotNet35()
+                downloadResult = DownloadUsingDotNet35(destinationPath, downloadURL)
+            Case Else
+                downloadResult = False
+        End Select
+    #End If
+End Sub
 
-Private Function DownloadReportTemplate(ByVal templatePath As String) As Boolean
+Private Function DownloadReportTemplate(ByVal templatePath As String, ByVal resourcesFolder As String) As Boolean
     Const REPORT_TEMPLATE_URL As String = "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/SpeakingEvaluationTemplate.pptx"
     Dim downloadResult As Boolean
     
@@ -1702,7 +1770,7 @@ Private Function DownloadReportTemplate(ByVal templatePath As String) As Boolean
             Debug.Print IIf(Err.Number = 0, "    Download successful.", "    Error: " & Err.Description)
         #End If
         
-        If downloadResult Then downloadResult = RequestFileAndFolderAccess(templatePath)
+        If downloadResult Then downloadResult = RequestFileAndFolderAccess(resourcesFolder, templatePath)
         #If PRINT_DEBUG_MESSAGES Then
             Debug.Print "    File access " & IIf(downloadResult, "granted.", "denied.")
         #End If
@@ -1738,7 +1806,7 @@ Private Function LocateTemplate(ByVal resourcesFolder As String, ByVal REPORT_TE
     DeleteFile tempTemplatePath ' Removing existing file to avoid problems overwriting
 
     If Not VerifyTemplateHash(templatePath) Then
-        If Not DownloadReportTemplate(templatePath) Then
+        If Not DownloadReportTemplate(templatePath, resourcesFolder) Then
             msgToDisplay = "No template was found. Process canceled."
             msgResult = DisplayMessage(msgToDisplay, vbOKOnly, "Template Not Found", 150)
             LocateTemplate = ""
@@ -1764,6 +1832,34 @@ Private Function LocateTemplate(ByVal resourcesFolder As String, ByVal REPORT_TE
             Debug.Print "    Failed to make a temporary copy. Using resources copy directly."
         #End If
     End If
+End Function
+
+Private Function InstallFonts() As Boolean
+    Const FONT_NAME As String = "Autumn in September.ttf"
+    Const FONT_URL = "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/font.ttf"
+    
+    #If Mac Then
+        InstallFonts = AppleScriptTask(APPLE_SCRIPT_FILE, "InstallFonts", FONT_NAME & APPLE_SCRIPT_SPLIT_KEY & FONT_URL)
+    #Else
+        Dim fso As Object, fontPath As String
+        
+        Set fso = CreateObject("Scripting.FileSystemObject")
+        fontPath = Environ("LOCALAPPDATA") & "\Microsoft\Windows\Fonts\" & FONT_NAME
+        
+        If fso.FileExists(fontPath) Then
+            InstallFonts = True
+            Exit Function
+        End If
+        
+        Select Case True
+            Case CheckForCurl()
+                InstallFonts = DownloadUsingCurl(fontPath, FONT_URL)
+            Case CheckForCurl()
+                InstallFonts = DownloadUsingDotNet35(fontPath, FONT_URL)
+            Case Else
+                InstallFonts = False
+        End Select
+    #End If
 End Function
 
 Private Function VerifyTemplateHash(ByVal templatePath As String) As Boolean
@@ -1803,7 +1899,6 @@ End Function
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ' Windows and MacOS
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
 Private Sub ConvertOneDriveToLocalPath(ByRef selectedPath As Variant)
     Dim i As Integer
     
@@ -2110,7 +2205,7 @@ Private Function MoveFile(ByVal initialPath As String, ByVal destinationPath As 
     MoveFile = moveSuccessful
 End Function
 
-Private Function SetSaveLocation(ByRef ws As Object, ByVal saveRoutine As String) As String
+Private Function SetSaveLocation(ByRef ws As Object, ByVal saveRoutine As String, ByVal resourcesFolder As String) As String
     Dim filePath As String
     
     filePath = ThisWorkbook.Path & Application.PathSeparator & GenerateSaveFolderName(ws) & Application.PathSeparator
@@ -2135,7 +2230,7 @@ Private Function SetSaveLocation(ByRef ws As Object, ByVal saveRoutine As String
     CreateSaveFolder filePath
     #If Mac Then
         Dim permissionGranted As Boolean
-        permissionGranted = RequestFileAndFolderAccess(filePath)
+        permissionGranted = RequestFileAndFolderAccess(resourcesFolder, filePath)
         #If PRINT_DEBUG_MESSAGES Then
             Debug.Print IIf(permissionGranted, "    Folder access granted. Continuing with process", "    Folder access denied. Cannot continue.")
         #End If
@@ -2154,11 +2249,93 @@ Private Function SetSaveLocation(ByRef ws As Object, ByVal saveRoutine As String
     SetSaveLocation = filePath
 End Function
 
+Private Function FindPathToArchiveTool(ByVal resourcesFolder As String, Optional ByRef archiverName As String = "") As String
+    Dim i As Integer, downloadResult As Boolean
+    
+    ' Declare OS specific variables, constants, and arrays
+    #If Mac Then
+        Dim scriptResultBoolean As Boolean
+        
+        Const RESOURCES_7ZIP_FILENAME As String = "7zz"
+        Const RESOURCES_7ZIP_ARCHIVER_NAME As String = "Local 7zip"
+    #Else
+        Dim wshShell As Object
+        Dim defaultPaths As Variant, archiverNames As Variant, exeNames As Variant, regKeys As Variant
+        Dim regValue As String
+    
+        Const REG_KEY_7ZIP As String = "HKEY_LOCAL_MACHINE\SOFTWARE\7-Zip\Path"
+        Const REG_KEY_7ZIP_32BIT As String = "HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\7-Zip\Path"
+        
+        Const ARCHIVER_NAME_7ZIP As String = "7Zip"
+        
+        Const EXE_NAME_7ZIP As String = "7z.exe"
+        
+        Const DEFAULT_PATH_7ZIP As String = "C:\Program Files\7-Zip\"
+        Const DEFAULT_PATH_7ZIP_32Bit As String = "C:\Program Files (x86)\7-Zip\"
+        
+        Const RESOURCES_7ZIP_FILENAME As String = "7za.exe"
+        Const RESOURCES_7ZIP_ARCHIVER_NAME As String = "Local 7zip"
+        
+        defaultPaths = Array(DEFAULT_PATH_7ZIP, DEFAULT_PATH_7ZIP_32Bit)
+        archiverNames = Array(ARCHIVER_NAME_7ZIP, ARCHIVER_NAME_7ZIP)
+        exeNames = Array(EXE_NAME_7ZIP, EXE_NAME_7ZIP)
+        regKeys = Array(REG_KEY_7ZIP, REG_KEY_7ZIP_32BIT)
+    #End If
+    
+    ' Find available archive utility
+    #If Mac Then
+        scriptResultBoolean = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFileExist", resourcesFolder & Application.PathSeparator & RESOURCES_7ZIP_FILENAME)
+        If scriptResultBoolean Then
+            scriptResultBoolean = AppleScriptTask(APPLE_SCRIPT_FILE, "ChangeFilePermissions", "+x" & APPLE_SCRIPT_SPLIT_KEY & resourcesFolder & Application.PathSeparator & RESOURCES_7ZIP_FILENAME)
+            If scriptResultBoolean Then FindPathToArchiveTool = resourcesFolder & Application.PathSeparator & RESOURCES_7ZIP_FILENAME
+            Exit Function
+        End If
+    #Else
+        Set wshShell = CreateObject("WScript.Shell")
+        
+        ' First check default installation locations
+        For i = LBound(defaultPaths) To UBound(defaultPaths)
+            If Dir(defaultPaths(i) & exeNames(i)) <> "" Then
+                archiverName = archiverNames(i)
+                FindPathToArchiveTool = defaultPaths(i) & exeNames(i)
+                Exit Function
+            End If
+        Next i
+        
+        ' If not found, check the registry for paths to custom locations
+        On Error Resume Next
+        For i = LBound(regKeys) To UBound(regKeys)
+            regValue = wshShell.RegRead(regKeys(i))
+            If Err.Number = 0 And regValue <> "" Then
+                If Right(regValue, 1) <> "\" Then regValue = regValue & "\"
+                
+                ' Verify executable exists before returning path
+                If Dir(regValue & exeNames(i)) <> "" Then
+                    archiverName = archiverNames(i)
+                    FindPathToArchiveTool = regValue & exeNames(i)
+                    Exit Function
+                End If
+            End If
+            Err.Clear
+        Next i
+        On Error GoTo 0
+    #End If
+    
+    Download7Zip resourcesFolder, downloadResult
+    
+    If downloadResult Then
+        archiverName = RESOURCES_7ZIP_ARCHIVER_NAME
+        FindPathToArchiveTool = resourcesFolder & Application.PathSeparator & RESOURCES_7ZIP_FILENAME
+    Else
+        FindPathToArchiveTool = ""
+    End If
+End Function
+
+
 #If Mac Then
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ' MacOS Only
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
 Public Function AreAppleScriptsInstalled(Optional ByVal recheckStatus As Boolean = False) As Boolean
     Dim libraryScriptsFolder As String, resourcesFolder As String, isAppleScriptInstalled As Boolean
     Dim isDialogToolkitInstalled As Boolean, statusHasBeenChecked As Boolean, scriptResult As Boolean
@@ -2325,7 +2502,7 @@ Private Function CheckForDialogToolkit(ByVal resourcesFolder As String) As Boole
     #End If
     
     libraryScriptsPath = AppleScriptTask(APPLE_SCRIPT_FILE, "CheckForScriptLibrariesFolder", "paramString")
-    If libraryScriptsPath <> "" Then scriptResult = RequestFileAndFolderAccess(libraryScriptsPath)
+    If libraryScriptsPath <> "" Then scriptResult = RequestFileAndFolderAccess(resourcesFolder, libraryScriptsPath)
     If scriptResult Then scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "InstallDialogToolkitPlus", resourcesFolder)
     
     #If PRINT_DEBUG_MESSAGES Then
@@ -2364,7 +2541,7 @@ Private Sub RemoveDialogToolKit(ByVal resourcesFolder As String)
     End If
 End Sub
 
-Private Function RequestFileAndFolderAccess(Optional ByVal filePath As Variant = "") As Boolean
+Private Function RequestFileAndFolderAccess(ByVal resourcesFolder As String, Optional ByVal filePath As Variant = "") As Boolean
     Dim workingFolder As Variant, resourcesFolder As Variant, excelTempFolder As Variant, powerpointTempFolder As Variant
     Dim filePermissionCandidates As Variant, pathToRequest As Variant
     Dim fileAccessGranted As Boolean, allAccessHasBeenGranted As Boolean
@@ -2374,7 +2551,6 @@ Private Function RequestFileAndFolderAccess(Optional ByVal filePath As Variant =
         Case ""
             workingFolder = ThisWorkbook.Path
             ConvertOneDriveToLocalPath workingFolder
-            resourcesFolder = workingFolder & "/Resources"
             excelTempFolder = Environ("TMPDIR")
             powerpointTempFolder = Replace(excelTempFolder, "Excel", "PowerPoint")
             filePermissionCandidates = Array(workingFolder, resourcesFolder, excelTempFolder, powerpointTempFolder)
@@ -2487,7 +2663,6 @@ End Sub
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ' Windows Only
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
 Private Function CheckForCurl() As Boolean
     Dim objShell As Object, objExec As Object
     Dim checkResult As Boolean
@@ -2593,179 +2768,3 @@ Private Function DownloadUsingDotNet35(ByVal destinationPath As String, ByVal do
     On Error GoTo 0
 End Function
 #End If
-
-Private Function FindPathToArchiveTool(Optional ByRef archiverName As String = "") As String
-    Dim i As Integer, downloadResult As Boolean
-    Dim resourcesFolder As String
-    
-    resourcesFolder = ThisWorkbook.Path & Application.PathSeparator & "Resources"
-    ConvertOneDriveToLocalPath resourcesFolder
-    
-    ' Declare OS specific variables, constants, and arrays
-    #If Mac Then
-        Dim scriptResultBoolean As Boolean
-        
-        Const RESOURCES_7ZIP_FILENAME As String = "7zz"
-        Const RESOURCES_7ZIP_ARCHIVER_NAME As String = "Local 7zip"
-    #Else
-        Dim wshShell As Object
-        Dim defaultPaths As Variant, archiverNames As Variant, exeNames As Variant, regKeys As Variant
-        Dim regValue As String
-    
-        Const REG_KEY_7ZIP As String = "HKEY_LOCAL_MACHINE\SOFTWARE\7-Zip\Path"
-        Const REG_KEY_7ZIP_32BIT As String = "HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\7-Zip\Path"
-        
-        Const ARCHIVER_NAME_7ZIP As String = "7Zip"
-        
-        Const EXE_NAME_7ZIP As String = "7z.exe"
-        
-        Const DEFAULT_PATH_7ZIP As String = "C:\Program Files\7-Zip\"
-        Const DEFAULT_PATH_7ZIP_32Bit As String = "C:\Program Files (x86)\7-Zip\"
-        
-        Const RESOURCES_7ZIP_FILENAME As String = "7za.exe"
-        Const RESOURCES_7ZIP_ARCHIVER_NAME As String = "Local 7zip"
-        
-        defaultPaths = Array(DEFAULT_PATH_7ZIP, DEFAULT_PATH_7ZIP_32Bit)
-        archiverNames = Array(ARCHIVER_NAME_7ZIP, ARCHIVER_NAME_7ZIP)
-        exeNames = Array(EXE_NAME_7ZIP, EXE_NAME_7ZIP)
-        regKeys = Array(REG_KEY_7ZIP, REG_KEY_7ZIP_32BIT)
-    #End If
-    
-    ' Find available archive utility
-    #If Mac Then
-        scriptResultBoolean = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFileExist", resourcesFolder & Application.PathSeparator & RESOURCES_7ZIP_FILENAME)
-        If scriptResultBoolean Then
-            FindPathToArchiveTool = resourcesFolder & Application.PathSeparator & RESOURCES_7ZIP_FILENAME
-            scriptResultBoolean = AppleScriptTask(APPLE_SCRIPT_FILE, "ChangeFilePermissions", "+x" & APPLE_SCRIPT_SPLIT_KEY & FindPathToArchiveTool)
-            Exit Function
-        End If
-    #Else
-        Set wshShell = CreateObject("WScript.Shell")
-        
-        ' First check default installation locations
-        For i = LBound(defaultPaths) To UBound(defaultPaths)
-            If Dir(defaultPaths(i) & exeNames(i)) <> "" Then
-                archiverName = archiverNames(i)
-                FindPathToArchiveTool = defaultPaths(i) & exeNames(i)
-                Exit Function
-            End If
-        Next i
-        
-        ' If not found, check the registry for paths to custom locations
-        On Error Resume Next
-        For i = LBound(regKeys) To UBound(regKeys)
-            regValue = wshShell.RegRead(regKeys(i))
-            If Err.Number = 0 And regValue <> "" Then
-                If Right(regValue, 1) <> "\" Then regValue = regValue & "\"
-                
-                ' Verify executable exists before returning path
-                If Dir(regValue & exeNames(i)) <> "" Then
-                    archiverName = archiverNames(i)
-                    FindPathToArchiveTool = regValue & exeNames(i)
-                    Exit Function
-                End If
-            End If
-            Err.Clear
-        Next i
-        On Error GoTo 0
-    #End If
-    
-    Download7Zip resourcesFolder, downloadResult
-    
-    If downloadResult Then
-        archiverName = RESOURCES_7ZIP_ARCHIVER_NAME
-        FindPathToArchiveTool = resourcesFolder & Application.PathSeparator & RESOURCES_7ZIP_FILENAME
-    Else
-        FindPathToArchiveTool = ""
-    End If
-End Function
-
-Private Sub Download7Zip(ByVal resourcesFolder As String, ByRef downloadResult As Boolean)
-    Dim destinationPath As String, downloadURL As String
-    
-    Const GIT_REPO_URL As String = "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/"
-    
-    #If Mac Then
-        Dim scriptResultBoolean As Boolean
-        
-        Const FILE_NAME As String = "7zz"
-        
-        destinationPath = resourcesFolder & Application.PathSeparator & FILE_NAME
-        downloadURL = GIT_REPO_URL & FILE_NAME
-        
-        scriptResultBoolean = AppleScriptTask(APPLE_SCRIPT_FILE, "DownloadFile", destinationPath & APPLE_SCRIPT_SPLIT_KEY & downloadURL)
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print IIf(scriptResultBoolean, "    Download successful.", "    Error: " & Err.Description)
-        #End If
-        
-        If scriptResultBoolean Then
-            downloadResult = RequestFileAndFolderAccess(destinationPath)
-            scriptResultBoolean = AppleScriptTask(APPLE_SCRIPT_FILE, "ChangeFilePermissions", "+x" & APPLE_SCRIPT_SPLIT_KEY & destinationPath)
-        End If
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    File access " & IIf(downloadResult, "granted.", "denied.")
-        #End If
-    #Else
-        Dim objWMI As Object, colProcessors As Object, objProcessor As Object
-        Dim architecture As String, fileToDownload As String
-        
-        Const FILE_NAME As String = "7za.exe"
-        
-        Set objWMI = GetObject("winmgmts:\\.\root\CIMV2")
-        Set colProcessors = objWMI.ExecQuery("SELECT Architecture FROM Win32_Processor")
-        
-        For Each objProcessor In colProcessors
-            Select Case objProcessor.architecture
-                Case 0: fileToDownload = "7za(x86).exe"
-                Case 9: fileToDownload = "7za(x64).exe"
-                Case 12: fileToDownload = "7za(ARM).exe"
-            End Select
-        Next
-        
-        destinationPath = resourcesFolder & Application.PathSeparator & FILE_NAME
-        downloadURL = GIT_REPO_URL & fileToDownload
-        
-        If Dir(destinationPath) <> "" Then
-            ' Add a hash check to verify the file
-            downloadResult = True
-            Exit Sub
-        End If
-        
-        Select Case True
-            Case CheckForCurl()
-                downloadResult = DownloadUsingCurl(destinationPath, downloadURL)
-            Case CheckForDotNet35()
-                downloadResult = DownloadUsingDotNet35(destinationPath, downloadURL)
-            Case Else
-                downloadResult = False
-        End Select
-    #End If
-End Sub
-
-Private Function InstallFonts() As Boolean
-    Const FONT_NAME As String = "Autumn in September.ttf"
-    Const FONT_URL = "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/font.ttf"
-    
-    #If Mac Then
-        InstallFonts = AppleScriptTask(APPLE_SCRIPT_FILE, "InstallFonts", FONT_NAME & APPLE_SCRIPT_SPLIT_KEY & FONT_URL)
-    #Else
-        Dim fso As Object, fontPath As String
-        
-        Set fso = CreateObject("Scripting.FileSystemObject")
-        fontPath = Environ("LOCALAPPDATA") & "\Microsoft\Windows\Fonts\" & FONT_NAME
-        
-        If fso.FileExists(fontPath) Then
-            InstallFonts = True
-            Exit Function
-        End If
-        
-        Select Case True
-            Case CheckForCurl()
-                InstallFonts = DownloadUsingCurl(fontPath, FONT_URL)
-            Case CheckForCurl()
-                InstallFonts = DownloadUsingDotNet35(fontPath, FONT_URL)
-            Case Else
-                InstallFonts = False
-        End Select
-    #End If
-End Function
