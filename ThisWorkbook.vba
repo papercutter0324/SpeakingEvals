@@ -319,7 +319,23 @@ Private Sub SetLayoutInstructions(ByRef wb As Workbook, ByRef ws As Worksheet)
             .Height = 265
             .Width = refShape.Width
         End With
-    
+        Set refShape = .Item("Message - Seeing the Code")
+        
+        With .Item("Title Bar - ToDo")
+            .Top = refShape.Top + refShape.Height + 20
+            .Left = refShape.Left
+            .Height = shp("Title Bar - Instructions").Height
+            .Width = 1524
+        End With
+        Set refShape = .Item("Title Bar - ToDo")
+            
+        With .Item("Message - ToDo")
+            .Top = refShape.Top + refShape.Height
+            .Left = refShape.Left
+            .Height = 585
+            .Width = refShape.Width
+        End With
+        
         Set refShape = .Item("Title Bar - Instructions")
     
         With .Item("Title Bar - Warning")
@@ -388,7 +404,7 @@ Private Sub SetLayoutMacOSUsers(ByRef wb As Workbook)
         Set refShape = .Item("Title Bar")
         
         With .Item("Message")
-            .Height = 680
+            .Height = 710
             .Width = refShape.Width
             .Top = refShape.Top + refShape.Height
             .Left = refShape.Left
@@ -1035,7 +1051,7 @@ End Function
 
 Private Sub WritePptReport(ByRef ws As Object, ByRef pptApp As Object, ByRef pptDoc As Object, ByVal generateProcess As String, ByVal currentRow As Integer, ByVal savePath As String, ByRef saveResult As Boolean)
     Dim englishName As String, koreanName As String, classLevel As String, nativeTeacher As String, koreanTeacher As String, evalDate As String
-    Dim commentText As String, classTime As String, fileName As String
+    Dim commentText As String, classTime As String, fileName As String, validEnglishName As String
     Dim scoreCategories As Variant, scoreValues As Variant
     Dim i As Integer
     
@@ -1061,11 +1077,10 @@ Private Sub WritePptReport(ByRef ws As Object, ByRef pptApp As Object, ByRef ppt
 
         ' Set report's filename
         classTime = .Item(4, 3).Value & "-" & .Item(5, 3).Value
-        If Len(englishName) > 10 Then
-            fileName = koreanName & "(" & Trim(Left(englishName, 10)) & ")" & " - " & .Item(4, 3).Value
-        Else
-            fileName = koreanName & "(" & englishName & ")" & " - " & .Item(4, 3).Value
-        End If
+        
+        validEnglishName = SanitizeFileName(englishName)
+        
+        fileName = koreanName & "(" & validEnglishName & ")" & " - " & .Item(4, 3).Value
     End With
     
     #If PRINT_DEBUG_MESSAGES Then
@@ -1133,6 +1148,30 @@ Private Function CalculateOverallGrade(ByRef ws As Worksheet, ByVal currentRow A
         Case 2: CalculateOverallGrade = "B"
         Case 1: CalculateOverallGrade = "C"
     End Select
+End Function
+
+Private Function SanitizeFileName(ByVal englishName As String) As String
+    Dim invalidCharacters As Variant, reservedNames As Variant, ch As Variant
+    
+    invalidCharacters = Array("\", "/", ":", "*", "?", """", "<", ">", "|")
+    
+    For Each ch In invalidCharacters
+        englishName = Replace(englishName, ch, "_")
+    Next ch
+    
+    englishName = Trim(englishName)
+    
+    Do While Right(englishName, 1) = "."
+        englishName = Left(englishName, Len(englishName) - 1)
+    Loop
+    
+    If Len(englishName) > 10 Then englishName = Trim(Left(englishName, 10))
+    
+    Do While Right(englishName, 1) = "_"
+        englishName = Left(englishName, Len(englishName) - 1)
+    Loop
+    
+    SanitizeFileName = Trim(englishName)
 End Function
 
 Private Sub ToggleScoreVisibility(ByRef pptDoc As Object, ByVal scoreCategory As String, ByVal scoreValue As String)
@@ -1841,12 +1880,13 @@ Private Function InstallFonts() As Boolean
     #If Mac Then
         InstallFonts = AppleScriptTask(APPLE_SCRIPT_FILE, "InstallFonts", FONT_NAME & APPLE_SCRIPT_SPLIT_KEY & FONT_URL)
     #Else
-        Dim fso As Object, fontPath As String
+        Dim fso As Object, fontPath As String, sysFontPath As String
         
         Set fso = CreateObject("Scripting.FileSystemObject")
         fontPath = Environ("LOCALAPPDATA") & "\Microsoft\Windows\Fonts\" & FONT_NAME
+        sysFontPath = Environ("WINDIR") & "\Fonts\" & FONT_NAME
         
-        If fso.FileExists(fontPath) Then
+        If fso.FileExists(fontPath) Or fso.FileExists(sysFontPath) Then
             InstallFonts = True
             Exit Function
         End If
@@ -2542,7 +2582,7 @@ Private Sub RemoveDialogToolKit(ByVal resourcesFolder As String)
 End Sub
 
 Private Function RequestFileAndFolderAccess(ByVal resourcesFolder As String, Optional ByVal filePath As Variant = "") As Boolean
-    Dim workingFolder As Variant, resourcesFolder As Variant, excelTempFolder As Variant, powerpointTempFolder As Variant
+    Dim workingFolder As Variant, excelTempFolder As Variant, powerpointTempFolder As Variant
     Dim filePermissionCandidates As Variant, pathToRequest As Variant
     Dim fileAccessGranted As Boolean, allAccessHasBeenGranted As Boolean
     Dim i As Integer
