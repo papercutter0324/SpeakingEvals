@@ -1,8 +1,8 @@
 (*
 Helper Scripts for the DYB Speaking Evaluations Excel spreadsheet
 
-Version: 1.4.0
-Build:   20250310
+Version: 1.4.1
+Build:   20250315
 Warren Feltmate
 © 2025
 *)
@@ -11,7 +11,7 @@ Warren Feltmate
 
 on GetScriptVersionNumber(paramString)
 	--- Use build number to determine if an update is available
-	return 20250310
+	return 20250315
 end GetScriptVersionNumber
 
 on GetMacOSVersion(paramString)
@@ -202,15 +202,16 @@ end FindSignature
 
 on InstallFonts(paramString)
 	set {fontName, fontURL} to SplitString(paramString, "-,-")
-	set fontPath to POSIX path of (path to home folder) & "Library/Fonts/" & fontName
+	set userFontPath to POSIX path of (path to home folder) & "Library/Fonts/" & fontName
+	set systemFontPath to "/Library/Fonts/" & fontName
 	
-	-- Check if the font is already installed
-	if DoesFileExist(fontPath) then
+	-- Check if the font is already installed in user or system-wide font directories
+	if DoesFileExist(userFontPath) or DoesFileExist(systemFontPath) then
 		return true
 	end if
 	
 	-- If not, download a copy to the fonts folder
-	return DownloadFile(fontPath & "-,-" & fontURL)
+	return DownloadFile(userFontPath & "-,-" & fontURL)
 end InstallFonts
 
 on RenameFile(paramString)
