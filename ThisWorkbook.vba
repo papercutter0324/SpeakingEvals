@@ -22,7 +22,8 @@ Sub Main()
     
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "Beginning tasks." & vbNewLine & _
-                    "    Active Worksheet = " & ws.Name
+                    "    Active Worksheet = " & ws.Name & vbNewLine & _
+                    "    Button Pressed: " & clickedButtonName
     #End If
     
     ' Check system requirements
@@ -97,6 +98,10 @@ Private Sub Workbook_Open()
     Dim startupMessageToDisplay As String
     Dim startTime As Double
     
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Beginning start-up self-checks."
+    #End If
+    
     Set wb = ThisWorkbook
     wb.Sheets("Instructions").Activate
     
@@ -115,6 +120,11 @@ Private Sub Workbook_Open()
     Application.ScreenUpdating = False
     Application.Calculation = xlCalculationManual
     
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "    Application.EnableEvents = " & Application.EnableEvents & _
+                    "    Application.ScreenUpdating = " & Application.ScreenUpdating
+    #End If
+    
     startupMessageToDisplay = "Initial"
     DisplayStartupMessage startupMessageToDisplay
     
@@ -123,6 +133,10 @@ Private Sub Workbook_Open()
     On Error GoTo ReenableEvents
     For Each ws In wb.Worksheets
         With ws
+            #If PRINT_DEBUG_MESSAGES Then
+                Debug.Print "Validating Layout: " & .Name
+            #End If
+            
             .Unprotect
             
             Select Case .Name
@@ -281,229 +295,238 @@ Private Sub AutoPopulateEvaluationDateValues(ByRef ws As Worksheet)
 End Sub
 
 Private Sub SetLayoutInstructions(ByRef wb As Workbook, ByRef ws As Worksheet)
-    Dim shp As Shapes, refShape As Shape, currentshp As Shape
-    Dim btnHeight As Double, btnWidth As Double, cellSpacing As Double
+    Dim shp As Shapes, shapeProps As Variant, i As Integer
     Dim btnNamesArray As Variant
-    Dim i As Integer
+    
+    Const TB_HEIGHT As Double = 58
+    Const PADDING_LEFT As Double = 15
+    Const PADDING_TOP As Double = 15
+    Const SHAPE_SPACING As Double = 20
+    
+    Const INSTRUCTIONS_TB_TOP As Double = PADDING_TOP
+    Const INSTRUCTIONS_TB_LEFT As Double = PADDING_LEFT
+    Const INSTRUCTION_TB_HEIGHT As Double = TB_HEIGHT
+    Const INSTRUCTIONS_TB_WIDTH As Double = 1165
+    
+    Const INSTRUCTIONS_MSG_TOP As Double = INSTRUCTIONS_TB_TOP + INSTRUCTION_TB_HEIGHT
+    Const INSTRUCTIONS_MSG_LEFT As Double = INSTRUCTIONS_TB_LEFT
+    Const INSTRUCTIONS_MSG_HEIGHT As Double = 560
+    Const INSTRUCTIONS_MSG_WIDTH As Double = INSTRUCTIONS_TB_WIDTH
+    
+    Const CODE_TB_TOP As Double = INSTRUCTIONS_MSG_TOP + INSTRUCTIONS_MSG_HEIGHT + SHAPE_SPACING
+    Const CODE_TB_LEFT As Double = PADDING_LEFT
+    Const CODE_TB_HEIGHT As Double = TB_HEIGHT
+    Const CODE_TB_WIDTH As Double = INSTRUCTIONS_MSG_WIDTH
+    
+    Const CODE_MSG_TOP As Double = CODE_TB_TOP + CODE_TB_HEIGHT
+    Const CODE_MSG_LEFT As Double = CODE_TB_LEFT
+    Const CODE_MSG_HEIGHT As Double = 265
+    Const CODE_MSG_WIDTH As Double = CODE_TB_WIDTH
+    
+    Const WARNING_TB_TOP As Double = PADDING_TOP
+    Const WARNING_TB_LEFT As Double = INSTRUCTIONS_TB_LEFT + INSTRUCTIONS_TB_WIDTH + SHAPE_SPACING
+    Const WARNING_TB_HEIGHT As Double = TB_HEIGHT
+    Const WARNING_TB_WIDTH As Double = 340
+    
+    Const WARNING_MSG_TOP As Double = WARNING_TB_TOP + WARNING_TB_HEIGHT
+    Const WARNING_MSG_LEFT As Double = WARNING_TB_LEFT
+    Const WARNING_MSG_HEIGHT As Double = 150
+    Const WARNING_MSG_WIDTH As Double = WARNING_TB_WIDTH
+    
+    Const IMPORTANT_TB_TOP As Double = WARNING_MSG_TOP + WARNING_MSG_HEIGHT + SHAPE_SPACING
+    Const IMPORTANT_TB_LEFT As Double = WARNING_MSG_LEFT
+    Const IMPORTANT_TB_HEIGHT As Double = TB_HEIGHT
+    Const IMPORTANT_TB_WIDTH As Double = WARNING_MSG_WIDTH
+    
+    Const IMPORTANT_MSG_TOP As Double = IMPORTANT_TB_TOP + IMPORTANT_TB_HEIGHT
+    Const IMPORTANT_MSG_LEFT As Double = IMPORTANT_TB_LEFT
+    Const IMPORTANT_MSG_HEIGHT As Double = 675
+    Const IMPORTANT_MSG_WIDTH As Double = IMPORTANT_TB_WIDTH
+    
+    Const TODO_TB_TOP As Double = CODE_MSG_TOP + CODE_MSG_HEIGHT + SHAPE_SPACING
+    Const TODO_TB_LEFT As Double = PADDING_LEFT
+    Const TODO_TB_HEIGHT As Double = TB_HEIGHT
+    Const TODO_TB_WIDTH As Double = INSTRUCTIONS_TB_WIDTH + SHAPE_SPACING + WARNING_TB_WIDTH
+    
+    Const TODO_MSG_TOP As Double = TODO_TB_TOP + TODO_TB_HEIGHT
+    Const TODO_MSG_LEFT As Double = TODO_TB_LEFT
+    Const TODO_MSG_HEIGHT As Double = 585
+    Const TODO_MSG_WIDTH As Double = TODO_TB_WIDTH
+    
+    Const BUTTON_HEIGHT As Double = 70
+    Const BUTTON_WIDTH As Double = 200
+    Const BUTTON_TOP As Double = CODE_MSG_TOP + CODE_MSG_HEIGHT - BUTTON_HEIGHT - 20
+    Const CELL_SPACING As Double = (CODE_MSG_WIDTH - 40 - (BUTTON_WIDTH * 5)) / 4
+    
+    btnNamesArray = Array("Button_Speadsheet", "Button_Font", "Button_ReportTemplate", "Button_SignatureTemplate", "Button_SourceCode")
+    
+    ' Define shape properties in an array: {Shape Name, Top, Left, Height, Width}
+    shapeProps = Array( _
+        Array("Title Bar - Instructions", INSTRUCTIONS_TB_TOP, INSTRUCTIONS_TB_LEFT, INSTRUCTION_TB_HEIGHT, INSTRUCTIONS_TB_WIDTH), _
+        Array("Message - Instructions", INSTRUCTIONS_MSG_TOP, INSTRUCTIONS_MSG_LEFT, INSTRUCTIONS_MSG_HEIGHT, INSTRUCTIONS_MSG_WIDTH), _
+        Array("Title Bar - Seeing the Code", CODE_TB_TOP, CODE_TB_LEFT, CODE_TB_HEIGHT, CODE_TB_WIDTH), _
+        Array("Message - Seeing the Code", CODE_MSG_TOP, CODE_MSG_LEFT, CODE_MSG_HEIGHT, CODE_MSG_WIDTH), _
+        Array("Title Bar - ToDo", TODO_TB_TOP, TODO_TB_LEFT, TODO_TB_HEIGHT, TODO_TB_WIDTH), _
+        Array("Message - ToDo", TODO_MSG_TOP, TODO_MSG_LEFT, TODO_MSG_HEIGHT, TODO_MSG_WIDTH), _
+        Array("Title Bar - Warning", WARNING_TB_TOP, WARNING_TB_LEFT, WARNING_TB_HEIGHT, WARNING_TB_WIDTH), _
+        Array("Message - Warning", WARNING_MSG_TOP, WARNING_MSG_LEFT, WARNING_MSG_HEIGHT, WARNING_MSG_WIDTH), _
+        Array("Title Bar - Important Files", IMPORTANT_TB_TOP, IMPORTANT_TB_LEFT, IMPORTANT_TB_HEIGHT, IMPORTANT_TB_WIDTH), _
+        Array("Message - Important Files", IMPORTANT_MSG_TOP, IMPORTANT_MSG_LEFT, IMPORTANT_MSG_HEIGHT, IMPORTANT_MSG_WIDTH) _
+    )
     
     Set shp = ws.Shapes
     
-    With ws.Shapes
-        With .Item("Title Bar - Instructions")
-            .Top = 15
-            .Left = 15
-            .Height = 58
-            .Width = 1165
+    ' Loop through the shape properties array and apply the settings
+    For i = LBound(shapeProps) To UBound(shapeProps)
+        With shp.Item(shapeProps(i)(0))
+            .Top = shapeProps(i)(1)
+            .Left = shapeProps(i)(2)
+            .Height = shapeProps(i)(3)
+            .Width = shapeProps(i)(4)
         End With
-        Set refShape = .Item("Title Bar - Instructions")
+    Next i
     
-        With .Item("Message - Instructions")
-            .Top = refShape.Top + refShape.Height
-            .Left = refShape.Left
-            .Height = 560
-            .Width = refShape.Width
+    ' Position buttons
+    For i = LBound(btnNamesArray) To UBound(btnNamesArray)
+        With shp.Item(btnNamesArray(i))
+            .Top = BUTTON_TOP
+            .Left = CODE_MSG_LEFT + 20 + i * (BUTTON_WIDTH + CELL_SPACING)
+            .Height = BUTTON_HEIGHT
+            .Width = BUTTON_WIDTH
         End With
-        Set refShape = .Item("Message - Instructions")
-    
-        With .Item("Title Bar - Seeing the Code")
-            .Top = refShape.Top + refShape.Height + 20
-            .Left = refShape.Left
-            .Height = shp("Title Bar - Instructions").Height
-            .Width = refShape.Width
-        End With
-        Set refShape = .Item("Title Bar - Seeing the Code")
-    
-        With .Item("Message - Seeing the Code")
-            .Top = refShape.Top + refShape.Height
-            .Left = refShape.Left
-            .Height = 265
-            .Width = refShape.Width
-        End With
-        Set refShape = .Item("Message - Seeing the Code")
-        
-        With .Item("Title Bar - ToDo")
-            .Top = refShape.Top + refShape.Height + 20
-            .Left = refShape.Left
-            .Height = shp("Title Bar - Instructions").Height
-            .Width = 1524
-        End With
-        Set refShape = .Item("Title Bar - ToDo")
-            
-        With .Item("Message - ToDo")
-            .Top = refShape.Top + refShape.Height
-            .Left = refShape.Left
-            .Height = 585
-            .Width = refShape.Width
-        End With
-        
-        Set refShape = .Item("Title Bar - Instructions")
-    
-        With .Item("Title Bar - Warning")
-            .Top = refShape.Top
-            .Left = refShape.Left + refShape.Width + 20
-            .Height = refShape.Height
-            .Width = 340
-        End With
-        Set refShape = .Item("Title Bar - Warning")
-    
-        With .Item("Message - Warning")
-            .Top = refShape.Top + refShape.Height
-            .Left = refShape.Left
-            .Height = 150
-            .Width = refShape.Width
-        End With
-        Set refShape = .Item("Message - Warning")
-    
-        With .Item("Title Bar - Important Files")
-            .Top = refShape.Top + refShape.Height + 20
-            .Left = refShape.Left
-            .Height = shp("Title Bar - Instructions").Height
-            .Width = refShape.Width
-        End With
-        Set refShape = .Item("Title Bar - Important Files")
-    
-        With .Item("Message - Important Files")
-            .Top = refShape.Top + refShape.Height
-            .Left = refShape.Left
-            .Height = 675
-            .Width = refShape.Width
-        End With
-    
-        Set refShape = .Item("Message - Seeing the Code")
-        
-        btnHeight = 70
-        btnWidth = 200
-        cellSpacing = (refShape.Width - 40 - (btnWidth * 5)) / 4
-        btnNamesArray = Array("Button_Speadsheet", "Button_Font", "Button_ReportTemplate", "Button_SignatureTemplate", "Button_SourceCode")
-    
-        For i = LBound(btnNamesArray) To UBound(btnNamesArray)
-            With .Item(btnNamesArray(i))
-                .Height = btnHeight
-                .Width = btnWidth
-                .Left = refShape.Left + 20 + i * (btnWidth + cellSpacing)
-                .Top = refShape.Top + refShape.Height - btnHeight - 20
-            End With
-        Next i
-    End With
+    Next i
 End Sub
 
 Private Sub SetLayoutMacOSUsers(ByRef wb As Workbook)
-    Dim refShape As Shape, currentBtn As Shape
-    Dim buttonNamesArray As Variant, i As Integer
+    Dim shp As Shapes
+    Dim shapeProps As Variant, buttonProps As Variant
+    Dim i As Integer
     
-    buttonNamesArray = Array("Button_SpeakingEvalsScpt_Installed", "Button_SpeakingEvalsScpt_Missing", "Button_DialogToolkit_Installed", _
-                            "Button_DialogToolkit_Missing", "Button_EnhancedDialogs_Enable", "Button_EnhancedDialogs_Disable")
+    Const MACOS_TB_TOP As Double = 15
+    Const MACOS_TB_LEFT As Double = 15
+    Const MACOS_TB_HEIGHT As Double = 58
+    Const MACOS_TB_WIDTH As Double = 1285
     
-    With wb.Sheets("MacOS Users").Shapes
-        With .Item("Title Bar")
-            .Height = 58
-            .Width = 1285
-            .Top = 15
-            .Left = 15
+    Const MACOS_MSG_TOP As Double = MACOS_TB_TOP + MACOS_TB_HEIGHT
+    Const MACOS_MSG_LEFT As Double = MACOS_TB_LEFT
+    Const MACOS_MSG_HEIGHT As Double = 710
+    Const MACOS_MSG_WIDTH As Double = MACOS_TB_WIDTH
+    
+    Const CURL_TOP As Double = MACOS_MSG_TOP
+    Const CURL_HEIGHT As Double = 115
+    Const CURL_WIDTH As Double = 560
+    Const CURL_LEFT As Double = MACOS_MSG_LEFT + MACOS_MSG_WIDTH - CURL_WIDTH
+    
+    Const BUTTON_HEIGHT As Double = 70
+    Const BUTTON_WIDTH As Double = 200
+    Const BUTTON_TOP As Double = MACOS_MSG_TOP + MACOS_MSG_HEIGHT - BUTTON_HEIGHT - 20
+    
+    ' Define shape properties in an array: {Shape Name, Top, Left, Height, Width}
+    shapeProps = Array( _
+        Array("Title Bar", MACOS_TB_TOP, MACOS_TB_LEFT, MACOS_TB_HEIGHT, MACOS_TB_WIDTH), _
+        Array("Message", MACOS_MSG_TOP, MACOS_MSG_LEFT, MACOS_MSG_HEIGHT, MACOS_MSG_WIDTH), _
+        Array("cURL_Command", CURL_TOP, CURL_LEFT, CURL_HEIGHT, CURL_WIDTH) _
+    )
+    
+    ' Define button properties in an array: {Button Name, Left Position}
+    buttonProps = Array( _
+        Array("Button_SpeakingEvalsScpt_Installed", MACOS_MSG_LEFT + 70), _
+        Array("Button_SpeakingEvalsScpt_Missing", MACOS_MSG_LEFT + 70), _
+        Array("Button_DialogToolkit_Installed", MACOS_MSG_LEFT + 350), _
+        Array("Button_DialogToolkit_Missing", MACOS_MSG_LEFT + 350), _
+        Array("Button_EnhancedDialogs_Enable", MACOS_MSG_LEFT + 630), _
+        Array("Button_EnhancedDialogs_Disable", MACOS_MSG_LEFT + 630) _
+    )
+    
+    Set shp = wb.Sheets("MacOS Users").Shapes
+    
+    ' Loop through the shape properties array and apply the settings
+    For i = LBound(shapeProps) To UBound(shapeProps)
+        With shp.Item(shapeProps(i)(0))
+            .Top = shapeProps(i)(1)
+            .Left = shapeProps(i)(2)
+            .Height = shapeProps(i)(3)
+            .Width = shapeProps(i)(4)
         End With
-        Set refShape = .Item("Title Bar")
-        
-        With .Item("Message")
-            .Height = 710
-            .Width = refShape.Width
-            .Top = refShape.Top + refShape.Height
-            .Left = refShape.Left
+    Next i
+
+    ' Loop through button properties and set positions
+    For i = LBound(buttonProps) To UBound(buttonProps)
+        With shp.Item(buttonProps(i)(0))
+            .Top = BUTTON_TOP
+            .Left = buttonProps(i)(1)
+            .Height = BUTTON_HEIGHT
+            .Width = BUTTON_WIDTH
         End With
-        Set refShape = .Item("Message")
-        
-        With .Item("cURL_Command")
-            .Height = 115
-            .Width = 560
-            .Top = refShape.Top
-            .Left = refShape.Left + refShape.Width - .Width
-        End With
-        
-        For i = LBound(buttonNamesArray) To UBound(buttonNamesArray)
-            With .Item(buttonNamesArray(i))
-                .Height = 70
-                .Width = 200
-                .Top = refShape.Top + refShape.Height - .Height - 20
-                
-                Select Case buttonNamesArray(i)
-                    Case "Button_SpeakingEvalsScpt_Installed", "Button_SpeakingEvalsScpt_Missing"
-                        .Left = refShape.Left + 70
-                    Case "Button_DialogToolkit_Installed", "Button_DialogToolkit_Missing"
-                        .Left = refShape.Left + 350
-                    Case "Button_EnhancedDialogs_Enable", "Button_EnhancedDialogs_Disable"
-                        .Left = refShape.Left + 630
-                End Select
-            End With
-        Next i
-    End With
+    Next i
 End Sub
 
 Private Sub SetLayoutMySignature(ByRef wb As Workbook)
+    Dim shp As Shapes
+    Dim shapeProps As Variant
     Dim maxHeight As Double, maxWidth As Double, aspectRatio As Double
-    Dim refShape As Shape
+    Dim i As Integer
     
-    With wb.Sheets("mySignature").Shapes
-        With .Item("Title Bar")
-            .Height = 58
-            .Width = 1270
-            .Top = 15
-            .Left = 15
-        End With
-        Set refShape = .Item("Title Bar")
-        
-        With .Item("Message")
-            .Height = 640
-            .Width = refShape.Width
-            .Top = refShape.Top + refShape.Height
-            .Left = refShape.Left
-        End With
-                
-        With .Item("Signature Title Bar")
-            .Height = refShape.Height
-            .Width = 300
-            .Top = refShape.Top
-            .Left = refShape.Left + refShape.Width - .Width
-        End With
-        Set refShape = .Item("Signature Title Bar")
-        
-        With .Item("Signature Container")
-            .Height = 86
-            .Width = refShape.Width
-            .Top = refShape.Top + refShape.Height
-            .Left = refShape.Left
-        End With
-        Set refShape = .Item("Signature Container")
-        
-        maxHeight = 68.2
-        maxWidth = 286
-        
-        If DoesShapeExist(wb.Sheets("mySignature"), "mySignature_Placeholder") Then
-            With .Item("mySignature_Placeholder")
-                .LockAspectRatio = msoFalse
-                .Height = maxHeight
-                .Width = maxWidth
-                .LockAspectRatio = msoTrue
-                .Top = refShape.Top + (refShape.Height / 2) - (.Height / 2)
-                .Left = refShape.Left + (refShape.Width / 2) - (.Width / 2)
-            End With
-        End If
-        
-        If DoesShapeExist(wb.Sheets("mySignature"), "mySignature") Then
-            With .Item("mySignature")
-                aspectRatio = .Width / .Height
-                
-                If maxWidth / maxHeight > aspectRatio Then
-                    .Width = maxHeight * aspectRatio
-                    .Height = maxHeight
-                Else
-                    .Width = maxWidth
-                    .Height = maxWidth / aspectRatio
-                End If
+    Const TB_HEIGHT As Double = 58
+    Const TB_WIDTH As Double = 1270
+    Const TB_TOP As Double = 15
+    Const TB_LEFT As Double = 15
+    
+    Const MSG_HEIGHT As Double = 640
+    Const SIG_TB_WIDTH As Double = 300
+    Const SIG_CONTAINER_HEIGHT As Double = 86
+    
+    maxHeight = 68.2
+    maxWidth = 286
 
-                .Top = refShape.Top + (refShape.Height / 2) - (.Height / 2)
-                .Left = refShape.Left + (refShape.Width / 2) - (.Width / 2)
-            End With
-        End If
-    End With
+    ' Define shape properties in an array: {Shape Name, Top, Left, Height, Width}
+    shapeProps = Array( _
+        Array("Title Bar", TB_TOP, TB_LEFT, TB_HEIGHT, TB_WIDTH), _
+        Array("Message", TB_TOP + TB_HEIGHT, TB_LEFT, MSG_HEIGHT, TB_WIDTH), _
+        Array("Signature Title Bar", TB_TOP, TB_LEFT + TB_WIDTH - SIG_TB_WIDTH, TB_HEIGHT, SIG_TB_WIDTH), _
+        Array("Signature Container", TB_TOP + TB_HEIGHT, TB_LEFT + TB_WIDTH - SIG_TB_WIDTH, SIG_CONTAINER_HEIGHT, SIG_TB_WIDTH) _
+    )
+
+    Set shp = wb.Sheets("mySignature").Shapes
+
+    ' Loop through shape properties array and apply settings
+    For i = LBound(shapeProps) To UBound(shapeProps)
+        With shp.Item(shapeProps(i)(0))
+            .Top = shapeProps(i)(1)
+            .Left = shapeProps(i)(2)
+            .Height = shapeProps(i)(3)
+            .Width = shapeProps(i)(4)
+        End With
+    Next i
+
+    ' Center signature images if they exist
+    If DoesShapeExist(wb.Sheets("mySignature"), "mySignature_Placeholder") Then
+        With shp.Item("mySignature_Placeholder")
+            .LockAspectRatio = msoFalse
+            .Height = maxHeight
+            .Width = maxWidth
+            .LockAspectRatio = msoTrue
+            .Top = shp.Item("Signature Container").Top + (SIG_CONTAINER_HEIGHT / 2) - (.Height / 2)
+            .Left = shp.Item("Signature Container").Left + (SIG_TB_WIDTH / 2) - (.Width / 2)
+        End With
+    End If
+
+    If DoesShapeExist(wb.Sheets("mySignature"), "mySignature") Then
+        With shp.Item("mySignature")
+            aspectRatio = .Width / .Height
+            
+            If maxWidth / maxHeight > aspectRatio Then
+                .Width = maxHeight * aspectRatio
+                .Height = maxHeight
+            Else
+                .Width = maxWidth
+                .Height = maxWidth / aspectRatio
+            End If
+
+            .Top = shp.Item("Signature Container").Top + (SIG_CONTAINER_HEIGHT / 2) - (.Height / 2)
+            .Left = shp.Item("Signature Container").Left + (SIG_TB_WIDTH / 2) - (.Width / 2)
+        End With
+    End If
 End Sub
 
 Private Function DoesShapeExist(ByVal ws As Worksheet, ByVal shapeName As String) As Boolean
@@ -606,7 +629,12 @@ End Sub
 
 Private Sub SetLayoutClassRecordsButtons(ByRef ws As Worksheet)
     Dim cellTop As Double, cellHeight As Double, cellLeft As Double, cellWidth As Double
-    Dim buttonHeight As Double, buttonWidth As Double, cellVerticalSpacing As Double, cellHorizontalSpacing As Double
+    Dim cellVerticalSpacing As Double, cellHorizontalSpacing As Double
+    Dim buttonProps As Variant
+    Dim i As Integer
+    
+    Const BUTTON_HEIGHT As Double = 50
+    Const BUTTON_WIDTH As Double = 187
     
     With ws.Cells(1, 10)
         cellTop = .Top
@@ -615,39 +643,27 @@ Private Sub SetLayoutClassRecordsButtons(ByRef ws As Worksheet)
         cellWidth = .Width
     End With
     
-    buttonHeight = 50
-    buttonWidth = 187
-    cellVerticalSpacing = (cellHeight - (2 * buttonHeight)) / 3
-    cellHorizontalSpacing = (cellWidth - (2 * buttonWidth)) / 3
+    cellVerticalSpacing = (cellHeight - (2 * BUTTON_HEIGHT)) / 3
+    cellHorizontalSpacing = (cellWidth - (2 * BUTTON_WIDTH)) / 3
+    
+    ' Define button properties in an array: {Button Name, Row Index, Col Index}
+    buttonProps = Array( _
+        Array("Button_GenerateProofs", 1, 1), _
+        Array("Button_GenerateReports", 2, 1), _
+        Array("Button_OpenTypingSite", 1, 2), _
+        Array("Button_RepairLayout", 2, 2) _
+    )
 
+    ' Loop through button array and set positions
     With ws.Shapes
-        With .Item("Button_GenerateProofs")
-            .Height = buttonHeight
-            .Width = buttonWidth
-            .Top = cellTop + cellVerticalSpacing
-            .Left = cellLeft + cellHorizontalSpacing
-        End With
-        
-        With .Item("Button_GenerateReports")
-            .Height = buttonHeight
-            .Width = buttonWidth
-            .Top = cellTop + (cellVerticalSpacing * 2) + buttonHeight
-            .Left = cellLeft + cellHorizontalSpacing
-        End With
-        
-        With .Item("Button_OpenTypingSite")
-            .Height = buttonHeight
-            .Width = buttonWidth
-            .Top = cellTop + cellVerticalSpacing
-            .Left = cellLeft + (cellHorizontalSpacing * 2) + buttonWidth
-        End With
-        
-        With .Item("Button_RepairLayout")
-            .Height = buttonHeight
-            .Width = buttonWidth
-            .Top = cellTop + (cellVerticalSpacing * 2) + buttonHeight
-            .Left = cellLeft + (cellHorizontalSpacing * 2) + buttonWidth
-        End With
+        For i = LBound(buttonProps) To UBound(buttonProps)
+            With .Item(buttonProps(i)(0))
+                .Height = BUTTON_HEIGHT
+                .Width = BUTTON_WIDTH
+                .Top = cellTop + (cellVerticalSpacing * buttonProps(i)(1)) + ((buttonProps(i)(1) - 1) * BUTTON_HEIGHT)
+                .Left = cellLeft + (cellHorizontalSpacing * buttonProps(i)(2)) + ((buttonProps(i)(2) - 1) * BUTTON_WIDTH)
+            End With
+        Next i
     End With
 End Sub
 
