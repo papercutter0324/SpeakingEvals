@@ -5,12 +5,12 @@
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Option Explicit
-#Const PRINT_DEBUG_MESSAGES = True
+#Const PRINT_DEBUG_MESSAGES = False
 Const APPLE_SCRIPT_FILE As String = "SpeakingEvals.scpt"
 Const APPLE_SCRIPT_SPLIT_KEY = "-,-"
 
 Sub Main()
-    Dim ws As Worksheet, clickedButtonName As String
+    Dim ws As Worksheet, clickedButtonName As String, msgResult As Integer
     
     Set ws = ActiveSheet
     
@@ -72,6 +72,8 @@ Sub Main()
             ToogleMacSettingsButtons ws, clickedButtonName
         #End If
         Case "Button_GenerateReports", "Button_GenerateProofs"
+            msgResult = DisplayMessage("There is a uncommon error, where the first time you try to save it fails. If you experience this, wait a couple seconds and try again. It should work fine the second time.", _
+                                        vbInformation, "Notice!")
             GenerateReports ws, clickedButtonName
             ws.Activate ' Ensure the right worksheet is being shown when finished.
         Case "Button_RepairLayout"
@@ -115,6 +117,9 @@ Private Sub Workbook_Open()
     While Timer - startTime < 2
         DoEvents
     Wend
+    
+    startupMessageToDisplay = "Initial"
+    DisplayStartupMessage startupMessageToDisplay
         
     Application.EnableEvents = False
     Application.ScreenUpdating = False
@@ -124,9 +129,6 @@ Private Sub Workbook_Open()
         Debug.Print "    Application.EnableEvents = " & Application.EnableEvents & _
                     "    Application.ScreenUpdating = " & Application.ScreenUpdating
     #End If
-    
-    startupMessageToDisplay = "Initial"
-    DisplayStartupMessage startupMessageToDisplay
     
     VerifySheetNames wb
     
@@ -409,7 +411,7 @@ Private Sub SetLayoutMacOSUsers(ByRef wb As Workbook)
     
     Const MACOS_MSG_TOP As Double = MACOS_TB_TOP + MACOS_TB_HEIGHT
     Const MACOS_MSG_LEFT As Double = MACOS_TB_LEFT
-    Const MACOS_MSG_HEIGHT As Double = 710
+    Const MACOS_MSG_HEIGHT As Double = 800
     Const MACOS_MSG_WIDTH As Double = MACOS_TB_WIDTH
     
     Const CURL_TOP As Double = MACOS_MSG_TOP
@@ -464,8 +466,12 @@ End Sub
 Private Sub SetLayoutMySignature(ByRef wb As Workbook)
     Dim shp As Shapes
     Dim shapeProps As Variant
-    Dim maxHeight As Double, maxWidth As Double, aspectRatio As Double
+    Dim aspectRatio As Double
     Dim i As Integer
+    
+    Const MAX_HEIGHT As Double = 68
+    Const MAX_WIDTH As Double = 286
+    Const DEFAULT_ASPECT_RATIO = MAX_WIDTH / MAX_HEIGHT
     
     Const TB_HEIGHT As Double = 58
     Const TB_WIDTH As Double = 1270
@@ -473,18 +479,26 @@ Private Sub SetLayoutMySignature(ByRef wb As Workbook)
     Const TB_LEFT As Double = 15
     
     Const MSG_HEIGHT As Double = 640
-    Const SIG_TB_WIDTH As Double = 300
-    Const SIG_CONTAINER_HEIGHT As Double = 86
+    Const MSG_WIDTH As Double = TB_WIDTH
+    Const MSG_TOP As Double = TB_TOP + TB_HEIGHT
+    Const MSG_LEFT As Double = TB_LEFT
     
-    maxHeight = 68.2
-    maxWidth = 286
+    Const SIG_TB_HEIGHT As Double = TB_HEIGHT
+    Const SIG_TB_WIDTH As Double = 300
+    Const SIG_TB_TOP As Double = TB_TOP
+    Const SIG_TB_LEFT As Double = TB_LEFT + TB_WIDTH - SIG_TB_WIDTH
+    
+    Const SIG_CONTAINER_HEIGHT As Double = 86
+    Const SIG_CONTAINER_WIDTH As Double = SIG_TB_WIDTH
+    Const SIG_CONTAINER_TOP As Double = TB_TOP + TB_HEIGHT
+    Const SIG_CONTAINER_LEFT As Double = TB_LEFT + TB_WIDTH - SIG_TB_WIDTH
 
     ' Define shape properties in an array: {Shape Name, Top, Left, Height, Width}
     shapeProps = Array( _
         Array("Title Bar", TB_TOP, TB_LEFT, TB_HEIGHT, TB_WIDTH), _
-        Array("Message", TB_TOP + TB_HEIGHT, TB_LEFT, MSG_HEIGHT, TB_WIDTH), _
-        Array("Signature Title Bar", TB_TOP, TB_LEFT + TB_WIDTH - SIG_TB_WIDTH, TB_HEIGHT, SIG_TB_WIDTH), _
-        Array("Signature Container", TB_TOP + TB_HEIGHT, TB_LEFT + TB_WIDTH - SIG_TB_WIDTH, SIG_CONTAINER_HEIGHT, SIG_TB_WIDTH) _
+        Array("Message", MSG_TOP, MSG_LEFT, MSG_HEIGHT, MSG_WIDTH), _
+        Array("Signature Title Bar", SIG_TB_TOP, SIG_TB_LEFT, SIG_TB_HEIGHT, SIG_TB_WIDTH), _
+        Array("Signature Container", SIG_CONTAINER_TOP, SIG_CONTAINER_LEFT, SIG_CONTAINER_HEIGHT, SIG_CONTAINER_WIDTH) _
     )
 
     Set shp = wb.Sheets("mySignature").Shapes
@@ -503,28 +517,29 @@ Private Sub SetLayoutMySignature(ByRef wb As Workbook)
     If DoesShapeExist(wb.Sheets("mySignature"), "mySignature_Placeholder") Then
         With shp.Item("mySignature_Placeholder")
             .LockAspectRatio = msoFalse
-            .Height = maxHeight
-            .Width = maxWidth
+            .Height = MAX_HEIGHT
+            .Width = MAX_WIDTH
             .LockAspectRatio = msoTrue
-            .Top = shp.Item("Signature Container").Top + (SIG_CONTAINER_HEIGHT / 2) - (.Height / 2)
-            .Left = shp.Item("Signature Container").Left + (SIG_TB_WIDTH / 2) - (.Width / 2)
+            .Top = SIG_CONTAINER_TOP + (SIG_CONTAINER_HEIGHT - .Height) / 2
+            .Left = SIG_CONTAINER_LEFT + (SIG_CONTAINER_WIDTH - .Width) / 2
         End With
     End If
 
     If DoesShapeExist(wb.Sheets("mySignature"), "mySignature") Then
         With shp.Item("mySignature")
+            .LockAspectRatio = msoTrue
             aspectRatio = .Width / .Height
             
-            If maxWidth / maxHeight > aspectRatio Then
-                .Width = maxHeight * aspectRatio
-                .Height = maxHeight
+            If DEFAULT_ASPECT_RATIO > aspectRatio Then
+                .Width = MAX_HEIGHT * aspectRatio
+                .Height = MAX_HEIGHT
             Else
-                .Width = maxWidth
-                .Height = maxWidth / aspectRatio
+                .Width = MAX_WIDTH
+                .Height = MAX_WIDTH / aspectRatio
             End If
 
-            .Top = shp.Item("Signature Container").Top + (SIG_CONTAINER_HEIGHT / 2) - (.Height / 2)
-            .Left = shp.Item("Signature Container").Left + (SIG_TB_WIDTH / 2) - (.Width / 2)
+            .Top = SIG_CONTAINER_TOP + (SIG_CONTAINER_HEIGHT - .Height) / 2
+            .Left = SIG_CONTAINER_LEFT + (SIG_CONTAINER_WIDTH - .Width) / 2
         End With
     End If
 End Sub
@@ -799,6 +814,7 @@ End Sub
 Private Sub GenerateReports(ByRef ws As Worksheet, ByVal clickedButtonName As String)
     Const REPORT_TEMPLATE As String = "SpeakingEvaluationTemplate.pptx"
     Const ERR_RESOURCES_FOLDER As String = "resourcesFolder"
+    Const ERR_FONT_INSTALLATION As String = "fontInstallation"
     Const ERR_INCOMPLETE_RECORDS As String = "incompleteRecords"
     Const ERR_LOADING_POWERPOINT As String = "loadingPowerPoint"
     Const ERR_LOADING_TEMPLATE As String = "loadingTemplate"
@@ -876,10 +892,7 @@ Private Sub GenerateReports(ByRef ws As Worksheet, ByVal clickedButtonName As St
     #End If
     
     If Not InstallFonts() Then
-        ' Throw an error
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "Font required for reports not installed. Please install manually before continuing."
-        #End If
+        resultMsg = ERR_FONT_INSTALLATION
         GoTo CleanUp
     End If
 
@@ -944,6 +957,8 @@ Private Sub GenerateReports(ByRef ws As Worksheet, ByVal clickedButtonName As St
         If Not saveResult Then resultMsg = MSG_ZIP_FAILED
     End If
     
+    ' Open savePath
+    
 CleanUp:
     Select Case resultMsg
         Case ERR_RESOURCES_FOLDER
@@ -956,6 +971,12 @@ CleanUp:
             msgTitle = "Missing Data!"
             msgType = vbExclamation
             dialogSize = 230
+        Case ERR_FONT_INSTALLATION
+            msgToDisplay = "There was an error when trying to install the required font. This might have been a minor connection error, so please try generating the files again." & vbNewLine & vbNewLine & _
+                           "If you continue to see this error, please see the Instructions sheet for the link to install the needed font manually."
+            msgTitle = "Font Error!"
+            msgType = vbExclamation
+            dialogSize = 360
         Case ERR_LOADING_POWERPOINT, ERR_LOADING_TEMPLATE
             msgToDisplay = "There was an error opening MS PowerPoint and/or the template. This is sometimes normal MS Office behaviour, so please wait a couple seconds and try again."
             msgTitle = "Error!"
@@ -1893,6 +1914,10 @@ Private Function InstallFonts() As Boolean
     Const FONT_NAME As String = "Autumn in September.ttf"
     Const FONT_URL = "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/font.ttf"
     
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Verifying required fonts are available."
+    #End If
+    
     #If Mac Then
         InstallFonts = AppleScriptTask(APPLE_SCRIPT_FILE, "InstallFonts", FONT_NAME & APPLE_SCRIPT_SPLIT_KEY & FONT_URL)
     #Else
@@ -1904,17 +1929,24 @@ Private Function InstallFonts() As Boolean
         
         If fso.FileExists(fontPath) Or fso.FileExists(sysFontPath) Then
             InstallFonts = True
-            Exit Function
+        Else
+            Select Case True
+                Case CheckForCurl()
+                    InstallFonts = DownloadUsingCurl(fontPath, FONT_URL)
+                Case CheckForCurl()
+                    InstallFonts = DownloadUsingDotNet35(fontPath, FONT_URL)
+                Case Else
+                    InstallFonts = False
+            End Select
         End If
-        
-        Select Case True
-            Case CheckForCurl()
-                InstallFonts = DownloadUsingCurl(fontPath, FONT_URL)
-            Case CheckForCurl()
-                InstallFonts = DownloadUsingDotNet35(fontPath, FONT_URL)
-            Case Else
-                InstallFonts = False
-        End Select
+    #End If
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        If InstallFonts Then
+            Debug.Print "    Font successfully installed."
+        Else
+            Debug.Print "    Required fonts not installed. Please install manually before continuing."
+        End If
     #End If
 End Function
 
