@@ -179,25 +179,27 @@ Public Function FormatGrade(ByVal gradeValue As String) As String
     Dim processedGrade As String
     
     processedGrade = UCase$(Trim$(gradeValue))
-
-    Select Case processedGrade
-        Case "A+", "A", "B+", "B", "C"
-            FormatGrade = processedGrade
-        Case "1": FormatGrade = "C"
-        Case "2": FormatGrade = "B"
-        Case "3": FormatGrade = "B+"
-        Case "4": FormatGrade = "A"
-        Case "5": FormatGrade = "A+"
-        Case Else
-            ' If no direct match, attempt to determine intended grade
-             processedGrade = TrimToFinalLetterGrade(processedGrade)
-             If processedGrade <> vbNullString Then
+    
+    If processedGrade <> vbNullString Then
+        Select Case processedGrade
+            Case "A+", "A", "B+", "B", "C"
+                FormatGrade = processedGrade
+            Case "1": FormatGrade = "C"
+            Case "2": FormatGrade = "B"
+            Case "3": FormatGrade = "B+"
+            Case "4": FormatGrade = "A"
+            Case "5": FormatGrade = "A+"
+            Case Else
+                ' If no direct match, attempt to determine intended grade
+                 processedGrade = TrimToFinalLetterGrade(processedGrade)
+                 
+                 If processedGrade = vbNullString Then
+                    DisplayWarning "Grade: Invalid Score"
+                 End If
+                 
                  FormatGrade = processedGrade
-             Else
-                DisplayWarning "Grade: Invalid Score"
-                FormatGrade = vbNullString
-             End If
-    End Select
+        End Select
+    End If
 End Function
 
 Public Function TrimToFinalLetterGrade(ByVal inputText As String) As String
