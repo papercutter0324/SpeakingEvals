@@ -94,6 +94,11 @@ Public Sub Main()
             RepairLayouts ws
         Case "Button_AutoSelectWinners"
             AutoSelectClassWinners ws
+        Case "Button_GenerateCertificates"
+            msgresult = DisplayMessage( _
+                "This feature has not been implemented yet, but it is planned for an upcoming " & _
+                "update. Sorry for the inconvenience.", vbOKOnly + vbInformation, "Notice!")
+            GoTo ReenableEvents
     End Select
     
     #If Mac Then
