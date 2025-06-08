@@ -9,53 +9,6 @@ Option Explicit
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ' Message Display
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-Public Sub DisplayWarning(ByVal msgTitle As String, Optional ByVal inputLength As Long = 0)
-    Dim msgToDisplay As String
-    Dim msgDialogType As Long
-    Dim msgDialogWidth As Long
-    Dim msgresult As Long
-    
-    Select Case msgTitle
-        Case "English Name: Exceeds Max Length"
-            msgToDisplay = "The student's English name is longer than 30 characters and may not " & _
-                           "fit on the report. Please verify how it looks after generating " & _
-                           "the report and consider using a shorter version." & vbNewLine & vbNewLine & _
-                           "Report generation will still work."
-            msgDialogType = vbOKOnly + vbInformation
-            msgDialogWidth = 370
-        Case "Korean Name: Uncommon Length"
-            msgToDisplay = "You entered a Korean name with " & CStr(inputLength) & " syllables. These names do exist, " & _
-                           "but they are uncommon. Please verify you have typed it correctly and using Hangul." & vbNewLine & vbNewLine & _
-                           "Report generation will still work."
-            msgDialogType = vbOKOnly + vbInformation
-            msgDialogWidth = 380
-        Case "Korean Name: Invalid Length"
-            msgToDisplay = "You entered an invalid name length. Please verify you have typed it correctly and using Hangul."
-            msgDialogType = vbOKOnly + vbExclamation
-            msgDialogWidth = 380
-        Case "Date: Invalid Format"
-            msgToDisplay = "Please enter a valid date."
-            msgDialogType = vbOKOnly + vbExclamation
-            msgDialogWidth = 200
-        Case "Grade: Invalid Score"
-            msgToDisplay = "An invalid score value has been entered. Please enter A+, A, B+, B, C, or a number between 1 and 5."
-            msgDialogType = vbOKOnly + vbExclamation
-            msgDialogWidth = 250
-        Case "Comment: Too Short"
-            msgToDisplay = "The comment you have typed is very short (under 80 characters). Please check that you " & _
-                           "have followed the ""Positive - Negative - Positive"" format and provided sufficient detail."
-            msgDialogType = vbOKOnly + vbInformation
-            msgDialogWidth = 280
-        Case "Comment: Exceeds Max Length"
-            msgToDisplay = "The comment you have typed is too long (" & CStr(inputLength) & " chars). Please shorten it by at least " & _
-                           Len(inputLength) - 960 & " characters to ensure it fits in the report's comment box."
-            msgDialogType = vbOKOnly + vbExclamation
-            msgDialogWidth = 300
-    End Select
-    
-    msgresult = DisplayMessage(msgToDisplay, msgDialogType, msgTitle, msgDialogWidth)
-End Sub
-
 Public Function DisplayMessage(ByVal messageText As String, ByVal messageType As Long, ByVal messageTitle As String, Optional ByVal dialogWidth As Long = 250) As Variant
     #If Mac Then
         Dim dialogType As String
@@ -82,7 +35,7 @@ Public Function DisplayMessage(ByVal messageText As String, ByVal messageType As
         If AreEnhancedDialogsEnabled Then
             #If PRINT_DEBUG_MESSAGES Then
                 Debug.Print "Attempting to display message via Dialog Toolkit Plus." & vbNewLine & _
-                            "    Message: " & messageText
+                            INDENT_LEVEL_1 & "Message: " & messageText
             #End If
             
             ' Determine buttons to display
@@ -138,8 +91,8 @@ Public Function DisplayMessage(ByVal messageText As String, ByVal messageType As
             
             #If PRINT_DEBUG_MESSAGES Then
                 If lastError = "" Then lastError = "N/A"
-                Debug.Print "    Number of attempts: " & i & vbNewLine & _
-                            "    Final error: " & lastError
+                Debug.Print INDENT_LEVEL_1 & "Number of attempts: " & i & vbNewLine & _
+                            INDENT_LEVEL_1 & "Final error: " & lastError
             #End If
             
             DisplayMessage = dialogResult
