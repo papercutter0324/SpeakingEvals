@@ -9,24 +9,63 @@ Option Explicit
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ' File and Folder Management
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-Public Function IsFileLoadedFromTempDir() As Boolean
-    Dim tempPath As String
-    Dim filePath As String
+Public Function CheckForFolder(ByVal folderPath As String, Optional ByVal subFolderName As String = vbNullString, Optional ByVal clearContents As Boolean = False) As Boolean
+    If Not DoesFolderExist(folderPath) Then
+        CreateNewFolder folderPath
+    ElseIf clearContents And subFolderName = vbNullString Then
+        ClearFolder folderPath
+    End If
     
-    filePath = ThisWorkbook.FullName
-    ConvertOneDriveToLocalPath filePath
-    tempPath = GetTempFilePath(vbNullString)
-    
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "Checking if loaded from a temp folder." & vbNewLine & _
-                    "    Current Path: " & filePath & vbNewLine & _
-                    "    Temp Folder: " & tempPath
-    #End If
-    
-    IsFileLoadedFromTempDir = (Left$(filePath, Len(tempPath)) = tempPath)
+    If subFolderName <> vbNullString Then
+        If Right$(folderPath, 1) <> Application.PathSeparator Then
+            folderPath = folderPath & Application.PathSeparator
+        End If
+        
+        If Not DoesFolderExist(folderPath & subFolderName) Then
+            CreateNewFolder (folderPath & subFolderName)
+        ElseIf clearContents Then
+            ClearFolder folderPath & subFolderName
+        End If
+        
+        CheckForFolder = DoesFolderExist(folderPath & subFolderName)
+    Else
+        CheckForFolder = DoesFolderExist(folderPath)
+    End If
 End Function
 
-Public Sub ConvertOneDriveToLocalPath(ByRef selectedPath As Variant)
+Private Sub ClearFolder(ByVal folderPath As String)
+    #If Mac Then
+        Call AppleScriptTask(APPLE_SCRIPT_FILE, "ClearFolder", folderPath)
+    #Else
+        Dim fso As Object
+        Dim fsoFolder As Object
+        Dim fsoFile As Object
+        Dim fileExt As String
+        
+        Set fso = CreateObject("Scripting.FileSystemObject")
+        
+        'Step 1: Remove trailing path separator if present
+        If Right$(folderPath, 1) = Application.PathSeparator Then
+            folderPath = Left$(folderPath, Len(folderPath) - 1)
+        End If
+        
+        ' Step 2: Iterate throught files and delete .pptx, .pdf, and .zip files found
+        Set fsoFolder = fso.GetFolder(folderPath)
+        
+        For Each fsoFile In fsoFolder.Files
+            fileExt = LCase$(fso.GetExtensionName(fsoFile.Name))
+            If fileExt = "pptx" Or fileExt = "pdf" Or fileExt = "zip" Then
+                fsoFile.Delete True
+            End If
+        Next fsoFile
+        
+        Set fsoFile = Nothing
+        Set fsoFolder = Nothing
+        Set fso = Nothing
+    #End If
+End Sub
+
+Public Function ConvertOneDriveToLocalPath(ByVal initialPath As Variant) As String
     Dim i As Long
     
     ' Cloud storage apps like OneDrive sometimes complicate where/how files are saved. Below is a reference
@@ -45,225 +84,187 @@ Public Sub ConvertOneDriveToLocalPath(ByRef selectedPath As Variant)
         ' Returned Paths:   N/A
         ' Procedure:        No trim required. ThisWorkbook.Path returns full local path
     
-    If Left$(selectedPath, 23) = "https://d.docs.live.net" Or Left$(selectedPath, 11) = "OneDrive://" Then
+    If Left$(initialPath, 23) = "https://d.docs.live.net" Or Left$(initialPath, 11) = "OneDrive://" Then
         For i = 1 To 4
-            selectedPath = Mid$(selectedPath, InStr(selectedPath, "/") + 1)
-        Next
+            initialPath = Mid$(initialPath, InStr(initialPath, "/") + 1)
+        Next i
         
         #If Mac Then
-            selectedPath = "/Users/" & Environ("USER") & "/Library/CloudStorage/OneDrive-Personal/" & selectedPath
+            ConvertOneDriveToLocalPath = "/Users/" & Environ("USER") & "/Library/CloudStorage/OneDrive-Personal/" & initialPath
         #Else
-            selectedPath = Environ$("OneDrive") & "\" & Replace(selectedPath, "/", "\")
+            ConvertOneDriveToLocalPath = Environ$("OneDrive") & Application.PathSeparator & Replace(initialPath, "/", Application.PathSeparator)
         #End If
+    Else
+        ConvertOneDriveToLocalPath = initialPath
     End If
-End Sub
+End Function
 
 Public Sub CreateNewFolder(ByRef filePath As String)
-    #If Mac Then
-        Dim scriptResult As Boolean
-    #Else
-        Dim fso As Object
-    #End If
-    
     If Right$(filePath, 1) = Application.PathSeparator Then
         filePath = Left$(filePath, Len(filePath) - 1)
     End If
 
     #If Mac Then
+        Dim scriptResult As Boolean
+        
+        On Error GoTo ErrorHandler
         scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "CreateFolder", filePath)
-    #Else
-        On Error Resume Next
-        Set fso = CreateObject("Scripting.FileSystemObject")
-        fso.CreateFolder filePath
-        Set fso = Nothing
         On Error GoTo 0
+    #Else
+        Dim fso As Object
+        
+        Set fso = CreateObject("Scripting.FileSystemObject")
+        
+        On Error GoTo ErrorHandler
+        fso.CreateFolder filePath
+        On Error GoTo 0
+        Set fso = Nothing
     #End If
 
     If Right$(filePath, 1) <> Application.PathSeparator Then
         filePath = filePath & Application.PathSeparator
     End If
+    
+    Exit Sub
+    
+ErrorHandler:
+    Select Case Err.Number
+        Case -2147024894 ' Folder already exists
+            ' Optionally handle the case where the folder already exists
+            Resume Next
+        Case Else
+            Debug.Print "Error creating folder: " & Err.Description
+    End Select
 End Sub
 
 Public Sub DeleteFile(ByVal filePath As String)
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print INDENT_LEVEL_1 & "Deleting: " & filePath
+    #End If
+    
     #If Mac Then
         Dim appleScriptResult As Boolean
-    #Else
-        Dim fso As Object
-    #End If
-    
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    Deleting: " & filePath
-    #End If
-    
-    #If Mac Then
+        
         appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFileExist", filePath)
-        If appleScriptResult Then appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DeleteFile", filePath)
-    #Else
-        On Error Resume Next
-        Set fso = CreateObject("Scripting.FileSystemObject")
         
-        If fso.FileExists(filePath) Then fso.DeleteFile filePath, True
-        filePath = Replace(filePath, " ", "%20")
-        If fso.FileExists(filePath) Then fso.DeleteFile filePath, True
-        
-        Set fso = Nothing
-        On Error GoTo 0
-    #End If
-End Sub
-
-Public Sub DeleteExistingFolder(ByVal filePath As String)
-    #If Mac Then
-        Dim msgToDisplay As String
-        Dim msgresult As Variant
-        Dim scriptResult As Boolean
+        If appleScriptResult Then
+            appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DeleteFile", filePath)
+        End If
     #Else
         Dim fso As Object
-    #End If
-    
-    
-    #If Mac Then
-        scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "ClearFolder", filePath)
-    #Else
+        
         Set fso = CreateObject("Scripting.FileSystemObject")
-
-        If Right$(filePath, 1) = Application.PathSeparator Then
-            filePath = Left$(filePath, Len(filePath) - 1)
+        
+        On Error Resume Next
+        If fso.fileExists(filePath) Then
+            fso.DeleteFile filePath, True
         End If
-
-        fso.DeleteFolder filePath, True
+        
+        filePath = Replace(filePath, " ", "%20")
+        
+        If fso.fileExists(filePath) Then
+            fso.DeleteFile filePath, True
+        End If
+        On Error GoTo 0
+        
         Set fso = Nothing
     #End If
 End Sub
 
-Public Function DoesFolderExist(ByVal filePath As String) As Boolean
+Public Function DoesFileExist(ByVal filePath As String) As Boolean
     #If Mac Then
-        DoesFolderExist = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFolderExist", filePath)
+        DoesFileExist = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFileExist", folderPath)
+        If DoesFileExist Then
+            DoesFileExist = RequestFileAndFolderAccess("", filePath)
+        End If
     #Else
-        DoesFolderExist = (Dir(filePath, vbDirectory) <> vbNullString)
+        DoesFileExist = (Dir(filePath) <> vbNullString)
     #End If
 End Function
 
-Public Function GenerateSaveFolderName(ByVal ws As Worksheet) As String
-    Dim classIdentifier As String
+Public Function DoesFolderExist(ByVal folderPath As String) As Boolean
+    #If Mac Then
+        DoesFolderExist = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFolderExist", folderPath)
+        If DoesFolderExist Then
+            DoesFolderExist = RequestFileAndFolderAccess("", folderPath)
+        End If
+    #Else
+        DoesFolderExist = (Dir(folderPath, vbDirectory) <> vbNullString)
+    #End If
+End Function
+
+Public Function DownloadFileSuccessful(ByVal fileType As String, ByVal fileName As String, ByVal fileDestination As String) As Boolean
+    Const GIT_REPO_URL As String = "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/"
     
-    Select Case ws.Cells.Item(4, 3).Value
-        Case "MonWed"
-            classIdentifier = "MW - " & ws.Cells.Item(5, 3).Value
-        Case "MonFri"
-            classIdentifier = "MF - " & ws.Cells.Item(5, 3).Value
-        Case "WedFri"
-            classIdentifier = "WF - " & ws.Cells.Item(5, 3).Value
-        Case "MWF"
-            classIdentifier = "MWF - " & ws.Cells.Item(5, 3).Value
-        Case "TTh"
-            classIdentifier = "TTh - " & ws.Cells.Item(5, 3).Value
-        Case "MWF (Class 1)": classIdentifier = "MWF-1"
-        Case "MWF (Class 2)": classIdentifier = "MWF-2"
-        Case "TTh (Class 1)": classIdentifier = "TTh-1"
-        Case "TTh (Class 2)": classIdentifier = "TTh-2"
+    Dim repoSubfolder As String
+    Dim downloadURL As String
+    Dim downloadResult As Boolean
+    
+    Select Case UCase$(fileType)
+        Case "TEMPLATE"
+            repoSubfolder = "Templates/"
+        Case "FONT"
+            repoSubfolder = "Fonts/"
+        Case "APPLESCRIPT"
+            repoSubfolder = "AppleScript/"
+        Case "7ZIP"
+            repoSubfolder = "7zip/"
     End Select
     
-    GenerateSaveFolderName = ws.Cells.Item(3, 3).Value & " (" & classIdentifier & ")"
-End Function
-
-Public Function GetTempFilePath(ByVal fileName As String) As String
-    #If Mac Then
-        GetTempFilePath = Environ("TMPDIR") & fileName
-    #Else
-        GetTempFilePath = Environ$("TEMP") & Application.PathSeparator & fileName
-    #End If
-End Function
-
-Public Function MoveFile(ByVal initialPath As String, ByVal destinationPath As String) As Boolean
-    Dim moveSuccessful As Boolean
+    downloadURL = GIT_REPO_URL & repoSubfolder & fileName
     
     #If Mac Then
-        ' No additional variables needed
-    #Else
-        Dim fso As Object
-    #End If
-    
-    On Error Resume Next
-    #If Mac Then
-        moveSuccessful = AppleScriptTask(APPLE_SCRIPT_FILE, "CopyFile", initialPath & APPLE_SCRIPT_SPLIT_KEY & destinationPath)
-    #Else
-        Set fso = CreateObject("Scripting.FileSystemObject")
-        fso.CopyFile initialPath, destinationPath
-        moveSuccessful = (Err.Number = 0)
-        Set fso = Nothing
-    #End If
-    
-    #If PRINT_DEBUG_MESSAGES Then
-        If Not moveSuccessful Then
-            Debug.Print "    Failed to move template to " & destinationPath
-        End If
-    #End If
-    
-    Err.Clear
-    On Error GoTo 0
-    MoveFile = moveSuccessful
-End Function
-
-Public Function SetSaveLocation(ByVal ws As Object, ByVal saveRoutine As String, ByVal resourcesFolder As String) As String
-    Dim filePath As String
-    
-    #If Mac Then
-        Dim permissionGranted As Boolean
+        downloadResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DownloadFile", fileDestination & APPLE_SCRIPT_SPLIT_KEY & downloadURL)
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print IIf(Err.Number = 0, INDENT_LEVEL_1 & "Download successful.", INDENT_LEVEL_1 & "Error: " & Err.Description)
+        #End If
         
-        Const PERMISSION_GRANTED As String = "    Folder access granted. Continuing with process"
-        Const PERMISSION_DENIED As String = "    Folder access denied. Cannot continue."
-    #End If
-    
-    filePath = ThisWorkbook.Path & Application.PathSeparator & GenerateSaveFolderName(ws) & Application.PathSeparator
-    ConvertOneDriveToLocalPath filePath
-    
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "Setting Save Path for Reports" & vbNewLine & _
-                    "    Path: " & filePath
-    #End If
-
-    If DoesFolderExist(filePath) Then
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Path already exists. Clearing out old files."
-        #End If
-        DeleteExistingFolder filePath
-    End If
-    
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    Creating save path"
-    #End If
-    
-    CreateNewFolder filePath
-    #If Mac Then
-        permissionGranted = RequestFileAndFolderAccess(resourcesFolder, filePath)
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print IIf(permissionGranted, PERMISSION_GRANTED, PERMISSION_DENIED)
-        #End If
-        If Not permissionGranted Then
-            ' Add a savePath permission denied value
-            SetSaveLocation = ""
-            Exit Function
+        If downloadResult Then
+            DownloadFileSuccessful = RequestFileAndFolderAccess("", fileDestination)
+            #If PRINT_DEBUG_MESSAGES Then
+                Debug.Print INDENT_LEVEL_1 & "File access " & IIf(downloadResult, "granted.", "denied.")
+            #End If
         End If
+    #Else
+        Select Case True
+            Case CheckForCurl()
+                downloadResult = DownloadUsingCurl(fileDestination, downloadURL)
+            Case CheckForDotNet()
+                downloadResult = DownloadUsingDotNet(fileDestination, downloadURL)
+            Case Else
+                DownloadFileSuccessful = False
+                Exit Function
+        End Select
     #End If
     
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "Saving reports in: " & vbNewLine & _
-                    "    " & filePath
-    #End If
-    
-    SetSaveLocation = filePath
+    If downloadResult Then
+        DownloadFileSuccessful = IsHashValid(fileDestination, fileName)
+    Else
+        DownloadFileSuccessful = False
+    End If
 End Function
 
 Public Function FindPathToArchiveTool(ByVal resourcesFolder As String, Optional ByRef archiverName As String = vbNullString) As String
     Dim downloadResult As Boolean
     Dim i As Long
     
-    ' Declare OS specific variables, constants, and arrays
     #If Mac Then
         Dim scriptResultBoolean As Boolean
         
         Const RESOURCES_7ZIP_FILENAME As String = "7zz"
         Const RESOURCES_7ZIP_ARCHIVER_NAME As String = "Local 7zip"
+        
+        scriptResultBoolean = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFileExist", resourcesFolder & Application.PathSeparator & RESOURCES_7ZIP_FILENAME)
+        
+        If scriptResultBoolean Then
+            scriptResultBoolean = AppleScriptTask(APPLE_SCRIPT_FILE, "ChangeFilePermissions", "+x" & APPLE_SCRIPT_SPLIT_KEY & resourcesFolder & Application.PathSeparator & RESOURCES_7ZIP_FILENAME)
+            
+            If scriptResultBoolean Then
+                FindPathToArchiveTool = resourcesFolder & Application.PathSeparator & RESOURCES_7ZIP_FILENAME
+            End If
+            
+            Exit Function
+        End If
     #Else
         Dim wshShell As Object
         Dim defaultPaths As Variant
@@ -284,17 +285,7 @@ Public Function FindPathToArchiveTool(ByVal resourcesFolder As String, Optional 
         
         Const RESOURCES_7ZIP_FILENAME As String = "7za.exe"
         Const RESOURCES_7ZIP_ARCHIVER_NAME As String = "Local 7zip"
-    #End If
-    
-    ' Find available archive utility
-    #If Mac Then
-        scriptResultBoolean = AppleScriptTask(APPLE_SCRIPT_FILE, "DoesFileExist", resourcesFolder & Application.PathSeparator & RESOURCES_7ZIP_FILENAME)
-        If scriptResultBoolean Then
-            scriptResultBoolean = AppleScriptTask(APPLE_SCRIPT_FILE, "ChangeFilePermissions", "+x" & APPLE_SCRIPT_SPLIT_KEY & resourcesFolder & Application.PathSeparator & RESOURCES_7ZIP_FILENAME)
-            If scriptResultBoolean Then FindPathToArchiveTool = resourcesFolder & Application.PathSeparator & RESOURCES_7ZIP_FILENAME
-            Exit Function
-        End If
-    #Else
+        
         defaultPaths = Array(DEFAULT_PATH_7ZIP, DEFAULT_PATH_7ZIP_32Bit)
         archiverNames = Array(ARCHIVER_NAME_7ZIP, ARCHIVER_NAME_7ZIP)
         exeNames = Array(EXE_NAME_7ZIP, EXE_NAME_7ZIP)
@@ -340,73 +331,96 @@ Public Function FindPathToArchiveTool(ByVal resourcesFolder As String, Optional 
     End If
 End Function
 
-Public Function LocateTemplate(ByVal resourcesFolder As String, ByVal REPORT_TEMPLATE As String) As String
-    Dim templatePath As String
-    Dim tempTemplatePath As String
-    Dim msgToDisplay As String
-    Dim msgresult As Variant
+Private Function GenerateSaveFolderName(ByVal ws As Worksheet) As String
+    Dim classIdentifier As String
     
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "Loading Report Template"
-    #End If
+    Select Case ws.Cells.Item(4, 3).Value
+        Case "MonWed": classIdentifier = "MW - " & ws.Cells.Item(5, 3).Value
+        Case "MonFri": classIdentifier = "MF - " & ws.Cells.Item(5, 3).Value
+        Case "WedFri": classIdentifier = "WF - " & ws.Cells.Item(5, 3).Value
+        Case "MWF": classIdentifier = "MWF - " & ws.Cells.Item(5, 3).Value
+        Case "TTh": classIdentifier = "TTh - " & ws.Cells.Item(5, 3).Value
+        Case "MWF (Class 1)": classIdentifier = "MWF-1"
+        Case "MWF (Class 2)": classIdentifier = "MWF-2"
+        Case "TTh (Class 1)": classIdentifier = "TTh-1"
+        Case "TTh (Class 2)": classIdentifier = "TTh-2"
+    End Select
     
-    templatePath = resourcesFolder & Application.PathSeparator & REPORT_TEMPLATE
-    tempTemplatePath = GetTempFilePath(REPORT_TEMPLATE)
-    
-    DeleteFile tempTemplatePath ' Removing existing file to avoid problems overwriting
-
-    If Not VerifyTemplateHash(templatePath) Then
-        If Not DownloadReportTemplate(templatePath, resourcesFolder) Then
-            msgToDisplay = "No template was found. Process canceled."
-            msgresult = DisplayMessage(msgToDisplay, vbOKOnly, "Template Not Found", 150)
-            LocateTemplate = vbNullString
-            #If PRINT_DEBUG_MESSAGES Then
-                Debug.Print "    Unable to locate a copy of the template."
-            #End If
-            Exit Function
-        End If
-    End If
-
-    #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    Valid template found"
-    #End If
-    
-    If MoveFile(templatePath, tempTemplatePath) Then
-        LocateTemplate = tempTemplatePath
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Loading temporary copy"
-        #End If
-    Else
-        LocateTemplate = templatePath
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Failed to make a temporary copy. Using resources copy directly."
-        #End If
-    End If
+    GenerateSaveFolderName = ws.Cells.Item(3, 3).Value & " (" & classIdentifier & ")"
 End Function
 
+Private Function GetKnownGoodHash(ByVal fileName As String) As String
+    Select Case fileName
+        Case "7za(x86).exe"
+            GetKnownGoodHash = "86D2E800B12CE5DA07F9BD2832870577"
+        Case "7za(x64).exe"
+            GetKnownGoodHash = "C58A4193BAC738B1A88ACAD9C6A57356"
+        Case "7za(ARM).exe"
+            GetKnownGoodHash = "3DCEBD415EC47C5EF080C13FAB5E15A2"
+        Case "7zz"
+            GetKnownGoodHash = "80B9D6E9761AECE7F8AC784491FC3B6A"
+        Case "SpeakingEvaluationTemplate.pptx"
+            GetKnownGoodHash = "AC1794BC6B04C8F18952D5A21A0BCEA4"
+        Case "CertificateTemplate.pptx"
+            GetKnownGoodHash = "BA41D2FDAE6F69A3FACBEC6BDF815D18"
+        Case "just-another-hand.regular.ttf"
+            GetKnownGoodHash = "2FBCF17635776DDB2692BF320838386C"
+        Case "KakaoBigSans-Regular.ttf"
+            GetKnownGoodHash = "01E7D95AE15377CB6747F824F1F6E9DB"
+        Case "KakaoBigSans-Bold.ttf"
+            GetKnownGoodHash = "FE621CE00147AADBD3E00134F38D0D86"
+        Case "KakaoBigSans-ExtraBold.ttf"
+            GetKnownGoodHash = "5427B26E380AC73E97A8E1B2CD1D108C"
+        Case "DialogDisplay.scpt"
+            GetKnownGoodHash = "33E05023335053FADC87B50900935E5E"
+        Case "Dialog_Toolkit.zip"
+            GetKnownGoodHash = "DB64101A9F28BA7C4D708FAAB760415C"
+        Case "SpeakingEvals.scpt"
+            GetKnownGoodHash = "68E2A7D937B9A145C15E823C45CE6E15"
+        Case "mySignature.png"
+            GetKnownGoodHash = "D3803794383425C34A11673C00033E85"
+    End Select
+End Function
 
-Private Function VerifyTemplateHash(ByVal templatePath As String) As Boolean
-    Const TEMPLATE_HASH As String = "AC1794BC6B04C8F18952D5A21A0BCEA4"
-    
+Public Function GetTempFilePath(ByVal fileName As String) As String
     #If Mac Then
-        ' No extra variables required.
+        GetTempFilePath = Environ("TMPDIR") & fileName
+    #Else
+        GetTempFilePath = Environ$("TEMP") & Application.PathSeparator & fileName
+    #End If
+End Function
+
+Public Function IsFileLoadedFromTempDir() As Boolean
+    Dim tempPath As String
+    Dim filePath As String
+    
+    filePath = ConvertOneDriveToLocalPath(ThisWorkbook.fullName)
+    tempPath = GetTempFilePath(vbNullString)
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Checking if loaded from a temp folder." & vbNewLine & _
+                    INDENT_LEVEL_1 & "Current Path: " & filePath & vbNewLine & _
+                    INDENT_LEVEL_1 & "Temp Folder: " & tempPath
+    #End If
+    
+    IsFileLoadedFromTempDir = (Left$(filePath, Len(tempPath)) = tempPath)
+End Function
+
+Public Function IsHashValid(ByVal filePath As String, ByVal fileName As String) As Boolean
+    #If Mac Then
+        validateHash = AppleScriptTask(APPLE_SCRIPT_FILE, "CompareMD5Hashes", filePath & APPLE_SCRIPT_SPLIT_KEY & GetKnownGoodHash(fileName))
     #Else
         Dim objShell As Object
-        Dim shellOutput As String
+        Dim hashResult As String
+        
+        On Error GoTo ErrorHandler
+        Set objShell = CreateObject("WScript.Shell")
+        On Error GoTo 0
+        
+        hashResult = objShell.Exec("cmd /c certutil -hashfile """ & filePath & """ MD5").StdOut.ReadAll
+        IsHashValid = (LCase$(GetKnownGoodHash(fileName)) = LCase$(Trim$(Split(hashResult, vbCrLf)(1))))
     #End If
     
-    #If Mac Then
-        VerifyTemplateHash = AppleScriptTask(APPLE_SCRIPT_FILE, "CompareMD5Hashes", templatePath & APPLE_SCRIPT_SPLIT_KEY & TEMPLATE_HASH)
-    #Else
-        If Dir(templatePath) <> vbNullString Then
-            On Error GoTo ErrorHandler
-            Set objShell = CreateObject("WScript.Shell")
-            shellOutput = objShell.Exec("cmd /c certutil -hashfile """ & templatePath & """ MD5").StdOut.ReadAll
-            VerifyTemplateHash = (LCase$(TEMPLATE_HASH) = LCase$(Trim$(Split(shellOutput, vbCrLf)(1))))
-        Else
-            VerifyTemplateHash = False
-        End If
-    #End If
 CleanUp:
     #If Mac Then
     #Else
@@ -417,8 +431,108 @@ ErrorHandler:
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "Error: " & Err.Number & " - " & Err.Description
     #End If
-    VerifyTemplateHash = False
+    IsHashValid = False
     Resume CleanUp
+End Function
+
+Private Function IsValidFilePresent(ByVal filePath As String, ByVal fileName As String) As Boolean
+    IsValidFilePresent = DoesFileExist(filePath) And IsHashValid(filePath, fileName)
+End Function
+
+Public Function LocateRequiredFile(ByVal fileName As String, ByVal filePath As String, ByVal fileType As String) As String
+    Dim tempFilePath As String
+    
+    ' Step 1: Set temporary file path
+    tempFilePath = GetTempFilePath(fileName)
+    
+    ' Step 2: Remove existing temp file, if present, to avoid overwriting errors
+    DeleteFile tempFilePath
+    
+    ' Step 3: Attempt to validate local copy
+    If Not IsValidFilePresent(filePath, fileName) Then
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print INDENT_LEVEL_1 & "Valid " & fileName & " not found. Attempting to download."
+        #End If
+        
+        ' Step 3a: Download new copy if missing or invalid
+        If Not DownloadFileSuccessful(fileType, fileName, filePath) Then
+            #If PRINT_DEBUG_MESSAGES Then
+                Debug.Print INDENT_LEVEL_2 & "Download failed. Terminiating file creation."
+            #End If
+            
+            LocateRequiredFile = vbNullString
+            Exit Function
+        End If
+        
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print INDENT_LEVEL_2 & "Download successful."
+        #End If
+    End If
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print INDENT_LEVEL_1 & "Valid copy found."
+    #End If
+    
+    ' Step 4: Make a temporary copy to work with
+    If MoveFile(filePath, tempFilePath) Then
+        LocateRequiredFile = tempFilePath
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print INDENT_LEVEL_1 & "Loading temporary copy"
+        #End If
+    Else
+        ' Step 4a: Use local copy if unable to make a temporary copy
+        LocateRequiredFile = filePath
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print INDENT_LEVEL_1 & "Failed to make a temporary copy. Using resources copy directly."
+        #End If
+    End If
+End Function
+
+Private Function MoveFile(ByVal initialPath As String, ByVal destinationPath As String) As Boolean
+    Dim moveSuccessful As Boolean
+    
+    #If Mac Then
+        moveSuccessful = AppleScriptTask(APPLE_SCRIPT_FILE, "CopyFile", initialPath & APPLE_SCRIPT_SPLIT_KEY & destinationPath)
+    #Else
+        Dim fso As Object
+        Set fso = CreateObject("Scripting.FileSystemObject")
+        
+        On Error Resume Next
+        fso.CopyFile initialPath, destinationPath
+        On Error GoTo 0
+        
+        moveSuccessful = (Err.Number = 0)
+        Err.Clear
+        Set fso = Nothing
+    #End If
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        If Not moveSuccessful Then
+            Debug.Print INDENT_LEVEL_1 & "Failed to move template to " & destinationPath
+        End If
+    #End If
+    
+    MoveFile = moveSuccessful
+End Function
+
+Public Function SetSavePath(ByVal ws As Worksheet, Optional ByVal subFolderName As String = vbNullString) As String
+    Dim workingPath As String
+    
+    ' Step 1: Set initial save location based on class days and time
+    workingPath = ConvertOneDriveToLocalPath(ThisWorkbook.Path & Application.PathSeparator & GenerateSaveFolderName(ws) & Application.PathSeparator)
+    
+    If Not CheckForFolder(workingPath, subFolderName, True) Then
+        SetSavePath = vbNullString
+        Exit Function
+    End If
+    
+    ' Step 2: Handle subfolder
+    If subFolderName <> vbNullString Then
+        workingPath = workingPath & subFolderName & Application.PathSeparator
+    End If
+    
+
+    SetSavePath = workingPath
 End Function
 
 Public Function SanitizeFileName(ByVal englishName As String) As String
@@ -479,28 +593,19 @@ Private Sub Download7Zip(ByVal resourcesFolder As String, ByRef downloadResult A
     Dim destinationPath As String
     Dim downloadURL As String
     
-    Const GIT_REPO_URL As String = "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/"
+    Const GIT_REPO_URL As String = "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/7zip/"
     
     #If Mac Then
         Dim scriptResultBoolean As Boolean
         
         Const FILE_NAME As String = "7zz"
-    #Else
-        Dim objWMI As Object
-        Dim colProcessors As Object
-        Dim objProcessor As Object
-        Dim fileToDownload As String
         
-        Const FILE_NAME As String = "7za.exe"
-    #End If
-    
-    #If Mac Then
         destinationPath = resourcesFolder & Application.PathSeparator & FILE_NAME
         downloadURL = GIT_REPO_URL & FILE_NAME
         
         scriptResultBoolean = AppleScriptTask(APPLE_SCRIPT_FILE, "DownloadFile", destinationPath & APPLE_SCRIPT_SPLIT_KEY & downloadURL)
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print IIf(scriptResultBoolean, "    Download successful.", "    Error: " & Err.Description)
+            Debug.Print IIf(scriptResultBoolean, INDENT_LEVEL_1 & "Download successful.", INDENT_LEVEL_1 & "Error: " & Err.Description)
         #End If
         
         If scriptResultBoolean Then
@@ -508,9 +613,16 @@ Private Sub Download7Zip(ByVal resourcesFolder As String, ByRef downloadResult A
             scriptResultBoolean = AppleScriptTask(APPLE_SCRIPT_FILE, "ChangeFilePermissions", "+x" & APPLE_SCRIPT_SPLIT_KEY & destinationPath)
         End If
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    File access " & IIf(downloadResult, "granted.", "denied.")
+            Debug.Print INDENT_LEVEL_1 & "File access " & IIf(downloadResult, "granted.", "denied.")
         #End If
     #Else
+        Dim objWMI As Object
+        Dim colProcessors As Object
+        Dim objProcessor As Object
+        Dim fileToDownload As String
+        
+        Const FILE_NAME As String = "7za.exe"
+        
         Set objWMI = GetObject("winmgmts:\\.\root\CIMV2")
         Set colProcessors = objWMI.ExecQuery("SELECT Architecture FROM Win32_Processor")
         
@@ -542,41 +654,6 @@ Private Sub Download7Zip(ByVal resourcesFolder As String, ByRef downloadResult A
     #End If
 End Sub
 
-Private Function DownloadReportTemplate(ByVal templatePath As String, ByVal resourcesFolder As String) As Boolean
-    Dim downloadResult As Boolean
-    
-    Const REPORT_TEMPLATE_URL As String = "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/SpeakingEvaluationTemplate.pptx"
-    
-    #If Mac Then
-        On Error Resume Next
-        downloadResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DownloadFile", templatePath & APPLE_SCRIPT_SPLIT_KEY & REPORT_TEMPLATE_URL)
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print IIf(Err.Number = 0, "    Download successful.", "    Error: " & Err.Description)
-        #End If
-        
-        If downloadResult Then downloadResult = RequestFileAndFolderAccess(resourcesFolder, templatePath)
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    File access " & IIf(downloadResult, "granted.", "denied.")
-        #End If
-        On Error GoTo 0
-    #Else
-        If CheckForCurl() Then
-            downloadResult = DownloadUsingCurl(templatePath, REPORT_TEMPLATE_URL)
-        ElseIf CheckForDotNet() Then
-            downloadResult = DownloadUsingDotNet(templatePath, REPORT_TEMPLATE_URL)
-        Else
-            downloadResult = False
-        End If
-    #End If
-    
-    If downloadResult Then
-        DownloadReportTemplate = VerifyTemplateHash(templatePath)
-    Else
-        DownloadReportTemplate = False
-    End If
-End Function
-
-
 #If Mac Then
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ' MacOS Only
@@ -593,13 +670,12 @@ Public Function RequestFileAndFolderAccess(ByVal resourcesFolder As String, Opti
 
     Select Case filePath
         Case ""
-            workingFolder = ThisWorkbook.Path
-            ConvertOneDriveToLocalPath workingFolder
+            workingFolder = ConvertOneDriveToLocalPath(ThisWorkbook.Path)
             excelTempFolder = Environ("TMPDIR")
             powerpointTempFolder = Replace(excelTempFolder, "Excel", "PowerPoint")
             filePermissionCandidates = Array(workingFolder, resourcesFolder, excelTempFolder, powerpointTempFolder)
         Case Else
-            ConvertOneDriveToLocalPath filePath ' Seems to be not needed?
+            filePath = ConvertOneDriveToLocalPath(filePath) ' Seems to be not needed?
             filePermissionCandidates = Array(filePath)
     End Select
 
@@ -611,8 +687,8 @@ Public Function RequestFileAndFolderAccess(ByVal resourcesFolder As String, Opti
         pathToRequest = Array(filePermissionCandidates(i))
         fileAccessGranted = GrantAccessToMultipleFiles(pathToRequest)
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    " & filePermissionCandidates(i) & vbNewLine & _
-                        "    Access granted: " & fileAccessGranted
+            Debug.Print INDENT_LEVEL_1 & "" & filePermissionCandidates(i) & vbNewLine & _
+                        INDENT_LEVEL_1 & "Access granted: " & fileAccessGranted
         #End If
         allAccessHasBeenGranted = fileAccessGranted
         If Not fileAccessGranted Then Exit For
@@ -620,7 +696,6 @@ Public Function RequestFileAndFolderAccess(ByVal resourcesFolder As String, Opti
 
     RequestFileAndFolderAccess = allAccessHasBeenGranted
 End Function
-
 #Else
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ' Windows Only
@@ -636,10 +711,10 @@ Public Function DownloadUsingCurl(ByVal destinationPath As String, ByVal downloa
     
     downloadCommand = "cmd /c curl.exe -o """ & destinationPath & """ """ & downloadURL & """"
     objShell.Run downloadCommand, 0, True
-    DownloadUsingCurl = fso.FileExists(destinationPath)
+    DownloadUsingCurl = fso.fileExists(destinationPath)
     
     #If PRINT_DEBUG_MESSAGES Then
-        If Not DownloadUsingCurl Then Debug.Print "    curl download failed for " & downloadURL
+        If Not DownloadUsingCurl Then Debug.Print INDENT_LEVEL_1 & "curl download failed for " & downloadURL
     #End If
     On Error GoTo 0
 End Function
