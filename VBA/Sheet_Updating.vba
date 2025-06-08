@@ -6,11 +6,153 @@ Option Explicit
     Const APPLE_SCRIPT_SPLIT_KEY = "-,-"
 #End If
 
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Class Record Updates
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+Public Sub UpdateClassRecords(ByVal ws As Worksheet, ByVal targetCellsRange As Range)
+    Dim currentCell As Range
+    Dim cellToShade As Range
+    Dim cellToQuery As Range
+    Dim validationListRange As Range
+    Dim winnersListRange As Range
+    Dim englishNamesRange As Range
+    Dim enteredValue() As String
+    Dim validatedValue() As String
+    Dim fieldType() As String
+    Dim nameToFind As String
+    Dim shadingValue As Long
+    Dim totalChangedCells As Long
+    Dim rankShading As Long
+    Dim i As Long
+    Dim currentRow As Long
+    Dim studentNameUpdate As Boolean
+    Dim winningName As Boolean
+    Dim shadingUpdates As New Dictionary
+    
+    ' Step 1: Prepare dictionary and arrays
+    ToggleApplicationFeatures False
+    ToggleSheetProtection ws, False
+    On Error GoTo ErrorHandler
+    
+    ' Set shadingUpdates = CreateObject("Scripting.Dictionary")
+    With ws
+        Set validationListRange = .Range(RANGE_VALIDATION_LIST)
+        Set winnersListRange = .Range(RANGE_WINNERS)
+        Set englishNamesRange = .Range(RANGE_ENGLISH_NAME)
+    End With
+
+    studentNameUpdate = False
+    totalChangedCells = targetCellsRange.Cells.Count
+    
+    ReDim enteredValue(1 To totalChangedCells)
+    ReDim validatedValue(1 To totalChangedCells)
+    ReDim fieldType(1 To totalChangedCells)
+    
+    ' Step 2: Validate input and determine fieldType
+    For i = 1 To totalChangedCells
+        Set currentCell = targetCellsRange.Cells.Item(i)
+        enteredValue(i) = Trim$(CStr(currentCell.Value))
+        validatedValue(i) = enteredValue(i)
+        fieldType(i) = GetCellType(currentCell)
+        studentNameUpdate = False
+
+        Select Case fieldType(i)
+            Case "Native Teacher", "Korean Teacher"
+                validatedValue(i) = FormatName(validatedValue(i))
+            Case "English Name", "Korean Name"
+                validatedValue(i) = FormatName(validatedValue(i))
+                studentNameUpdate = True
+            Case "Eval Date"
+                validatedValue(i) = FormatEvalDate(validatedValue(i))
+            Case "Grade"
+                validatedValue(i) = FormatGrade(validatedValue(i))
+            Case "Comment"
+                validatedValue(i) = FormatComment(validatedValue(i))
+        End Select
+
+        ' Step 2a: Write new value if input has been updated
+        If enteredValue(i) <> validatedValue(i) Then currentCell.Value = validatedValue(i)
+        
+        ' Step 2b: Update winners list options if a student's name has been updated
+        If studentNameUpdate Then UpdateHiddenNameValidationList ws, currentCell
+    Next i
+    
+    ' Step 3: Process shading for "English Name", "Korean Name", and "Comment" cells
+    For i = 1 To totalChangedCells
+        Set currentCell = targetCellsRange.Cells.Item(i)
+        winningName = False
+        shadingValue = 0
+
+        ' Step 3a: Determine if current name has been selected as a winner
+        If fieldType(i) = "English Name" Or fieldType(i) = "Korean Name" Then
+            winningName = CheckIfAWinningName(ws, fieldType(i), currentCell)
+        End If
+
+        Select Case True
+            ' Step 3b: Handle updates to the winners list
+            Case Not Intersect(currentCell, winnersListRange) Is Nothing
+                ' Step 3b-i: Load shading value for the student's rank
+                shadingValue = GetWinnerShadingValue(currentCell.Address)
+
+                If enteredValue(i) = vbNullString Then
+                    ' Step 3b-ii: Set proper shading if name has been removed from the winners list
+                    DetermineNameCellShading ws, englishNamesRange, shadingValue, shadingUpdates
+                Else
+                    ' Step 3b-iii: Queue shading for winner students
+                    SetShadingForWinnerName validationListRange, enteredValue(i), shadingUpdates, shadingValue
+                    
+                    ' Step 3b-iv: Remove duplicates in L2:L4
+                    RemoveDuplicateWinners ws, winnersListRange, currentCell.Address, shadingValue, shadingUpdates, enteredValue(i)
+                
+                    ' Step 3b-v: Queue shading for non-winning students
+                    DetermineNameCellShading ws, englishNamesRange, shadingValue, shadingUpdates
+                End If
+            ' Step 3c: Handle updates to non-winning students
+            Case Not winningName
+                ' Step 3c-i: Queue default shading for empty/blank cells
+                If IsEmpty(enteredValue(i)) Or enteredValue(i) = vbNullString Then
+                    Select Case fieldType(i)
+                        Case "English Name", "Korean Name"
+                            AddToShadingDictionary shadingUpdates, currentCell.Address, xlNone
+                        Case "Comment"
+                            AddToShadingDictionary shadingUpdates, currentCell.Address, RGB(242, 242, 242)
+                    End Select
+                ' Step 3c-ii: Queue shading for updated cells
+                Else
+                    Select Case fieldType(i)
+                        Case "English Name"
+                            AddToShadingDictionary shadingUpdates, currentCell.Address, GetEnglishNameShading(validatedValue(i))
+                        Case "Korean Name"
+                            AddToShadingDictionary shadingUpdates, currentCell.Address, GetKoreanNameShading(validatedValue(i))
+                        Case "Comment"
+                            AddToShadingDictionary shadingUpdates, currentCell.Address, GetCommentShading(validatedValue(i))
+                    End Select
+                End If
+        End Select
+    Next i
+    
+    ' Step 4: Apply shading queue
+    ApplyShading ws, shadingUpdates
+    
+' Step 5: Clear and reset settings.
+CleanUp:
+    ToggleApplicationFeatures True
+    ToggleSheetProtection ws, True
+    Set currentCell = Nothing
+    Set shadingUpdates = Nothing
+    Exit Sub
+ErrorHandler:
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Error in Worksheet_Change: " & Err.Description & " (Error " & Err.Number & ")"
+    #End If
+    Resume CleanUp
+End Sub
+
 
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ' Cell and Data Updating
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-Public Function CheckIfAWinningName(ByVal ws As Worksheet, ByVal cellType As String, ByVal currentCell As Range) As Boolean
+Private Function CheckIfAWinningName(ByVal ws As Worksheet, ByVal cellType As String, ByVal currentCell As Range) As Boolean
     Dim englishName As String
     Dim koreanName As String
     Dim mergedName As String
@@ -68,12 +210,12 @@ Public Sub GenerateCompleteHiddenNameValidationList(ByVal ws As Worksheet)
                 mergedName = vbNullString
             End If
 
-            .Range("BB" & i).Value = mergedName
+            .Range("O" & i).Value = mergedName
         Next i
     End With
 End Sub
 
-Public Sub UpdateHiddenNameValidationList(ByVal ws As Worksheet, ByVal currentCell As Range)
+Private Sub UpdateHiddenNameValidationList(ByVal ws As Worksheet, ByVal currentCell As Range)
     Dim offsetValue As Long
     Dim currentRow As Long
     Dim currentName As String
@@ -89,9 +231,9 @@ Public Sub UpdateHiddenNameValidationList(ByVal ws As Worksheet, ByVal currentCe
             mergedName = vbNullString
         End If
         
-        currentName = .Range("BB" & currentRow).Value
+        currentName = .Range("O" & currentRow).Value
         If currentName <> mergedName Then
-            .Range("BB" & currentRow).Value = mergedName
+            .Range("O" & currentRow).Value = mergedName
             PopulateWinnersListValidationValues ws
         End If
     End With
@@ -104,8 +246,8 @@ Public Sub PopulateWinnersListValidationValues(ByVal ws As Worksheet)
 
     With ws
         For i = 8 To 32
-            If Not IsEmpty(.Range("BB" & i)) Then
-                validationList = validationList & .Range("BB" & i).Value & ","
+            If Not IsEmpty(.Range("O" & i)) Then
+                validationList = validationList & .Range("O" & i).Value & ","
             End If
         Next i
 
@@ -131,7 +273,7 @@ Public Sub PopulateWinnersListValidationValues(ByVal ws As Worksheet)
     End With
 End Sub
 
-Public Function FormatName(ByVal nameValue As String) As String
+Private Function FormatName(ByVal nameValue As String) As String
     If IsValueEnglish(nameValue) Then
         FormatName = StrConv(nameValue, vbProperCase)
     Else
@@ -139,7 +281,7 @@ Public Function FormatName(ByVal nameValue As String) As String
     End If
 End Function
 
-Public Function IsValueEnglish(ByVal inputText As String) As Boolean
+Private Function IsValueEnglish(ByVal inputText As String) As Boolean
     Dim charCode As Long
     Dim i As Long
     
@@ -162,20 +304,36 @@ Public Function IsValueEnglish(ByVal inputText As String) As Boolean
     IsValueEnglish = True
 End Function
 
-Public Function FormatComment(ByVal commentValue As String) As String
+Private Function FormatComment(ByVal commentValue As String) As String
     FormatComment = UCase$(Left$(commentValue, 1)) & Mid$(commentValue, 2)
 End Function
 
-Public Function FormatEvalDate(ByVal dateValue As String) As String
+Private Function FormatEvalDate(ByVal dateValue As String) As String
+    Dim msgTitle As String
+    Dim msgToDisplay As String
+    Dim msgDialogType As Long
+    Dim msgDialogWidth As Long
+    
     If IsDate(dateValue) Then
-        FormatEvalDate = Format$(CDate(dateValue), "MMM. YYYY")
+        ' Make this format match the user's locale
+        FormatEvalDate = Format$(CDate(dateValue), "DD MMM. YYYY")
     Else
-        DisplayWarning "Date: Invalid Format"
+        If dateValue <> vbNullString Then
+            msgTitle = "Date: Invalid Format"
+            msgToDisplay = "Please enter a valid date."
+            msgDialogType = vbOKOnly + vbExclamation
+            msgDialogWidth = 200
+            Call DisplayMessage(msgToDisplay, msgDialogType, msgTitle, msgDialogWidth)
+        End If
         FormatEvalDate = vbNullString
     End If
 End Function
 
-Public Function FormatGrade(ByVal gradeValue As String) As String
+Private Function FormatGrade(ByVal gradeValue As String) As String
+    Dim msgTitle As String
+    Dim msgToDisplay As String
+    Dim msgDialogType As Long
+    Dim msgDialogWidth As Long
     Dim processedGrade As String
     
     processedGrade = UCase$(Trim$(gradeValue))
@@ -194,7 +352,11 @@ Public Function FormatGrade(ByVal gradeValue As String) As String
                  processedGrade = TrimToFinalLetterGrade(processedGrade)
                  
                  If processedGrade = vbNullString Then
-                    DisplayWarning "Grade: Invalid Score"
+                    msgTitle = "Grade: Invalid Score"
+                    msgToDisplay = "An invalid score value has been entered. Please enter A+, A, B+, B, C, or a number between 1 and 5."
+                    msgDialogType = vbOKOnly + vbExclamation
+                    msgDialogWidth = 250
+                    Call DisplayMessage(msgToDisplay, msgDialogType, msgTitle, msgDialogWidth)
                  End If
                  
                  FormatGrade = processedGrade
@@ -202,7 +364,7 @@ Public Function FormatGrade(ByVal gradeValue As String) As String
     End If
 End Function
 
-Public Function TrimToFinalLetterGrade(ByVal inputText As String) As String
+Private Function TrimToFinalLetterGrade(ByVal inputText As String) As String
     Dim firstChar As String
     Dim firstTwo As String
     Dim outsideTwo As String
