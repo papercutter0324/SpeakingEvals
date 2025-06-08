@@ -14,21 +14,18 @@ Public Function InstallFonts() As Boolean
     Dim downloadEngSuccess As Boolean
     Dim downloadKorSuccess As Boolean
     
-    Const FONT_BASE_URL As String = "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/"
+    Const FONT_BASE_URL As String = "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Fonts/"
     Const FONT_NAME_ENG As String = "just-another-hand.regular.ttf"
     Const FONT_NAME_KOR As String = "KakaoBigSans-Regular.ttf"
-    Const INSTALL_FONTS_SUCCESSFUL As String = "    Font successfully installed"
-    Const INSTALL_FONTS_FAILED As String = "    Unable to automatically install fonts. Please install manually."
+    Const INSTALL_FONTS_SUCCESSFUL As String = INDENT_LEVEL_1 & "Font successfully installed"
+    Const INSTALL_FONTS_FAILED As String = INDENT_LEVEL_1 & "Unable to automatically install fonts. Please install manually."
     
     #If Mac Then
         ' No extra variables required.
     #Else
-        Dim fso As Object
         Dim fontFolder As String
-        Dim engFontPath As String
-        Dim korFontPath As String
-        Dim engSysFontPath As String
-        Dim korSysFontPath As String
+        Dim engFontInstalled As Boolean
+        Dim korFontInstalled As Boolean
     #End If
     
     #If PRINT_DEBUG_MESSAGES Then
@@ -44,83 +41,22 @@ Public Function InstallFonts() As Boolean
             InstallFonts = AppleScriptTask(APPLE_SCRIPT_FILE, "InstallFonts", FONT_NAME_KOR & APPLE_SCRIPT_SPLIT_KEY & fontURL)
         End If
     #Else
-        Set fso = CreateObject("Scripting.FileSystemObject")
-        
-        fontFolder = Environ$("LOCALAPPDATA") & "\Microsoft\Windows\Fonts"
-        engFontPath = fso.BuildPath(fontFolder, FONT_NAME_ENG)
-        korFontPath = fso.BuildPath(fontFolder, FONT_NAME_KOR)
-        engSysFontPath = fso.BuildPath(Environ$("WINDIR") & "\Fonts", FONT_NAME_ENG)
-        korSysFontPath = fso.BuildPath(Environ$("WINDIR") & "\Fonts", FONT_NAME_KOR)
-        
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Checking Windows Paths:" & vbNewLine & _
-                        "        User Font Folder: " & fontFolder & vbNewLine & _
-                        "        Eng. User Path: " & engFontPath & vbNewLine & _
-                        "        Kor. User Path: " & korFontPath & vbNewLine & _
-                        "        Eng. System Path: " & engSysFontPath & vbNewLine & _
-                        "        Kor. System Path: " & korSysFontPath
-        #End If
-        
-        If (fso.FileExists(engFontPath) Or fso.FileExists(engSysFontPath)) And _
-           (fso.FileExists(korFontPath) Or fso.FileExists(korSysFontPath)) Then
-            InstallFonts = True
-        Else
-            #If PRINT_DEBUG_MESSAGES Then
-                Debug.Print "    Status: Missing" & vbNewLine & _
-                            "Attempting to Install Required Fonts"
-            #End If
-            
-            If Not DoesFolderExist(fontFolder) Then
-                #If PRINT_DEBUG_MESSAGES Then
-                    Debug.Print "    User font path not found. Attempting to create."
-                #End If
-                CreateNewFolder fontFolder
-            End If
-            
-            If DoesFolderExist(fontFolder) Then
-                #If PRINT_DEBUG_MESSAGES Then
-                    Debug.Print "    Creation successful." & vbNewLine & _
-                                "    Attempting to download fonts."
-                #End If
-                
-                downloadEngSuccess = (fso.FileExists(engFontPath) Or fso.FileExists(engSysFontPath))
-                downloadKorSuccess = (fso.FileExists(korFontPath) Or fso.FileExists(korSysFontPath))
-                
-                Select Case True
-                    Case CheckForCurl()
-                        If Not downloadEngSuccess Then
-                            fontURL = FONT_BASE_URL & FONT_NAME_ENG
-                            downloadEngSuccess = DownloadUsingCurl(engFontPath, fontURL)
-                        End If
-                        
-                        If Not downloadKorSuccess Then
-                            fontURL = FONT_BASE_URL & FONT_NAME_KOR
-                            downloadKorSuccess = DownloadUsingCurl(korFontPath, fontURL)
-                        End If
-                    Case CheckForDotNet()
-                        If Not downloadEngSuccess Then
-                            fontURL = FONT_BASE_URL & FONT_NAME_ENG
-                            downloadEngSuccess = DownloadUsingDotNet(engFontPath, fontURL)
-                        End If
-                        
-                        If Not downloadKorSuccess Then
-                            fontURL = FONT_BASE_URL & FONT_NAME_KOR
-                            downloadKorSuccess = DownloadUsingDotNet(korFontPath, fontURL)
-                        End If
-                    Case Else
-                        InstallFonts = False
-                End Select
-                
-                InstallFonts = (downloadEngSuccess And downloadKorSuccess)
-            Else
-                #If PRINT_DEBUG_MESSAGES Then
-                    Debug.Print "    Creation failed."
-                #End If
-                InstallFonts = False
-            End If
+        fontFolder = Environ$("LOCALAPPDATA") & "\Microsoft\Windows\Fonts\"
+        If Not CheckForFolder(fontFolder) Then
+            fontFolder = Environ$("WINDIR") & "\Fonts\"
         End If
         
-        Set fso = Nothing
+        engFontInstalled = IsFontInstalled(FONT_NAME_ENG)
+        If Not engFontInstalled Then
+            engFontInstalled = DownloadFileSuccessful("Font", FONT_NAME_ENG, fontFolder & FONT_NAME_ENG)
+        End If
+        
+        korFontInstalled = IsFontInstalled(FONT_NAME_KOR)
+        If Not korFontInstalled Then
+            korFontInstalled = DownloadFileSuccessful("Font", FONT_NAME_KOR, fontFolder & FONT_NAME_KOR)
+        End If
+        
+        InstallFonts = (engFontInstalled And korFontInstalled)
     #End If
     
     #If PRINT_DEBUG_MESSAGES Then
@@ -128,8 +64,8 @@ Public Function InstallFonts() As Boolean
             Debug.Print INSTALL_FONTS_SUCCESSFUL
         Else
             Debug.Print INSTALL_FONTS_FAILED & vbNewLine & _
-                        "        Just Another Hand (Regular): " & IIf(downloadEngSuccess, "Installed", "Missing") & vbNewLine & _
-                        "        Kakao Big Sans (Regular):    " & IIf(downloadKorSuccess, "Installed", "Missing")
+                        INDENT_LEVEL_2 & "Just Another Hand (Regular): " & IIf(downloadEngSuccess, "Installed", "Missing") & vbNewLine & _
+                        INDENT_LEVEL_2 & "Kakao Big Sans (Regular):    " & IIf(downloadKorSuccess, "Installed", "Missing")
         End If
     #End If
 End Function
@@ -153,12 +89,11 @@ Public Function AreAppleScriptsInstalled(Optional ByVal recheckStatus As Boolean
         If Not recheckStatus Then CheckForAppleScriptUpdate
         
         libraryScriptsFolder = "/Users/" & Environ("USER") & "/Library/Script Libraries"
-        resourcesFolder = ThisWorkbook.Path & "/Resources"
-        ConvertOneDriveToLocalPath resourcesFolder
+        resourcesFolder = ConvertOneDriveToLocalPath(ThisWorkbook.Path & Application.PathSeparator & "Resources")
 
         #If PRINT_DEBUG_MESSAGES Then
             Debug.Print "Locating Dialog Toolkit Plus.scptd" & vbNewLine & _
-                        "    Searching: " & libraryScriptsFolder
+                        INDENT_LEVEL_1 & "Searching: " & libraryScriptsFolder
         #End If
 
         If Not recheckStatus Then
@@ -170,14 +105,14 @@ Public Function AreAppleScriptsInstalled(Optional ByVal recheckStatus As Boolean
         End If
 
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Installed: " & isDialogToolkitInstalled
+            Debug.Print INDENT_LEVEL_1 & "Installed: " & isDialogToolkitInstalled
         #End If
 
         If isDialogToolkitInstalled Then
             isDialogToolkitInstalled = CheckForDialogDisplayScript(resourcesFolder)
             #If PRINT_DEBUG_MESSAGES Then
                 Debug.Print "Attempting to install DialogDisplay.scpt" & vbNewLine & _
-                            "    Installed: " & isDialogToolkitInstalled
+                            INDENT_LEVEL_1 & "Installed: " & isDialogToolkitInstalled
             #End If
         End If
     Else
@@ -189,11 +124,11 @@ Public Function AreAppleScriptsInstalled(Optional ByVal recheckStatus As Boolean
     AreAppleScriptsInstalled = isAppleScriptInstalled
 End Function
 
-Private Function AreEnhancedDialogsEnabled() As Boolean
+Public Function AreEnhancedDialogsEnabled() As Boolean
     AreEnhancedDialogsEnabled = ThisWorkbook.Sheets("MacOS Users").Shapes("Button_EnhancedDialogs_Enable").Visible
 End Function
 
-Private Function CheckForAppleScript() As Boolean
+Public Function CheckForAppleScript() As Boolean
     Dim appleScriptPath As String
     Dim appleScriptStatus As Boolean
     
@@ -201,7 +136,7 @@ Private Function CheckForAppleScript() As Boolean
     
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "Locating " & APPLE_SCRIPT_FILE & vbNewLine & _
-                    "    Searching: " & appleScriptPath
+                    INDENT_LEVEL_1 & "Searching: " & appleScriptPath
     #End If
     
     On Error Resume Next
@@ -209,20 +144,20 @@ Private Function CheckForAppleScript() As Boolean
     On Error GoTo 0
     
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    Found: " & appleScriptStatus
+        Debug.Print INDENT_LEVEL_1 & "Found: " & appleScriptStatus
     #End If
     
     CheckForAppleScript = appleScriptStatus
 End Function
 
-Private Sub CheckForAppleScriptUpdate()
+Public Sub CheckForAppleScriptUpdate()
     Dim scriptFolder As String
     Dim destinationPath As String
     Dim currentScriptVersion As Long
     Dim downloadedScriptVersion As Long
     Dim appleScriptResult As Boolean
     
-    Const APPLE_SCRIPT_URL As String = "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/SpeakingEvals.scpt"
+    Const APPLE_SCRIPT_URL As String = "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/AppleScript/SpeakingEvals.scpt"
     Const OLD_APPLE_SCRIPT As String = "SpeakingEvals-Old.scpt"
     Const TMP_APPLE_SCRIPT As String = "SpeakingEvals-Tmp.scpt"
     
@@ -238,7 +173,7 @@ Private Sub CheckForAppleScriptUpdate()
     appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DownloadFile", destinationPath & APPLE_SCRIPT_SPLIT_KEY & APPLE_SCRIPT_URL)
     If Not appleScriptResult Then
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Unable to download new " & APPLE_SCRIPT_FILE
+            Debug.Print INDENT_LEVEL_1 & "Unable to download new " & APPLE_SCRIPT_FILE
         #End If
         GoTo ErrorHandler
     End If
@@ -247,13 +182,13 @@ Private Sub CheckForAppleScriptUpdate()
     downloadedScriptVersion = AppleScriptTask(TMP_APPLE_SCRIPT, "GetScriptVersionNumber", "")
     
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    Installed Version: " & currentScriptVersion & vbNewLine & _
-                    "    Online Version:    " & downloadedScriptVersion
+        Debug.Print INDENT_LEVEL_1 & "Installed Version: " & currentScriptVersion & vbNewLine & _
+                    INDENT_LEVEL_1 & "Online Version:    " & downloadedScriptVersion
     #End If
     
     If downloadedScriptVersion <= currentScriptVersion Then
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Installed version is up-to-date."
+            Debug.Print INDENT_LEVEL_1 & "Installed version is up-to-date."
         #End If
         GoTo CleanUp
     End If
@@ -264,12 +199,12 @@ Private Sub CheckForAppleScriptUpdate()
     If Not appleScriptResult Then GoTo ErrorHandler
     
     #If PRINT_DEBUG_MESSAGES Then
-        If appleScriptResult Then Debug.Print "    Update complete."
+        If appleScriptResult Then Debug.Print INDENT_LEVEL_1 & "Update complete."
     #End If
     
 CleanUp:
     #If PRINT_DEBUG_MESSAGES Then
-        If appleScriptResult Then Debug.Print "    Beginning clean up process."
+        If appleScriptResult Then Debug.Print INDENT_LEVEL_1 & "Beginning clean up process."
     #End If
     
     On Error Resume Next
@@ -277,7 +212,7 @@ CleanUp:
     If appleScriptResult Then
         appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DeleteFile", scriptFolder & TMP_APPLE_SCRIPT)
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Removing temporary update file: " & IIf(appleScriptResult, "Successful", "Failed")
+            Debug.Print INDENT_LEVEL_1 & "Removing temporary update file: " & IIf(appleScriptResult, "Successful", "Failed")
         #End If
     End If
     
@@ -285,13 +220,13 @@ CleanUp:
     If appleScriptResult Then
         appleScriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "DeleteFile", scriptFolder & OLD_APPLE_SCRIPT)
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Removing old version: " & IIf(appleScriptResult, "Successful", "Failed")
+            Debug.Print INDENT_LEVEL_1 & "Removing old version: " & IIf(appleScriptResult, "Successful", "Failed")
         #End If
     End If
     On Error GoTo 0
     
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    Finished clean up."
+        Debug.Print INDENT_LEVEL_1 & "Finished clean up."
     #End If
     Exit Sub
     
@@ -303,27 +238,33 @@ ErrorHandler:
     Resume CleanUp
 End Sub
 
-Private Function CheckForDialogToolkit(ByVal resourcesFolder As String) As Boolean
+Public Function CheckForDialogToolkit(ByVal resourcesFolder As String) As Boolean
     Dim scriptResult As Boolean
     Dim libraryScriptsPath As String
     
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "Checking for presence of Dialog Toolkit Plus." & vbNewLine & _
-                    "    Local resources: " & resourcesFolder
+                    INDENT_LEVEL_1 & "Local resources: " & resourcesFolder
     #End If
     
     libraryScriptsPath = AppleScriptTask(APPLE_SCRIPT_FILE, "CheckForScriptLibrariesFolder", "paramString")
-    If libraryScriptsPath <> "" Then scriptResult = RequestFileAndFolderAccess(resourcesFolder, libraryScriptsPath)
-    If scriptResult Then scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "InstallDialogToolkitPlus", resourcesFolder)
+    
+    If libraryScriptsPath <> "" Then
+        scriptResult = RequestFileAndFolderAccess(resourcesFolder, libraryScriptsPath)
+        
+        If scriptResult Then
+            scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "InstallDialogToolkitPlus", resourcesFolder)
+        End If
+    End If
     
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    Toolkit Status: " & scriptResult
+        Debug.Print INDENT_LEVEL_1 & "Toolkit Installed: " & scriptResult
     #End If
     
     CheckForDialogToolkit = scriptResult
 End Function
 
-Private Function CheckForDialogDisplayScript(ByVal resourcesFolder As String) As Boolean
+Public Function CheckForDialogDisplayScript(ByVal resourcesFolder As String) As Boolean
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "Checking for presence of DialogDisplay.scpt."
     #End If
@@ -331,34 +272,34 @@ Private Function CheckForDialogDisplayScript(ByVal resourcesFolder As String) As
     CheckForDialogDisplayScript = AppleScriptTask(APPLE_SCRIPT_FILE, "InstallDialogDisplayScript", resourcesFolder)
     
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    Status: " & CheckForDialogDisplayScript
+        Debug.Print INDENT_LEVEL_1 & "Status: " & CheckForDialogDisplayScript
     #End If
 End Function
 
-Private Sub RemoveDialogToolKit(ByVal resourcesFolder As String)
+Public Sub RemoveDialogToolKit(ByVal resourcesFolder As String)
     Dim scriptResult As Boolean
         
     If CheckForAppleScript() Then
         #If PRINT_DEBUG_MESSAGES Then
             Debug.Print "Removing Dialog ToolKit Plus from ~/Library/Script Libraries" & vbNewLine & _
-                        "    A local copy will be stored in: " & resourcesFolder
+                        INDENT_LEVEL_1 & "A local copy will be stored in: " & resourcesFolder
         #End If
             
         scriptResult = AppleScriptTask(APPLE_SCRIPT_FILE, "UninstallDialogToolkitPlus", resourcesFolder)
             
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Result: " & scriptResult
+            Debug.Print INDENT_LEVEL_1 & "Result: " & scriptResult
         #End If
     End If
 End Sub
 
-Private Sub RemindUserToInstallSpeakingEvalsScpt()
-    Dim msgresult As Long
+Public Sub RemindUserToInstallSpeakingEvalsScpt()
+    Dim msgResult As Long
     
     Const APPLE_SCRIPT_REMINDER As String = "SpeakingEvals.scpt must be installed in order to generate reports. Please run the terminal " & _
                                             "command on the ""MacOs Users"" sheet to install it and try again."
 
-    msgresult = DisplayMessage(APPLE_SCRIPT_REMINDER, vbOKOnly + vbExclamation, "Invalid Selection!")
+    msgResult = DisplayMessage(APPLE_SCRIPT_REMINDER, vbOKOnly + vbExclamation, "Invalid Selection!")
     MacOS_Users.Activate
 End Sub
 
@@ -366,7 +307,7 @@ End Sub
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ' Windows Only
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-Private Function CheckForCurl() As Boolean
+Public Function CheckForCurl() As Boolean
     Dim objShell As Object
     Dim objExec As Object
     Dim checkResult As Boolean
@@ -388,7 +329,7 @@ Private Function CheckForCurl() As Boolean
     End If
     
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print IIf(checkResult, "    Installed", "    Not installed. Falling back to .Net")
+        Debug.Print IIf(checkResult, INDENT_LEVEL_1 & "Installed", INDENT_LEVEL_1 & "Not installed. Falling back to .Net")
     #End If
     
     CheckForCurl = checkResult
@@ -398,13 +339,13 @@ CleanUp:
     Exit Function
 ErrorHandler:
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    Error while checking for curl.exe: " & Err.Description
+        Debug.Print INDENT_LEVEL_1 & "Error while checking for curl.exe: " & Err.Description
     #End If
     CheckForCurl = False
     Resume CleanUp
 End Function
 
-Private Function CheckForDotNet() As Boolean
+Public Function CheckForDotNet() As Boolean
     Dim frameworkPath As String
     
     #If PRINT_DEBUG_MESSAGES Then
@@ -427,5 +368,23 @@ ErrorHandler:
     #End If
     CheckForDotNet = False
 End Function
-#End If
 
+Private Function IsFontInstalled(ByVal fontName As String) As Boolean
+    Dim fso As Object
+    Dim userFontPath As String
+    Dim sysFontPath As String
+
+    Set fso = CreateObject("Scripting.FileSystemObject")
+
+    userFontPath = fso.BuildPath(Environ$("LOCALAPPDATA") & "\Microsoft\Windows\Fonts", fontName)
+
+    If fso.fileExists(userFontPath) Then
+        IsFontInstalled = IsHashValid(userFontPath, fontName)
+
+        If Not IsFontInstalled Then
+            sysFontPath = fso.BuildPath(Environ$("WINDIR") & "\Fonts", fontName)
+            IsFontInstalled = IsHashValid(sysFontPath, fontName)
+        End If
+    End If
+End Function
+#End If
