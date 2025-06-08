@@ -13,13 +13,13 @@ Private Sub Workbook_Open()
     Dim startTime As Date
     Dim endTime As Date
     Dim elapsedTime As Double
-    Dim msgresult As Long
+    Dim msgResult As Long
     
     #If Mac Then
         Dim scriptResult As Boolean
     #End If
     
-    Const CURL_COMMAND_TEXT As String = "curl -L -o ~/Library/Application\ Scripts/com.microsoft.Excel/SpeakingEvals.scpt https://github.com/papercutter0324/SpeakingEvals/raw/main/SpeakingEvals.scpt"
+    Const CURL_COMMAND_TEXT As String = "curl -L -o ~/Library/Application\ Scripts/com.microsoft.Excel/SpeakingEvals.scpt https://github.com/papercutter0324/SpeakingEvals/raw/main/AppleScript/SpeakingEvals.scpt"
     Const STARTUP_MSG_TEMP_DIR As String = "This file has been loaded from a temporary folder and will not function correctly. " & _
                                            "Please verify you have correctly extracted this file from the zip file (if applicable) " & _
                                            "and save it to a permanent location."
@@ -34,7 +34,7 @@ Private Sub Workbook_Open()
     
     ' This might need to be moved elsewhere to ensure it is diplayed properly
     If IsFileLoadedFromTempDir Then
-        msgresult = DisplayMessage(STARTUP_MSG_TEMP_DIR, vbOKOnly + vbExclamation, "Warning!", STARTUP_MSG_TEMP_DIR_SIZE)
+        msgResult = DisplayMessage(STARTUP_MSG_TEMP_DIR, vbOKOnly + vbExclamation, "Warning!", STARTUP_MSG_TEMP_DIR_SIZE)
         Exit Sub
     End If
     
@@ -42,21 +42,10 @@ Private Sub Workbook_Open()
     
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "Beginning start-up self-checks" & vbNewLine & _
-                    "    Start Time: " & Format$(startTime, "hh:mm:ss")
+                    INDENT_LEVEL_1 & "Start Time: " & Format$(startTime, "hh:mm:ss")
     #End If
     
-    With Application
-        .EnableEvents = False
-        .ScreenUpdating = False
-        .Calculation = xlCalculationManual
-        
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "Disabling Application Updates" & vbNewLine & _
-                        "    EnableEvents: " & .EnableEvents & vbNewLine & _
-                        "    ScreenUpdating: " & .ScreenUpdating & vbNewLine & _
-                        "    Calculation: " & IIf(.Calculation = xlCalculationManual, "Manual", "Automatic")
-        #End If
-    End With
+    ToggleApplicationFeatures False
     
     VerifySheetNames
     
@@ -67,11 +56,11 @@ Private Sub Workbook_Open()
     On Error GoTo ReenableEvents
     Set wb = ThisWorkbook
     For Each ws In wb.Worksheets
+        ToggleSheetProtection ws, False
+        
         With ws
-            .Unprotect
-            
             #If PRINT_DEBUG_MESSAGES Then
-                Debug.Print "    Sheet: " & .Name
+                Debug.Print INDENT_LEVEL_1 & "Sheet: " & .Name
             #End If
             
             Select Case .Name
@@ -88,18 +77,17 @@ Private Sub Workbook_Open()
                     #Else
                         If .Visible <> xlSheetHidden Then .Visible = xlSheetHidden
                     #End If
-                Case "mySignature"
+                Case "Options"
                     If .Visible = xlSheetHidden Then .Visible = xlSheetVisible
-                    SetLayoutMySignature
+                    SetLayoutOptions
                 Case Else
                     If .Visible = xlSheetHidden Then .Visible = xlSheetVisible
                     AutoPopulateEvaluationDateValues ws
                     SetLayoutClassRecords ws
             End Select
-            
-            .Protect
-            .EnableSelection = xlUnlockedCells
         End With
+        
+        ToggleSheetProtection ws, True
     Next ws
     
     ' Calculate time now to avoid user response time being added to the result
@@ -109,16 +97,16 @@ Private Sub Workbook_Open()
     #If Mac Then
         #If PRINT_DEBUG_MESSAGES Then
             Debug.Print "SpeakingEvals.scpt" & vbNewLine & _
-                        "    Status: " & IIf(scriptResult, "Installed", "Missing")
+                        INDENT_LEVEL_1 & "Status: " & IIf(scriptResult, "Installed", "Missing")
         #End If
         If Not scriptResult Then
             #If PRINT_DEBUG_MESSAGES Then
-                Debug.Print "    Remindering user to install." & vbNewLine & _
-                            "    Activating sheet ""MacOS Users"""
+                Debug.Print INDENT_LEVEL_1 & "Remindering user to install." & vbNewLine & _
+                            INDENT_LEVEL_1 & "Activating sheet ""MacOS Users"""
             #End If
             MacOS_Users.Activate
             SetLayoutMacOSUsers
-            msgresult = DisplayMessage(STARTUP_MSG_APPLE_SCRIPT_REMINDER, vbOKOnly + vbInformation, "Notice!", STARTUP_MSG_APPLE_SCRIPT_REMINDER_SIZE)
+            msgResult = DisplayMessage(STARTUP_MSG_APPLE_SCRIPT_REMINDER, vbOKOnly + vbInformation, "Notice!", STARTUP_MSG_APPLE_SCRIPT_REMINDER_SIZE)
         Else
             Instructions.Activate
             SetLayoutInstructions
@@ -131,42 +119,22 @@ Private Sub Workbook_Open()
     #End If
 
 ReenableEvents:
-    With Application
-        .EnableEvents = True
-        .ScreenUpdating = True
-        .Calculation = xlCalculationAutomatic
-    
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "Re-enabling Application Updates" & vbNewLine & _
-                        "    EnableEvents: " & .EnableEvents & vbNewLine & _
-                        "    ScreenUpdating: " & .ScreenUpdating & vbNewLine & _
-                        "    Calculation: " & IIf(.Calculation = xlCalculationAutomatic, "Automatic", "Manual") & vbNewLine & _
-                        "Finished Tasks" & vbNewLine & _
-                        "    End Time: " & Format$(endTime, "hh:mm:ss") & vbNewLine & _
-                        "    Elapsed time: " & Format$(elapsedTime * 86400, "0.00") & " seconds"
-        #End If
-    End With
+    ToggleApplicationFeatures True
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Finished Tasks" & vbNewLine & _
+                    INDENT_LEVEL_1 & "End Time: " & Format$(endTime, "hh:mm:ss") & vbNewLine & _
+                    INDENT_LEVEL_1 & "Elapsed time: " & Format$(elapsedTime * 86400, "0.00") & " seconds"
+    #End If
 End Sub
 
 Private Sub Workbook_SheetActivate(ByVal ws As Object)
-    Const CURL_COMMAND_TEXT As String = "curl -L -o ~/Library/Application\ Scripts/com.microsoft.Excel/SpeakingEvals.scpt https://github.com/papercutter0324/SpeakingEvals/raw/main/SpeakingEvals.scpt"
+    Const CURL_COMMAND_TEXT As String = "curl -L -o ~/Library/Application\ Scripts/com.microsoft.Excel/SpeakingEvals.scpt https://github.com/papercutter0324/SpeakingEvals/raw/main/AppleScript/SpeakingEvals.scpt"
     
-    With Application
-        .EnableEvents = False
-        .ScreenUpdating = False
-        .Calculation = xlCalculationManual
-        
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "Disabling Application Updates" & vbNewLine & _
-                        "    EnableEvents: " & .EnableEvents & vbNewLine & _
-                        "    ScreenUpdating: " & .ScreenUpdating & vbNewLine & _
-                        "    Calculation: " & IIf(.Calculation = xlCalculationManual, "Manual", "Automatic")
-        #End If
-    End With
+    ToggleApplicationFeatures False
     
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "Validating Layout" & vbNewLine & _
-                    "    Sheet: " & ws.Name
+                    INDENT_LEVEL_1 & "Sheet: " & ws.Name
     #End If
     
     VerifySheetNames
@@ -177,8 +145,9 @@ Private Sub Workbook_SheetActivate(ByVal ws As Object)
         Case "MacOS Users"
             ws.Shapes("cURL_Command").TextFrame2.TextRange.Characters.Text = CURL_COMMAND_TEXT
             SetLayoutMacOSUsers
-        Case "mySignature"
-            SetLayoutMySignature
+        Case "Options"
+            SetLayoutOptions
+            OptionsShapeVisibility ws
         Case Else
             If ws.Cells(1, 1).Value = "Native Teacher:" Then
                 SetLayoutClassRecordsButtons ws
@@ -186,26 +155,14 @@ Private Sub Workbook_SheetActivate(ByVal ws As Object)
             End If
     End Select
     
-    With Application
-        .EnableEvents = True
-        .ScreenUpdating = True
-        .Calculation = xlCalculationAutomatic
-    
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "Re-enabling Application Updates" & vbNewLine & _
-                        "    EnableEvents: " & .EnableEvents & vbNewLine & _
-                        "    ScreenUpdating: " & .ScreenUpdating & vbNewLine & _
-                        "    Calculation: " & IIf(.Calculation = xlCalculationAutomatic, "Automatic", "Manual")
-        #End If
-    End With
+    ToggleApplicationFeatures True
 End Sub
 
 Private Sub Workbook_BeforeClose(ByRef Cancel As Boolean)
     #If Mac Then
         Dim resourcesFolder As String
         
-        resourcesFolder = ThisWorkbook.Path & "/Resources"
-        ConvertOneDriveToLocalPath resourcesFolder
+        resourcesFolder = ConvertOneDriveToLocalPath(ThisWorkbook.Path & Application.PathSeparator & "Resources")
         RemoveDialogToolKit resourcesFolder
     #End If
 End Sub
