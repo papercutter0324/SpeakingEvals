@@ -15,7 +15,7 @@ Public Sub SetDefaultShading(ByVal ws As Worksheet)
     Dim commentRange As Range
     Dim validationListRange As Range
     Dim currentCell As Range
-    Dim shadingUpdates As Object
+    Dim shadingUpdates As New Dictionary
     Dim shadingKey As Variant
     Dim nameToFind As String
     Dim shadingValue As Long
@@ -29,7 +29,7 @@ Public Sub SetDefaultShading(ByVal ws As Worksheet)
         Set validationListRange = .Range(RANGE_VALIDATION_LIST)
     End With
     
-    Set shadingUpdates = CreateObject("Scripting.Dictionary")
+    ' Set shadingUpdates = CreateObject("Scripting.Dictionary")
     
     For Each currentCell In englishNameRange
         With currentCell
@@ -62,28 +62,61 @@ Public Sub SetDefaultShading(ByVal ws As Worksheet)
 End Sub
 
 Public Function GetEnglishNameShading(ByVal nameValue As String, Optional ByVal enableWarningMsg As Boolean = True) As Long
+    Dim msgTitle As String
+    Dim msgToDisplay As String
+    Dim msgDialogType As Long
+    Dim msgDialogWidth As Long
+    
     Select Case Len(nameValue)
         Case 0 ' Empty cell
             GetEnglishNameShading = RGB(255, 255, 255)
         Case Is <= 21 ' Within acceptable length
             GetEnglishNameShading = RGB(255, 255, 255)
         Case Else ' Too long
-            If enableWarningMsg Then DisplayWarning "English Name: Exceeds Max Length"
+            If enableWarningMsg Then
+                msgTitle = "English Name: Exceeds Max Length"
+                msgToDisplay = "The student's English name is longer than 40 characters and may not " & _
+                               "fit on the report. Please verify how it looks after generating " & _
+                               "the report and consider using a shorter version." & vbNewLine & vbNewLine & _
+                               "Report generation will still work."
+                msgDialogType = vbOKOnly + vbInformation
+                msgDialogWidth = 370
+                Call DisplayMessage(msgToDisplay, msgDialogType, msgTitle, msgDialogWidth)
+            End If
             GetEnglishNameShading = RGB(255, 255, 0)
     End Select
 End Function
 
 Public Function GetKoreanNameShading(ByVal nameValue As String, Optional ByVal enableWarningMsg As Boolean = True) As Long
+    Dim msgTitle As String
+    Dim msgToDisplay As String
+    Dim msgDialogType As Long
+    Dim msgDialogWidth As Long
+    
     nameValue = TrimStringBeforeCharacter(nameValue)
     
     Select Case Len(nameValue)
         Case 0, 3 ' Empty cell or typical name length
             GetKoreanNameShading = RGB(255, 255, 255)
         Case 2, 4 ' Uncommon but possible
-            If enableWarningMsg Then DisplayWarning "Korean Name: Uncommon Length", Len(nameValue)
+            If enableWarningMsg Then
+                msgTitle = "Korean Name: Uncommon Length"
+                msgToDisplay = "You entered a Korean name with " & CStr(Len(nameValue)) & " syllables. These names do exist, " & _
+                           "but they are uncommon. Please verify you have typed it correctly and using Hangul." & vbNewLine & vbNewLine & _
+                           "Report generation will still work."
+                msgDialogType = vbOKOnly + vbInformation
+                msgDialogWidth = 380
+                Call DisplayMessage(msgToDisplay, msgDialogType, msgTitle, msgDialogWidth)
+            End If
             GetKoreanNameShading = RGB(255, 255, 0)
         Case Else ' Includes 1 and > 4, likely errors
-            If enableWarningMsg Then DisplayWarning "Korean Name: Invalid Length", Len(nameValue)
+            If enableWarningMsg Then
+                msgTitle = "Korean Name: Invalid Length"
+                msgToDisplay = "You entered an invalid name length. Please verify you have typed it correctly and using Hangul."
+                msgDialogType = vbOKOnly + vbExclamation
+                msgDialogWidth = 380
+                Call DisplayMessage(msgToDisplay, msgDialogType, msgTitle, msgDialogWidth)
+            End If
             GetKoreanNameShading = RGB(255, 0, 0)
     End Select
 End Function
@@ -103,22 +136,41 @@ End Function
 Public Function GetCommentShading(ByVal commentValue As String, Optional ByVal enableWarningMsg As Boolean = True) As Long
     Const MIN_LEN As Long = 80
     Const MAX_LEN As Long = 960
+    
+    Dim msgTitle As String
+    Dim msgToDisplay As String
+    Dim msgDialogType As Long
+    Dim msgDialogWidth As Long
 
     Select Case Len(commentValue)
         Case 0 ' Empty cell
             GetCommentShading = RGB(242, 242, 242)
         Case 1 To MIN_LEN - 1 ' Comment is too short
-            If enableWarningMsg Then DisplayWarning "Comment: Too Short"
+            If enableWarningMsg Then
+                msgTitle = "Comment: Too Short"
+                msgToDisplay = "The comment you have typed is very short (under 80 characters). Please check that you " & _
+                           "have followed the ""Positive - Negative - Positive"" format and provided sufficient detail."
+                msgDialogType = vbOKOnly + vbInformation
+                msgDialogWidth = 280
+                Call DisplayMessage(msgToDisplay, msgDialogType, msgTitle, msgDialogWidth)
+            End If
             GetCommentShading = RGB(255, 255, 0)
         Case Is > MAX_LEN ' Comment exceeds max length
-            If enableWarningMsg Then DisplayWarning "Comment: Exceeds Max Length", Len(commentValue)
+            If enableWarningMsg Then
+                msgTitle = "Comment: Exceeds Max Length"
+                msgToDisplay = "The comment you have typed is too long (" & CStr(Len(commentValue)) & " chars). Please shorten it by at least " & _
+                               CStr(Len(commentValue) - 960) & " characters to ensure it fits in the report's comment box."
+                msgDialogType = vbOKOnly + vbExclamation
+                msgDialogWidth = 300
+                Call DisplayMessage(msgToDisplay, msgDialogType, msgTitle, msgDialogWidth)
+            End If
             GetCommentShading = RGB(255, 0, 0)
         Case Else ' Within acceptable length
             GetCommentShading = RGB(242, 242, 242)
     End Select
 End Function
 
-Public Function GetWinnerShadingValue(ByVal placementCellAddress As String)
+Public Function GetWinnerShadingValue(ByVal placementCellAddress As String) As Long
     Dim shadingValue As Long
     
     Select Case placementCellAddress
@@ -133,7 +185,7 @@ Public Function GetWinnerShadingValue(ByVal placementCellAddress As String)
     GetWinnerShadingValue = shadingValue
 End Function
 
-Public Sub SetShadingForWinnerName(ByVal validationListRange As Range, ByVal enteredValue As String, ByRef shadingUpdates As Object, ByVal shadingValue As Long)
+Public Sub SetShadingForWinnerName(ByVal validationListRange As Range, ByVal enteredValue As String, ByRef shadingUpdates As Dictionary, ByVal shadingValue As Long)
     Dim cellToQuery As Range
     
     For Each cellToQuery In validationListRange
@@ -144,7 +196,7 @@ Public Sub SetShadingForWinnerName(ByVal validationListRange As Range, ByVal ent
     Next cellToQuery
 End Sub
 
-Public Sub DetermineNameCellShading(ByVal ws As Worksheet, ByVal cellRange As Range, ByVal shadingValue As Long, ByRef shadingUpdates As Object)
+Public Sub DetermineNameCellShading(ByVal ws As Worksheet, ByVal cellRange As Range, ByVal shadingValue As Long, ByRef shadingUpdates As Dictionary)
     Dim cellToQuery As Range
     Dim currentRow As Long
     
@@ -158,7 +210,7 @@ Public Sub DetermineNameCellShading(ByVal ws As Worksheet, ByVal cellRange As Ra
     Next cellToQuery
 End Sub
 
-Public Sub RemoveDuplicateWinners(ByVal ws As Worksheet, ByVal cellRange As Range, ByVal currentCellAddress As String, ByVal shadingValue As Long, ByRef shadingUpdates As Object, ByVal enteredValue As String)
+Public Sub RemoveDuplicateWinners(ByVal ws As Worksheet, ByVal cellRange As Range, ByVal currentCellAddress As String, ByVal shadingValue As Long, ByRef shadingUpdates As Dictionary, ByVal enteredValue As String)
     Dim cellToQuery As Range
     Dim currentRow As Long
 
@@ -177,7 +229,7 @@ Public Sub RemoveDuplicateWinners(ByVal ws As Worksheet, ByVal cellRange As Rang
 End Sub
 
 Public Sub AddToShadingDictionary(ByRef shadingDictionary As Object, ByVal cellToShade As String, ByVal shadingValue As Long)
-    If Not shadingDictionary.exists(cellToShade) Then
+    If Not shadingDictionary.Exists(cellToShade) Then
         shadingDictionary.Add cellToShade, shadingValue
     Else
         shadingDictionary(cellToShade) = shadingValue
