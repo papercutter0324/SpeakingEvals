@@ -16,7 +16,7 @@ Public Sub AutoSelectClassWinners(ByVal ws As Worksheet)
     Dim studentScores() As Double
     
     ' Set ranges
-    Set validationRange = ws.Range("BB1:BB25")
+    Set validationRange = ws.Range("O1:O25")
     Set winnersRange = ws.Range("L2:L4")
     
     ' Initialize student names array
@@ -34,9 +34,9 @@ Public Sub AutoSelectClassWinners(ByVal ws As Worksheet)
     PopulateWinnersRange ws, nameList()
     
     ' Validate and update winners names
-    ws.Unprotect
+    ToggleSheetProtection ws, False
     SetDefaultShading ws
-    ws.Protect
+    ToggleSheetProtection ws, True
 End Sub
 
 Private Sub GenerateNameListToSort(ByVal ws As Worksheet, ByRef nameList() As String)
@@ -106,7 +106,9 @@ End Sub
 Private Sub PopulateWinnersRange(ByVal ws As Worksheet, ByRef nameList() As String)
     Dim i As Long
     
-    For i = 2 To 4
-        ws.Range("L" & i).Value = nameList(i - 2)
-    Next i
+    With ws
+        For i = 2 To 4
+            .Range("L" & i).Value = nameList(i - 2)
+        Next i
+    End With
 End Sub
