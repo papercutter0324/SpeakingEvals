@@ -1,26 +1,14 @@
 Option Explicit
 
-#If Mac Then
-#Else
-    #If VBA7 Then
-        Public Declare PtrSafe Function ShellExecute Lib "shell32.dll" Alias "ShellExecuteA" ( _
-            ByVal hwnd As LongPtr, ByVal lpOperation As String, ByVal lpFile As String, _
-            ByVal lpParameters As String, ByVal lpDirectory As String, ByVal nShowCmd As Long) As LongPtr
-    #Else
-        Public Declare Function ShellExecute Lib "shell32.dll" Alias "ShellExecuteA" ( _
-            ByVal hwnd As Long, ByVal lpOperation As String, ByVal lpFile As String, _
-            ByVal lpParameters As String, ByVal lpDirectory As String, ByVal nShowCmd As Long) As Long
-    #End If
-#End If
-''''''''''''''''''''''''''''''''''''''''''''''''''''
-' ^^^^^ Is This Even used ^^^^^
-''''''''''''''''''''''''''''''''''''''''''''''''''''
-
 #Const PRINT_DEBUG_MESSAGES = True
 #If Mac Then
     Const APPLE_SCRIPT_FILE As String = "SpeakingEvals.scpt"
     Const APPLE_SCRIPT_SPLIT_KEY = "-,-"
 #End If
+
+Public Const INDENT_LEVEL_1 As String = "    "
+Public Const INDENT_LEVEL_2 As String = INDENT_LEVEL_1 & INDENT_LEVEL_1
+Public Const INDENT_LEVEL_3 As String = INDENT_LEVEL_1 & INDENT_LEVEL_2
 
 Public Const RANGE_NATIVE_TEACHER As String = "C1"
 Public Const RANGE_KOREAN_TEACHER As String = "C2"
@@ -35,7 +23,7 @@ Public Const RANGE_GRADES As String = "D8:I32"
 Public Const RANGE_COMMENT As String = "J8:J32"
 Public Const RANGE_NOTES As String = "K8:M32"
 Public Const RANGE_WINNERS As String = "L2:L4"
-Public Const RANGE_VALIDATION_LIST As String = "BB8:BB32"
+Public Const RANGE_VALIDATION_LIST As String = "O8:O32"
 Public Const RANGE_ALL_MONITORED As String = "C1:C2,C6,B8:J32,L2:L4"
 
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -44,7 +32,7 @@ Public Const RANGE_ALL_MONITORED As String = "C1:C2,C6,B8:J32,L2:L4"
 Public Sub Main()
     Dim ws As Worksheet
     Dim clickedButtonName As String
-    Dim msgresult As Long
+    Dim msgResult As Long
     Dim startTime As Date
     Dim endTime As Date
     Dim elapsedTime As Double
@@ -53,6 +41,8 @@ Public Sub Main()
         Dim msgToDiplay As String
     #End If
     
+    ' Add a static variable or track a hidden cell so that this only appears once per instance
+    ' Update this to mention an occasional PPT hang when closing.
     Const STARTUP_MSG_TEMP_DIR As String = "This file has been loaded from a temporary folder and will not function correctly. " & _
                                            "Please verify you have correctly extracted this file from the zip file (if applicable) " & _
                                            "and save it to a permanent location."
@@ -65,24 +55,15 @@ Public Sub Main()
     
     #If PRINT_DEBUG_MESSAGES Then
         Debug.Print "Beginning Tasks" & vbNewLine & _
-                    "    Start Time: " & Format$(startTime, "hh:mm:ss") & vbNewLine & _
-                    "    Active Worksheet: " & ws.Name & vbNewLine & _
-                    "    Button Pressed: " & clickedButtonName
+                    INDENT_LEVEL_1 & "Start Time: " & Format$(startTime, "hh:mm:ss") & vbNewLine & _
+                    INDENT_LEVEL_1 & "Active Worksheet: " & ws.Name & vbNewLine & _
+                    INDENT_LEVEL_1 & "Button Pressed: " & clickedButtonName
     #End If
     
-    With Application
-        .EnableEvents = False
-        .ScreenUpdating = False
-        
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "Disabling Application Updates" & vbNewLine & _
-                        "    EnableEvents: " & .EnableEvents & vbNewLine & _
-                        "    ScreenUpdating: " & .ScreenUpdating
-        #End If
-    End With
+    ToggleApplicationFeatures False
     
     If IsFileLoadedFromTempDir Then
-        msgresult = DisplayMessage(STARTUP_MSG_TEMP_DIR, vbOKOnly + vbExclamation, "Warning!", STARTUP_MSG_TEMP_DIR_SIZE)
+        msgResult = DisplayMessage(STARTUP_MSG_TEMP_DIR, vbOKOnly + vbExclamation, "Warning!", STARTUP_MSG_TEMP_DIR_SIZE)
         GoTo ReenableEvents
     End If
     
@@ -95,10 +76,10 @@ Public Sub Main()
         Case "Button_AutoSelectWinners"
             AutoSelectClassWinners ws
         Case "Button_GenerateCertificates"
-            msgresult = DisplayMessage( _
+            'msgResult = DisplayMessage( _
                 "This feature has not been implemented yet, but it is planned for an upcoming " & _
                 "update. Sorry for the inconvenience.", vbOKOnly + vbInformation, "Notice!")
-            GoTo ReenableEvents
+            'GoTo ReenableEvents
     End Select
     
     #If Mac Then
@@ -114,32 +95,54 @@ Public Sub Main()
     #End If
     
     Select Case clickedButtonName
-        Case "Button_GenerateReports", "Button_GenerateProofs"
-            msgresult = DisplayMessage( _
+        Case "Button_GenerateReports", "Button_GenerateProofs", "Button_GenerateCertificates"
+            msgResult = DisplayMessage( _
                 "There is a uncommon error, where the first time you try to save it fails. " & _
                 "If you experience this, wait a couple seconds and try again. It should work " & _
                 "fine the second time." & vbNewLine & vbNewLine & "Press okay to continue " & _
                 "creating the reports", vbOKOnly + vbInformation, "Notice!")
                 
-            GenerateReports ws, clickedButtonName
-            ws.Activate ' Ensure the correct worksheet is displayed
+            ' GenerateReports ws, clickedButtonName
+            CreateReportsAndCertificates ws, clickedButtonName
+            ws.Activate
     End Select
     
 ReenableEvents:
     endTime = Now
     elapsedTime = endTime - startTime
     
-    With Application
-        .EnableEvents = True
-        .ScreenUpdating = True
+    ToggleApplicationFeatures True
         
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Finished Tasks" & vbNewLine & _
+                    INDENT_LEVEL_1 & "End Time: " & Format$(endTime, "hh:mm:ss") & vbNewLine & _
+                    INDENT_LEVEL_1 & "Elapsed time: " & Format$(elapsedTime * 86400, "0.00") & " seconds" & vbNewLine & vbNewLine
+    #End If
+End Sub
+
+Public Sub ToggleSheetProtection(ByVal ws As Worksheet, ByVal protectionStatus As Boolean)
+    With ws
+        If protectionStatus Then
+            .Protect
+            .EnableSelection = xlUnlockedCells
+        Else
+            .Unprotect
+        End If
+    End With
+End Sub
+
+Public Sub ToggleApplicationFeatures(ByVal enabledStatues As Boolean)
+    With Application
+        .Calculation = IIf(enabledStatues, xlCalculationAutomatic, xlCalculationManual)
+        .EnableAnimations = enabledStatues
+        .EnableEvents = enabledStatues
+        .ScreenUpdating = enabledStatues
+    
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "Re-enabling Application Updates" & vbNewLine & _
-                        "    EnableEvents: " & .EnableEvents & vbNewLine & _
-                        "    ScreenUpdating: " & .ScreenUpdating & vbNewLine & _
-                        "Finished Tasks" & vbNewLine & _
-                        "    End Time: " & Format$(endTime, "hh:mm:ss") & vbNewLine & _
-                        "    Elapsed time: " & Format$(elapsedTime * 86400, "0.00") & " seconds" & vbNewLine & vbNewLine
+            Debug.Print "Toggling Application Updates" & vbNewLine & _
+                        INDENT_LEVEL_1 & "Calculation: " & IIf(.Calculation = xlCalculationManual, "Manual", "Automatic") & vbNewLine & _
+                        INDENT_LEVEL_1 & "EnableEvents: " & .EnableEvents & vbNewLine & _
+                        INDENT_LEVEL_1 & "ScreenUpdating: " & .ScreenUpdating
         #End If
     End With
 End Sub
@@ -182,7 +185,7 @@ Public Function TrimStringBeforeCharacter(ByRef stringToTrim As String, Optional
     
     charPos = InStr(stringToTrim, trimPoint)
     If charPos > 0 Then
-        stringToTrim = Left(stringToTrim, charPos - 1)
+        stringToTrim = Left$(stringToTrim, charPos - 1)
     End If
     
     TrimStringBeforeCharacter = stringToTrim
