@@ -19,8 +19,8 @@ Public Sub VerifySheetNames()
                     If .Name <> "Instructions" Then .Name = "Instructions"
                 Case "MacOS_Users"
                     If .Name <> "MacOS Users" Then .Name = "MacOS Users"
-                Case "mySignature"
-                    If .Name <> "mySignature" Then .Name = "mySignature"
+                Case "Options"
+                    If .Name <> "Options" Then .Name = "Options"
             End Select
         End With
     Next ws
@@ -31,25 +31,27 @@ Public Sub AutoPopulateEvaluationDateValues(ByVal ws As Worksheet)
     Dim dateAsDate As Date
     Dim dateToCheck As Date
     Dim messageText As String
-    Dim msgresult As Variant
+    Dim msgResult As Variant
     
     On Error Resume Next
     If ws.Range("A6").Value = "Evaluation Date:" Then
         Set dateCell = ws.Range("C6")
 
         If Len(Trim$(dateCell.Value)) = 0 Then
-            dateCell.Value = Format$(Date, "MMM. YYYY")
+            dateCell.Value = Format$(Date, "DD MMM. YYYY")
         ElseIf IsDate(Trim$(dateCell.Value)) Then
-            dateAsDate = CDate(Trim$(dateCell.Value))
-            dateToCheck = DateAdd("m", -2, Date)
-        
-            If dateAsDate < dateToCheck Then
-                dateCell.Value = Format$(Date, "MMM. YYYY")
-            End If
+            ' This isn't working
+            
+            ' dateAsDate = CDate(Trim$(dateCell.Value))
+            ' dateToCheck = DateAdd("m", -2, Date)
+            
+            ' If dateAsDate < dateToCheck Then
+            '     dateCell.Value = Format$(Date, "MMM. YYYY")
+            ' End If
         Else
             messageText = "An invalid date has been found on worksheet " & ws.Name & "." & vbNewLine & _
                           "Please enter a valid date."
-            msgresult = DisplayMessage(messageText, vbInformation, "Invalid Date!")
+            msgResult = DisplayMessage(messageText, vbInformation, "Invalid Date!")
             dateCell.Value = vbNullString
         End If
     End If
@@ -151,7 +153,7 @@ Public Sub SetLayoutInstructions()
                 .Width = shapeProps(i)(4)
             Else
                 #If PRINT_DEBUG_MESSAGES Then
-                    Debug.Print "        Warning: Shape '" & shapeProps(i)(0) & "' not found."
+                    Debug.Print INDENT_LEVEL_2 & "Warning: Shape '" & shapeProps(i)(0) & "' not found."
                 #End If
                 Err.Clear ' Clear the error
             End If
@@ -168,7 +170,7 @@ Public Sub SetLayoutInstructions()
                 .Width = BUTTON_WIDTH
             Else
                 #If PRINT_DEBUG_MESSAGES Then
-                    Debug.Print "        Warning: Shape '" & buttonNames(i) & "' not found."
+                    Debug.Print INDENT_LEVEL_2 & "Warning: Shape '" & buttonNames(i) & "' not found."
                 #End If
                 Err.Clear ' Clear the error
             End If
@@ -177,7 +179,7 @@ Public Sub SetLayoutInstructions()
     On Error GoTo 0
     
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "        Result: " & IIf(Err.Number = 0, "Complete", "Errors found.")
+        Debug.Print INDENT_LEVEL_2 & "Result: " & IIf(Err.Number = 0, "Complete", "Errors found.")
     #End If
 End Sub
 
@@ -236,7 +238,7 @@ Public Sub SetLayoutMacOSUsers()
                 .Width = shapeProps(i)(4)
             Else
                 #If PRINT_DEBUG_MESSAGES Then
-                    Debug.Print "        Warning: Shape '" & shapeProps(i)(0) & "' not found."
+                    Debug.Print INDENT_LEVEL_2 & "Warning: Shape '" & shapeProps(i)(0) & "' not found."
                 #End If
                 Err.Clear ' Clear the error
             End If
@@ -253,7 +255,7 @@ Public Sub SetLayoutMacOSUsers()
                 .Width = BUTTON_WIDTH
             Else
                 #If PRINT_DEBUG_MESSAGES Then
-                    Debug.Print "        Warning: Shape '" & buttonProps(i)(0) & "' not found."
+                    Debug.Print INDENT_LEVEL_2 & "Warning: Shape '" & buttonProps(i)(0) & "' not found."
                 #End If
                 Err.Clear ' Clear the error
             End If
@@ -262,11 +264,11 @@ Public Sub SetLayoutMacOSUsers()
     On Error GoTo 0
     
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "        Result: " & IIf(Err.Number = 0, "Complete", "Errors found.")
+        Debug.Print INDENT_LEVEL_2 & "Result: " & IIf(Err.Number = 0, "Complete", "Errors found.")
     #End If
 End Sub
 
-Public Sub SetLayoutMySignature()
+Public Sub SetLayoutOptions()
     Dim shp As Shapes
     Dim shapeProps As Variant
     Dim aspectRatio As Double
@@ -276,44 +278,77 @@ Public Sub SetLayoutMySignature()
     Dim mySignatureCalculatedLeft As Double
     Dim i As Long
     
+    ' Signature Information Title Bar
+    Const TB_HEIGHT As Double = 58
+    Const TB_WIDTH As Double = 1030
+    Const TB_TOP As Double = 15
+    Const TB_LEFT As Double = 15
+    
+    ' Signature Image Title  Bar
+    Const SIG_TB_HEIGHT As Double = TB_HEIGHT
+    Const SIG_TB_WIDTH As Double = 300
+    Const SIG_TB_TOP As Double = TB_TOP
+    Const SIG_TB_LEFT As Double = TB_LEFT + TB_WIDTH
+    
+    ' Signature Information Msg Box
+    Const MSG_HEIGHT As Double = 320
+    Const MSG_WIDTH As Double = TB_WIDTH + SIG_TB_WIDTH
+    Const MSG_TOP As Double = TB_TOP + TB_HEIGHT
+    Const MSG_LEFT As Double = TB_LEFT
+    
+    ' Signature Image Container
+    Const SIG_CONTAINER_HEIGHT As Double = 86
+    Const SIG_CONTAINER_WIDTH As Double = SIG_TB_WIDTH
+    Const SIG_CONTAINER_TOP As Double = SIG_TB_TOP + SIG_TB_HEIGHT
+    Const SIG_CONTAINER_LEFT As Double = SIG_TB_LEFT
+    
+    ' Signature Image Dimensions
     Const MAX_HEIGHT As Double = 68
     Const MAX_WIDTH As Double = 286
     Const DEFAULT_ASPECT_RATIO As Double = MAX_WIDTH / MAX_HEIGHT
     
-    Const TB_HEIGHT As Double = 58
-    Const TB_WIDTH As Double = 1270
-    Const TB_TOP As Double = 15
-    Const TB_LEFT As Double = 15
-    
-    Const MSG_HEIGHT As Double = 640
-    Const MSG_WIDTH As Double = TB_WIDTH
-    Const MSG_TOP As Double = TB_TOP + TB_HEIGHT
-    Const MSG_LEFT As Double = TB_LEFT
-    
-    Const SIG_TB_HEIGHT As Double = TB_HEIGHT
-    Const SIG_TB_WIDTH As Double = 300
-    Const SIG_TB_TOP As Double = TB_TOP
-    Const SIG_TB_LEFT As Double = TB_LEFT + TB_WIDTH - SIG_TB_WIDTH
-    
-    Const SIG_CONTAINER_HEIGHT As Double = 86
-    Const SIG_CONTAINER_WIDTH As Double = SIG_TB_WIDTH
-    Const SIG_CONTAINER_TOP As Double = TB_TOP + TB_HEIGHT
-    Const SIG_CONTAINER_LEFT As Double = TB_LEFT + TB_WIDTH - SIG_TB_WIDTH
-    
+    ' Signature Image
     Const SIG_PLACEHOLDER_HEIGHT As Double = MAX_HEIGHT
     Const SIG_PLACEHOLDER_WIDTH As Double = MAX_WIDTH
     Const SIG_PLACEHOLDER_TOP As Double = SIG_CONTAINER_TOP + (SIG_CONTAINER_HEIGHT - SIG_PLACEHOLDER_HEIGHT) / 2
     Const SIG_PLACEHOLDER_LEFT As Double = SIG_CONTAINER_LEFT + (SIG_CONTAINER_WIDTH - SIG_PLACEHOLDER_WIDTH) / 2
     
+    ' Signature Toggle Button Container
     Const BTN_CONTAINER_HEIGHT As Double = SIG_CONTAINER_HEIGHT
     Const BTN_CONTAINER_WIDTH As Double = 205
     Const BTN_CONTAINER_TOP As Double = SIG_CONTAINER_TOP + SIG_CONTAINER_HEIGHT
     Const BTN_CONTAINER_LEFT As Double = SIG_CONTAINER_LEFT + SIG_CONTAINER_WIDTH - (SIG_CONTAINER_WIDTH / 2) - (BTN_CONTAINER_WIDTH / 2)
     
+    ' Signature Toggle Button
     Const BTN_SIGNATURE_HEIGHT As Double = 65
     Const BTN_SIGNATURE_WIDTH As Double = 175
     Const BTN_SIGNATURE_TOP As Double = SIG_CONTAINER_TOP + SIG_CONTAINER_HEIGHT + 10
     Const BTN_SIGNATURE_LEFT As Double = SIG_CONTAINER_LEFT + (SIG_CONTAINER_WIDTH - BTN_SIGNATURE_WIDTH) / 2
+    
+    ' Winner Certificates Title Bar
+    Const TB_CERTS_HEIGHT As Double = TB_HEIGHT
+    Const TB_CERTS_WIDTH As Double = 620
+    Const TB_CERTS_TOP As Double = MSG_TOP + MSG_HEIGHT + 15
+    Const TB_CERTS_LEFT As Double = TB_LEFT
+    
+    ' Winner Certificates Options and Preview Title Bar
+    Const TB_CERT_OPTIONS_HEIGHT As Double = TB_HEIGHT
+    Const TB_CERT_OPTIONS_WIDTH As Double = TB_WIDTH + SIG_TB_WIDTH - TB_CERTS_WIDTH
+    Const TB_CERT_OPTIONS_TOP As Double = TB_CERTS_TOP
+    Const TB_CERT_OPTIONS_LEFT As Double = TB_TOP + TB_CERTS_WIDTH
+    
+    ' Winner Certificates Information Box
+    Const MSG_CERTS_HEIGHT As Double = 340
+    Const MSG_CERTS_WIDTH As Double = TB_CERTS_WIDTH
+    Const MSG_CERTS_TOP As Double = TB_CERTS_TOP + TB_CERTS_HEIGHT
+    Const MSG_CERTS_LEFT As Double = TB_CERTS_LEFT
+    
+    ' Winner Certificates Preview Images
+    Const CERT_PREVIEW_HEIGHT As Double = 300
+    Const CERT_PREVIEW_WIDTH As Double = 433.32
+    Const CERT_PREVIEW_TOP As Double = MSG_CERTS_TOP + (MSG_CERTS_HEIGHT / 2) - (CERT_PREVIEW_HEIGHT / 2)
+    Const CERT_PREVIEW_LEFT As Double = TB_CERT_OPTIONS_LEFT + 20
+    
 
     ' Array of the standard shapes and their positions/dimensions
     shapeProps = Array( _
@@ -323,43 +358,52 @@ Public Sub SetLayoutMySignature()
         Array("Signature Container", SIG_CONTAINER_TOP, SIG_CONTAINER_LEFT, SIG_CONTAINER_HEIGHT, SIG_CONTAINER_WIDTH), _
         Array("Button_Container", BTN_CONTAINER_TOP, BTN_CONTAINER_LEFT, BTN_CONTAINER_HEIGHT, BTN_CONTAINER_WIDTH), _
         Array("Button_SignatureEmbedded", BTN_SIGNATURE_TOP, BTN_SIGNATURE_LEFT, BTN_SIGNATURE_HEIGHT, BTN_SIGNATURE_WIDTH), _
-        Array("Button_SignatureMissing", BTN_SIGNATURE_TOP, BTN_SIGNATURE_LEFT, BTN_SIGNATURE_HEIGHT, BTN_SIGNATURE_WIDTH) _
+        Array("Button_SignatureMissing", BTN_SIGNATURE_TOP, BTN_SIGNATURE_LEFT, BTN_SIGNATURE_HEIGHT, BTN_SIGNATURE_WIDTH), _
+        Array("Certificate_TitleBar", TB_CERTS_TOP, TB_CERTS_LEFT, TB_CERTS_HEIGHT, TB_CERTS_WIDTH), _
+        Array("Certificate_Message", MSG_CERTS_TOP, MSG_CERTS_LEFT, MSG_CERTS_HEIGHT, MSG_CERTS_WIDTH), _
+        Array("Certificate_Options_TitleBar", TB_CERT_OPTIONS_TOP, TB_CERT_OPTIONS_LEFT, TB_CERT_OPTIONS_HEIGHT, TB_CERT_OPTIONS_WIDTH), _
+        Array("Preview_Design_Landscape_Default", CERT_PREVIEW_TOP, CERT_PREVIEW_LEFT, CERT_PREVIEW_HEIGHT, CERT_PREVIEW_WIDTH), _
+        Array("Preview_Border_Landscape_Style 1", CERT_PREVIEW_TOP, CERT_PREVIEW_LEFT, CERT_PREVIEW_HEIGHT, CERT_PREVIEW_WIDTH), _
+        Array("Preview_Border_Landscape_Style 2", CERT_PREVIEW_TOP, CERT_PREVIEW_LEFT, CERT_PREVIEW_HEIGHT, CERT_PREVIEW_WIDTH) _
     )
 
-    Set shp = mySignature.Shapes
+    Set shp = Options.Shapes
 
     ' Step 1: Verify all shapes exist
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "        Verifying all standard shapes are present."
+        Debug.Print INDENT_LEVEL_2 & "Verifying all standard shapes are present."
     #End If
     For i = LBound(shapeProps) To UBound(shapeProps)
-        If Not DoesShapeExist(mySignature, shapeProps(i)(0)) Then
+        If Not DoesShapeExist(Options, shapeProps(i)(0)) Then
             #If PRINT_DEBUG_MESSAGES Then
-                Debug.Print "            Warning: Shape '" & shapeProps(i)(0) & "' not found."
+                Debug.Print INDENT_LEVEL_3 & "Warning: Shape '" & shapeProps(i)(0) & "' not found."
             #End If
             ' Exit Sub ' Support for this will be added later
         End If
         
         ' Step 2: Set dimensions and positions of standard shapes and textboxes
+        #If PRINT_DEBUG_MESSAGES Then
+            Debug.Print INDENT_LEVEL_2 & "Setting layout for " & shapeProps(i)(0) & "."
+        #End If
         SetButtonDimensionsAndPosition shp.Item(shapeProps(i)(0)), shapeProps(i)(3), shapeProps(i)(4), _
                                        shapeProps(i)(1), shapeProps(i)(2)
     Next i
 
     ' Step 3a: Set dimensions and positions of 'mySignature_Placeholder', if present
-    If DoesShapeExist(mySignature, "mySignature_Placeholder") Then
+    If DoesShapeExist(Options, "mySignature_Placeholder") Then
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "        'mySignature_Placeholder' found." & vbNewLine & _
-                        "            Verifying correct dimensions."
+            Debug.Print INDENT_LEVEL_2 & "'mySignature_Placeholder' found." & vbNewLine & _
+                        INDENT_LEVEL_2 & "    Verifying correct dimensions."
         #End If
         SetButtonDimensionsAndPosition shp.Item("mySignature_Placeholder"), SIG_PLACEHOLDER_HEIGHT, _
                                        SIG_PLACEHOLDER_WIDTH, SIG_PLACEHOLDER_TOP, SIG_PLACEHOLDER_LEFT
     End If
 
     ' Step 3b: Set dimensions and positions of 'mySignature', if present
-    If DoesShapeExist(mySignature, "mySignature") Then
+    If DoesShapeExist(Options, "mySignature") Then
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "        'mySignature' found." & vbNewLine & _
-                        "            Verifying correct dimensions."
+            Debug.Print INDENT_LEVEL_2 & "'mySignature' found." & vbNewLine & _
+                        INDENT_LEVEL_2 & "    Verifying correct dimensions."
         #End If
         
         mySignatureCalculatedHeight = MAX_HEIGHT
@@ -382,9 +426,98 @@ Public Sub SetLayoutMySignature()
     End If
     
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "        Result: " & IIf(Err.Number = 0, "Complete", "Errors found.")
+        Debug.Print INDENT_LEVEL_2 & "Result: " & IIf(Err.Number = 0, "Complete", "Errors found.")
     #End If
 End Sub
+
+Public Sub OptionsShapeVisibility(ByVal ws As Worksheet)
+    Dim shp As Shapes
+    Dim defaultOption As String
+    Dim signaturePresent As Boolean
+    Dim certificateOptions As Variant
+    Dim optionRangeRow As Long
+    Dim i As Long
+    
+    Set shp = ws.Shapes
+    
+    ' Step 1: Verify correct signature button is displayed
+    On Error Resume Next
+    signaturePresent = Not shp.[_Default]("mySignature") Is Nothing
+    On Error GoTo 0
+    
+    shp.[_Default]("Button_SignatureEmbedded").Visible = signaturePresent
+    shp.[_Default]("Button_SignatureMissing").Visible = Not signaturePresent
+    
+    ' Step 2: Check certificate options, setting defaults as needed, and generate preview
+    certificateOptions = ws.Range("J10:K14")
+    For i = LBound(certificateOptions, 1) To UBound(certificateOptions, 1)
+        If certificateOptions(i, 2) = vbNullString Then
+            optionRangeRow = i + 9
+            defaultOption = GetDefaultCertificateOptions(ws.Range("k" & optionRangeRow), certificateOptions(i, 1))
+            ws.Range("k" & optionRangeRow).Value = defaultOption
+        End If
+    Next i
+End Sub
+
+Public Function GetDefaultCertificateOptions(ByVal certOption As Range, ByVal optionType As String) As String
+    Select Case optionType
+        Case "Layout:"
+            GetDefaultCertificateOptions = "Landscape"
+        Case "Design:"
+            GetDefaultCertificateOptions = "Default"
+        Case "Border:"
+            GetDefaultCertificateOptions = "Disabled"
+        Case "Border Color:"
+            GetDefaultCertificateOptions = "Default"
+        Case "Color Code:"
+            GetDefaultCertificateOptions = GetCertificateBorderColorCode(certOption.Offset(-2, 0).Value, certOption.Offset(-1, 0).Value)
+    End Select
+End Function
+
+Public Function GetCertificateBorderColorCode(ByVal borderStyle As String, ByVal borderColorOption As String) As String
+    Select Case borderColorOption
+        Case "Default"
+            GetCertificateBorderColorCode = GetDefaultBorderColor(borderStyle)
+        Case "Gold"
+            GetCertificateBorderColorCode = "#EFBF04"
+        Case "Metalic Gold"
+            GetCertificateBorderColorCode = "#D4AF37"
+        Case "Silver"
+            GetCertificateBorderColorCode = "#C0C0C0"
+        Case "Dark Teal"
+            GetCertificateBorderColorCode = "#2B694A"
+        Case "Custom"
+            GetCertificateBorderColorCode = GetDefaultBorderColor(borderStyle)
+    End Select
+End Function
+
+Public Function GetCertificateBorderColorLabel(ByVal borderColorCode As String) As String
+    Select Case borderColorCode
+        Case "#EFBF04"
+            GetCertificateBorderColorLabel = "Gold"
+        Case "#D4AF37"
+            GetCertificateBorderColorLabel = "Metalic Gold"
+        Case "#C0C0C0"
+            GetCertificateBorderColorLabel = "Silver"
+        Case "#2B694A"
+            GetCertificateBorderColorLabel = "Dark Teal"
+        Case Else
+            GetCertificateBorderColorLabel = "Custom"
+    End Select
+End Function
+
+Private Function GetDefaultBorderColor(ByVal borderStyle As String) As String
+    Select Case borderStyle
+        Case "Disabled"
+            GetDefaultBorderColor = "#000000"
+        Case "Style 1"
+            GetDefaultBorderColor = "#EFBF04"
+        Case "Style 2"
+            GetDefaultBorderColor = "#2B694A"
+        Case Else
+            GetDefaultBorderColor = "#EFBF04"
+    End Select
+End Function
 
 Private Function DoesShapeExist(ByVal ws As Worksheet, ByVal shapeName As String) As Boolean
     On Error Resume Next
@@ -404,23 +537,20 @@ Private Sub SetButtonDimensionsAndPosition(ByVal buttonShape As Shape, ByVal but
 End Sub
 
 Public Sub RepairLayouts(ByVal ws As Worksheet)
-    With ws
-        .Unprotect
-        
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "Repairing Layout" & vbNewLine & _
-                        "    Sheet: " & .Name & vbNewLine & _
-                        "    Protected: " & .ProtectContents
-        #End If
-        
-        SetLayoutClassRecords ws
-        .Protect
-        
-        #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Protected: " & .ProtectContents & vbNewLine & _
-                        "    Repair Complete"
-        #End If
-    End With
+    ToggleSheetProtection ws, False
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print "Repairing Layout" & vbNewLine & _
+                    INDENT_LEVEL_1 & "Sheet: " & ws.Name
+    #End If
+    
+    SetLayoutClassRecords ws
+    
+    #If PRINT_DEBUG_MESSAGES Then
+        Debug.Print INDENT_LEVEL_1 & "Repair Complete"
+    #End If
+    
+    ToggleSheetProtection ws, True
 End Sub
 
 Public Sub SetLayoutClassRecords(ByVal ws As Worksheet)
@@ -528,7 +658,7 @@ Public Sub SetLayoutClassRecords(ByVal ws As Worksheet)
     SetDefaultShading ws
 
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "        Result: " & IIf(Err.Number = 0, "Complete", "Errors found.")
+        Debug.Print INDENT_LEVEL_2 & "Result: " & IIf(Err.Number = 0, "Complete", "Errors found.")
     #End If
 End Sub
 
@@ -619,7 +749,7 @@ Private Sub VerifyValidationAndFontsForClassRecords(ByVal ws As Worksheet)
         userFontPath = fso.BuildPath(Environ$("LOCALAPPDATA") & "\Microsoft\Windows\Fonts", KOREAN_FONT_CUSTOM_FILENAME)
         sysFontPath = fso.BuildPath(Environ$("WINDIR") & "\Fonts", KOREAN_FONT_CUSTOM_FILENAME)
         
-        If fso.FileExists(userFontPath) Or fso.FileExists(sysFontPath) Then
+        If fso.fileExists(userFontPath) Or fso.fileExists(sysFontPath) Then
             koreanFont = KOREAN_FONT_CUSTOM
         Else
             koreanFont = KOREAN_FONT_DEFAULT
@@ -688,10 +818,11 @@ Private Sub ApplyValidationAndFontsForClassRecords(ByVal ws As Worksheet, ByVal 
         If valType = xlValidateList Then Exit Sub
         
         ' Step 2: Set validation settings
+        On Error Resume Next
+        .Validation.Delete
+        On Error GoTo 0
+        
         With .Validation
-            On Error Resume Next
-            .Delete
-            On Error GoTo 0
             .Add Type:=valType, AlertStyle:=valAlertStyle
             .InputTitle = valInputTitle
             .InputMessage = valInputMsg
@@ -704,7 +835,7 @@ End Sub
 Public Sub ToggleEmbeddedSignature(ByVal clickedButtonName As String)
     Dim shp As Shapes
     
-    Set shp = mySignature.Shapes
+    Set shp = Options.Shapes
     
     On Error Resume Next
     shp.[_Default]("Button_SignatureMissing").Visible = Not shp.[_Default]("Button_SignatureMissing").Visible
@@ -743,12 +874,9 @@ Private Sub SetVisibilityOfMacSettingsShapes(ByVal isAppleScriptInstalled As Boo
     End With
     
     If enhancedDialogsAreDisabled And enhancedDialogsStatus <> "Enhanced Dialogs: Disabled" Then
-        With ws
-            .Unprotect
-            .Cells(1, 1).Value = "Enhanced Dialogs: Disabled"
-            .Protect
-            .EnableSelection = xlUnlockedCells
-        End With
+        ToggleSheetProtection ws, False
+        ws.Cells(1, 1).Value = "Enhanced Dialogs: Disabled"
+        ToggleSheetProtection ws, True
     End If
 End Sub
 
@@ -783,17 +911,17 @@ Private Sub ToogleMacSettingsButtons(ByRef ws As Worksheet, ByVal clickedButtonN
     End Select
     
     #If PRINT_DEBUG_MESSAGES Then
-        Debug.Print "    Updating persistant status value."
+        Debug.Print INDENT_LEVEL_1 & "Updating persistant status value."
     #End If
     
+    ToggleSheetProtection ws, False
     With ws
-        .Unprotect
         .Cells(1, 1).Value = IIf(.Shapes("Button_EnhancedDialogs_Enable").Visible, SCRIPT_ENABLED, SCRIPT_DISABLED)
-        .Protect
-        .EnableSelection = xlUnlockedCells
+
         #If PRINT_DEBUG_MESSAGES Then
-            Debug.Print "    Value: """ & .Cells(1, 1).Value & """"
+            Debug.Print INDENT_LEVEL_1 & "Value: """ & .Cells(1, 1).Value & """"
         #End If
     End With
+    ToggleSheetProtection ws, True
 End Sub
 #End If
