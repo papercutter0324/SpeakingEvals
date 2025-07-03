@@ -1,8 +1,8 @@
 (*
 Helper Scripts for the DYB Speaking Evaluations Excel spreadsheet
 
-Version: 1.4.1
-Build:   20250315
+Version: 1.5.0
+Build:   20250704
 Warren Feltmate
 © 2025
 *)
@@ -11,7 +11,7 @@ Warren Feltmate
 
 on GetScriptVersionNumber(paramString)
 	--- Use build number to determine if an update is available
-	return 20250315
+	return 20250704
 end GetScriptVersionNumber
 
 on GetMacOSVersion(paramString)
@@ -27,13 +27,23 @@ end GetMacOSVersion
 on SplitString(passedParamString, parameterSeparator)
 	-- Excel can only pass on parameter to this file. This makes it possible to split one into many.
 	tell AppleScript
-		set oldTextItemsDelimiters to text item delimiters
-		set text item delimiters to parameterSeparator
+		set oldTextItemsDelimiters to AppleScript's text item delimiters
+		set AppleScript's text item delimiters to parameterSeparator
 		set separatedParameters to text items of passedParamString
-		set text item delimiters to oldTextItemsDelimiters
+		set AppleScript's text item delimiters to oldTextItemsDelimiters
 	end tell
 	return separatedParameters
 end SplitString
+
+on JoinString(passedParamArray, parameterSeparator)
+	tell AppleScript
+		set oldTextItemsDelimiters to AppleScript's text item delimiters
+		set AppleScript's text item delimiters to parameterSeparator
+		set joinedParameters to passedParamArray as string
+		set AppleScript's text item delimiters to oldTextItemsDelimiters
+	end tell
+	return joinedParameters
+end JoinString
 
 -- Application Manipulations
 
@@ -177,10 +187,10 @@ on DownloadFile(paramString)
 	-- Self-explanatory. The value of fileURL is the internet address to the desired file.
 	set {destinationPath, fileURL} to SplitString(paramString, "-,-")
 	try
-		do shell script "curl -L -o" & space & (quoted form of destinationPath) & space & (quoted form of fileURL)
+		do shell script "curl -L -o " & (quoted form of destinationPath) & " " & (quoted form of fileURL)
 		return true
 	on error
-		display dialog "Error downloading file:" & space & fileURL
+		display dialog "Error downloading file: " & fileURL
 		return false
 	end try
 end DownloadFile
@@ -297,6 +307,42 @@ on DoesFolderExist(folderPath)
 	-- Self-explanatory
 	tell application "System Events" to return (exists disk item folderPath) and class of disk item folderPath = folder
 end DoesFolderExist
+
+on ListFolderContents(paramString)
+	set {folderPath, fileExtension} to SplitString(paramString, "-,-")
+	
+	tell application "System Events"
+		try
+			set fileList to name of files of folder folderPath whose name extension is fileExtension
+			
+			if fileList is {} then
+				return ""
+			end if
+			
+			set oldTextItemsDelimiters to AppleScript's text item delimiters
+			set AppleScript's text item delimiters to "-,-"
+			
+			set joinedFileList to fileList as string
+			set AppleScript's text item delimiters to oldTextItemsDelimiters
+			
+			return joinedFileList
+		on error errMsg
+			return "Error: " & errMsg
+		end try
+	end tell
+end ListFolderContents
+
+on OpenFolder(folderPath)
+	try
+		set pathAlias to POSIX file folderPath as alias
+		tell application "Finder"
+			open pathAlias
+			return true
+		end tell
+	on error
+		return false
+	end try
+end OpenFolder
 
 -- Dialog Boxes
 
