@@ -1,0 +1,98 @@
+{
+  "EntryTests": {
+    "FileNames": "Filenames have been set.",
+    "FileHashes": "Hashes have been set.",
+    "FileUrls": "URLs have been set."
+  },
+  "SpeakingEvaluationTemplate": {
+    "filename": "SpeakingEvaluationTemplate.pptx",
+    "hash": "8590B1CF15698117E02B303D547E584F",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/SpeakingEvaluationTemplate.pptx"
+  },
+  "SpeakingEvaluationTemplate-Lite": {
+    "filename": "SpeakingEvaluationTemplate-Lite.pptx",
+    "hash": "2EB6E0B35C493764041E2DCF88F4CA01",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/SpeakingEvaluationTemplate-Lite.pptx"
+  },
+  "SpeakingEvaluationTemplate-Full": {
+    "filename": "SpeakingEvaluationTemplate-Full.pptx",
+    "hash": "A722F2CF4DF193835EC7C864D54BD786",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/SpeakingEvaluationTemplate-Full.pptx"
+  },
+  "CertificateTemplate": {
+    "filename": "CertificateTemplate.pptx",
+    "hash": "7397FEE16FC131663A71866876FADF40",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/CertificateTemplate.pptx"
+  },
+  "CertificateTemplate-Lite": {
+    "filename": "CertificateTemplate-Lite.pptx",
+    "hash": "4A3E6B71B7C18A720EEFC5DEA70D1575",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/CertificateTemplate-Lite.pptx"
+  },
+  "CertificateTemplate-Full": {
+    "filename": "CertificateTemplate-Full.pptx",
+    "hash": "306F265796B97596E58723338D74FE84",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/CertificateTemplate-Full.pptx"
+  },
+  "mySignature": {
+    "filename": "mySignature.png",
+    "hash": "D3803794383425C34A11673C00033E85",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/mySignature.png"
+  },
+  "7za(x86)": {
+    "filename": "7za(x86).exe",
+    "hash": "86D2E800B12CE5DA07F9BD2832870577",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/7zip/7za(x86).exe"
+  },
+  "7za(x64)": {
+    "filename": "7za(x64).exe",
+    "hash": "C58A4193BAC738B1A88ACAD9C6A57356",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/7zip/7za(x64).exe"
+  },
+  "7za(ARM)": {
+    "filename": "7za(ARM).exe",
+    "hash": "3DCEBD415EC47C5EF080C13FAB5E15A2",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/7zip/7za(ARM).exe"
+  },
+  "7zz": {
+    "filename": "7zz",
+    "hash": "80B9D6E9761AECE7F8AC784491FC3B6A",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/7zip/7zz"
+  },
+  "Hurricane-Regular": {
+    "englishdisplayname": "Hurricane",
+    "koreandisplayname": "Hurricane",
+    "filename": "Hurricane-Regular.ttf",
+    "hash": "64805C084EF848D3E41501A22A7882ED",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Fonts/Hurricane-Regular.ttf"
+  },
+  "just-another-hand": {
+    "englishdisplayname": "Just Another Hand",
+    "koreandisplayname": "Just Another Hand",
+    "filename": "just-another-hand.regular.ttf",
+    "hash": "2FBCF17635776DDB2692BF320838386C",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Fonts/just-another-hand.regular.ttf"
+  },
+  "KakaoBigSans-Regular": {
+    "englishdisplayname": "Kakao Big Sans",
+    "koreandisplayname": "카카오 큰글씨",
+    "filename": "KakaoBigSans-Regular.ttf",
+    "hash": "01E7D95AE15377CB6747F824F1F6E9DB",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Fonts/KakaoBigSans-Regular.ttf"
+  },
+  "DialogDisplay": {
+    "filename": "DialogDisplay.scpt",
+    "hash": "33E05023335053FADC87B50900935E5E",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/AppleScript/DialogDisplay.scpt"
+  },
+  "Dialog_Toolkit": {
+    "filename": "Dialog_Toolkit.zip",
+    "hash": "DB64101A9F28BA7C4D708FAAB760415C",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/AppleScript/Dialog_Toolkit.zip"
+  },
+  "SpeakingEvals": {
+    "filename": "SpeakingEvals.scpt",
+    "hash": "56B80BABBDB2418459A936D0743F08B4",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/AppleScript/SpeakingEvals.scpt"
+  }
+}

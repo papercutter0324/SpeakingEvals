@@ -1,0 +1,190 @@
+{
+  "EntryTests": {
+    "Messages": "Messages have been set."
+  },
+  "Debug": {
+    "AppleScript": {
+      "AttemptToLocate": "Locating {0}{NEWLINE1}{INDENT1}Searching: {1}",
+      "CheckForUpdate": "Checking if an update is available for SpeakingEvals.scpt.",
+      "InstalledStatus": "{INDENT1}Found: {0}",
+      "LatestVersionInstalled": "{INDENT1}Installed version is up-to-date.",
+      "ReminderToInstall": "{INDENT1}Remindering user to install.{NEWLINE1}{INDENT1}Activating sheet: MacOS Users",
+      "StartupInstallCheck": "SpeakingEvals.scpt{NEWLINE1}{INDENT1}Status: {0}",
+      "UnableToDownloadUpdate": "Unable to download new {0}",
+      "UpdateComplete": "{INDENT1}Update complete.",
+      "VersionNumbers": "{INDENT1}Installed Version: {0}{NEWLINE1}{INDENT1}Online Version:    {1}"
+    },
+    "CodeExecution": {
+      "BeginningCleanup": "Beginning final cleanup checks.",
+      "BeginningTasks": "Beginning Tasks{NEWLINE1}{INDENT1}Start Time: {0}{NEWLINE1}{INDENT1}Active Worksheet: {1}{NEWLINE1}{INDENT1}Button Pressed: {2}",
+      "EntryPoint": "Entry Point: {NEWLINE1}{INDENT1}{0}",
+      "EntryPointButton": "Entry Point: {NEWLINE1}{INDENT1}{0} - {1}",
+      "EntryPointOnActivation": "Entry Point: {NEWLINE1}{INDENT1}{0} Activation",
+      "ExectutionTimeStats": "Finished Tasks{NEWLINE1}{INDENT1}Start Time:   {0}{NEWLINE1}{INDENT1}End Time:     {1}{NEWLINE1}{INDENT1}Elapsed time: {2} seconds",
+      "Result": "{0}Result: {1}",
+      "Status": "{0}Status: {1}"
+    },
+    "DialogDisplayScript": {
+      "AttemptToLocate": "Checking for presence of DialogDisplay.scpt."
+    },
+    "DialogToolKitPlus": {
+      "AttemptToInstall": "Attempting to install DialogDisplay.scpt{NEWLINE1}{INDENT1}Installed: {0}",
+      "AttemptToLocate": "Locating Dialog Toolkit Plus.scptd{NEWLINE1}{INDENT1}Searching: {0}",
+      "AttemptToUse": "Attempting to display message via Dialog Toolkit Plus.{NEWLINE1}{INDENT1}Message: {0}",
+      "InstalledStatus": "{INDENT1}Installed: {0}",
+      "NumberOfAttempts": "{INDENT1}Number of attempts: {0}{NEWLINE1}{INDENT1}Final error: {1}",
+      "RemoveInstalledFile": "Removing Dialog ToolKit Plus from ~/Library/Script Libraries{NEWLINE1}{INDENT1}A local copy will be stored in: {0}"
+    },
+    "ErrorMessages": {
+      "ErrorCheckFor": "{INDENT1}Error while checking for {0}{NEWLINE1}Error {1}: {2}",
+      "ErrorDuringUpdateProcess": "Error during the update process.{NEWLINE1}{INDENT1}Error {0}: {1}"
+    },
+    "FileManagement": {
+      "BeginCleanUp": "{INDENT1}Beginning clean up process.",
+      "DeletingFile": "{INDENT1}Deleting: {0}",
+      "DeletingFileFailed": "Error deleting: {0}{NEWLINE1}Error {1}: {2}",
+      "DownloadFailed": "{INDENT1}Error {0}: {1}",
+      "DownloadFailedCurl": "{INDENT1}Curl download failed for {0}",
+      "DownloadFailedCritical": "{INDENT2}Download failed. Terminiating file creation.",
+      "DownloadFailedDotNet": "HTTP request failed. Status: {0} - {1}",
+      "DownloadNewCopy": "{INDENT1}Valid {0} not found. Attempting to download.",
+      "DownloadSuccessful": "{0}Download successful.",
+      "ErrorCreatingFolder": "Error creating folder:{NEWLINE1}{INDENT1}Error {0}: {1}",
+      "ErrorCreatingTemporaryCopy": "{INDENT1}Failed to make a temporary copy. Using resources copy directly.",
+      "FileAccessPermissionRequest": "Requesting access to:",
+      "FileAccessPermissionStatus": "{INDENT2}File access {0}",
+      "FileAccessPermissionStatusDetailed": "{INDENT1}{0}{NEWLINE1}{INDENT2}{Access {1}",
+      "FileCreationSaveComplete": "{INDENT1}Save process complete.",
+      "FileCreationStart": "Beginning File Creation{NEWLINE1}{INDENT1}File Types: {0}",
+      "FileMoveFailed": "{INDENT1}Failed to move template to {0}",
+      "FinishedCleanUp": "{INDENT1}Finished clean up.",
+      "HashCheckError": "Hash check failed.{NEWLINE1}{INDENT1}Error {0}: {1}",
+      "LoadTemporaryCopy": "{INDENT1}Loading temporary copy",
+      "MarkAsExecutable": "{INDENT1}Marking {0} as executable.",
+      "OpenDestinationFolder": "Attempting to open destination folder.{NEWLINE1}{INDENT1}Path: {0}",
+      "RemoveOldVersion": "{INDENT1}Removing old version: {0}",
+      "RemoveTemporaryFile": "{INDENT1}Removing temporary file: {0}",
+      "ValidFileFound": "{INDENT1}Valid copy found."
+    },
+    "PowerPoint": {
+      "AttemptingToClose": "Attempting to close PowerPoint.",
+      "AttemptingToCloseExtraMacStep": "{INDENT1}Attempting extra step required to completely close MS PowerPoint on MacOS.",
+      "CheckingForOpenInstances": "Checking for Existing PowerPoint Instances",
+      "ClosingOpenInstance": "Closing Open PowerPoint Instances",
+      "ClosingOpenTemplate": "{INDENT1}Attempting to close the template.{NEWLINE1}{INDENT1}Status: {0}",
+      "DisableAutoSave": "{INDENT1}Disabling AutoSave",
+      "LoadedStatus": "{INDENT1}PowerPoint Loaded: {0}",
+      "Opening": "Opening PowerPoint",
+      "OpenInstanceClosed": "{INDENT1}Open instance has been closed.",
+      "OpenInstanceFound": "{INDENT1}PowerPoint instance found.{NEWLINE1}{INDENT1}Checking if template is already open.",
+      "OpenInstanceStatus": "{INDENT1}Open instances: {0}",
+      "RequestToCloseOpenInstance": "{INDENT1}Open instance found{NEWLINE1}{INDENT1}Asking if user wishes to automatically close and continue.",
+      "TemplateLoadedStatus": "{INDENT1}Template loaded: {0}"
+    },
+    "Reports": {
+      "ErrorInsertingSignature": "Error inserting signature.",
+      "ErrorSaving": "{INDENT2}Failed to save.{NEWLINE1}{INDENT2}Error Number: {0}{NEWLINE1}{INDENT2}Error Description: {1}",
+      "Filename": "{INDENT2}Filename: {0}",
+      "GeneratingFile": "{INDENT1}Generating Report {0} of {1}",
+      "PreparingData": "{INDENT2}Preparing Report Data",
+      "Saved": "Report saved."
+    },
+    "StudentRecords": {
+      "FinalEntry": "{INDENT1}Final student record entry: {0}{NEWLINE1}{INDENT1}Validating entered records",
+      "InvalidData": "Invalid value for {0}.",
+      "MissingData": "Class information incomplete.{NEWLINE2}Missing: {0}",
+      "NoStudentsFound": "{INDENT1}No students were found.",
+      "VerifyingIfComplete": "Verifying Student Records Are Complete"
+    },
+    "SystemRequirements": {
+      "CurlCheck": "Checking if curl.exe is installed.",
+      "DotNetCheck": "Checking if Microsoft DotNet 3.5 is installed.",
+      "FontsCheck": "Checking if required fonts are installed.",
+      "FontsInstallationFailed": "{INDENT1}Unable to automatically install fonts. Please install manually.{NEWLINE1}{INDENT2}Just Another Hand (Regular): {0}{NEWLINE1}{INDENT2}Hurricane (Regular): {1}{NEWLINE1}{INDENT2}Kakao Big Sans (Regular): {2}",
+      "FontsInstallationSuccessful": "{INDENT1}All fonts are successfully installed"
+    },
+    "Workbook": {
+      "BeginStartupSelfChecks": "Beginning start-up self-checks{NEWLINE1}{INDENT1}Start Time: {0}",
+      "LoadedFromTempFolderCheck": "Checking if loaded from a temp folder.{NEWLINE1}{INDENT1}Current Path: {0}{NEWLINE1}{INDENT1}Temp Folder: {1}",
+      "ToggleApplicationUpdates": "Toggling Application Updates{NEWLINE1}{INDENT1}Calculation: {0}{NEWLINE1}{INDENT1}EnableEvents: {1}{NEWLINE1}{INDENT1}ScreenUpdating: {2}",
+      "UpdatingPersistantSetting": "{INDENT1}Updating persistant status value.",
+      "UpdatingPersistantSettingValue": "{INDENT2}Value: {0}",
+      "ValidateLayouts": "Validating Layouts"
+    },
+    "Worksheet": {
+      "MissingShape": "{INDENT2}Warning: Shape '{0}' not found.",
+      "PrintWorksheetName": "{0}Sheet: {1}",
+      "RepairLayout": "Repairing Layout{NEWLINE1}{INDENT1}Sheet: {0}",
+      "RepairLayoutComplete": "{INDENT1}Repair Complete",
+      "UpdatingCertificateOptions": "Updating Valid Certicate Options{NEWLINE1}{INDENT1}{0} {1}",
+      "ValidateAllShapesArePresent": "{INDENT2}Verifying all standard shapes are present.",
+      "ValidateLayout": "Validating Layout{NEWLINE1}{INDENT1}Sheet: {0}",
+      "ValidateShapeDimensions": "{INDENT2}{0} found.{NEWLINE1}{INDENT3}Verifying signature dimensions.",
+      "ValidateShapePlacement": "{INDENT2}Setting layout for {0}.",
+      "WorksheetChangeError": "Error in Worksheet_Change{NEWLINE1}{INDENT1}Error {0}: {1}",
+      "WorksheetError": "Error occurred in {0}{NEWLINE1}{INDENT1}Error {1}: {2}"
+    },
+    "Zip": {
+      "Failed": "{INDENT1}Zip failed{NEWLINE1}{INDENT2}Error {0}: {1}",
+      "Successful": "{INDENT1}Zip successful",
+      "ZippingReport": "Zipping Reports{NEWLINE1}{INDENT1}Zip Filename: {0}{NEWLINE1}{INDENT1}Destination:  {1}"
+    }
+  },
+  "Display": {
+    "AppleScript": {
+      "InstallReminder": "SpeakingEvals.scpt must be installed for this file to fuction properly and generate reports. Please follow the installation instructions on the MacOS Users sheet and then try again."
+    },
+    "ErrorMessages": {
+      "DownloadFile": "Error downloading file: {0}",
+      "ErrorOpeningPowerPoint": "Error opening PowerPoint.{NEWLINE2}PowerPoint may have encountered a bug preventing it from opening and/or closing properly. Please wait a couple seconds and try again. If this error persists, please try rebooting your computer.",
+      "ErrorOpeningTemplate": "Error opening template.{NEWLINE2}PowerPoint may have encountered a bug preventing it from opening and/or closing properly. Please wait a couple seconds and try again. If this error persists, please try rebooting your computer.",
+      "ErrorSavingFile": "Export failed. Please ensure all data was entered correctly and try saving to a different folder.",
+      "ErrorZippingFiles": "The reports were successfully created, but there was an error when trying to add them into a zip file.",
+      "FontInstallationFailed": "There was an error when trying to install the required font. Please try again, and if the error persists, consider installing{NEWLINE2}the font manually. You can find the link on the Instructions sheet.",
+      "IncompleteRecords": "One or more fields for missing. Please complete all fields and try again.",
+      "MissingShapes": "There is a error with the template. Please redownload a copy of the original and try again.",
+      "UnableToCreateResourcesFolder": "Unable to locate or create the Resources folder. Please create this manually in the same location as this spreadsheet and try again.",
+      "UnableToDownloadFile": "No valid means of downloading required files. Please make sure you are using a supported version of Windows or MacOS and that you have installed the latest updates."
+    },
+    "PowerPoint": {
+      "RequestToCloseOpenInstance": "An open instance of MS PowerPoint has been detected. Please save any open files before continuing.{NEWLINE2}Click OK to automatically close PowerPoint and continue, or click Cancel to finish and save your work.",
+      "ErrorLoadingViaAppleScript": "An error occurred while trying to load Microsoft PowerPoint. This is usually a result of a quirk in MacOS. Try creating the reports again, and it should work fine.{NEWLINE2}If the problem persists, please take a picture of the following error message and ask your team leader to send it to Warren at Bundang.{NEWLINE2}VBA Error {0}: {1}{NEWLINE1}AppleScript Error: {2}",
+      "WarnAboutClosingDelay": "There is a uncommon error, where the first time you try to save it fails. If you experience this, wait a couple seconds and try again. It should work fine the second time.{NEWLINE2}Additionally, PowerPoint occasionally takes longer than expected to close. This seems to be mainly an issue with smaller classes and completing all the reports too quickly. It should only take about a minute for PowerPoint to close, so please be patient.{NEWLINE2}Press okay to continue creating the reports.{NEWLINE1}(This message can be disabled via the Options sheet.)"
+    },
+    "Reports": {
+      "InvalidReportButton": "You have clicked an invalid option for creating the reports. This shouldn't be possible unless this file has been altered in an unintended manner. Please download a new copy of this Excel file, copy over all of the students' records, and try again.",
+      "Success": "Export complete!"
+    },
+    "StudentRecords": {
+      "CommentTooLong": "The COMMENT for {0} is too long. Please shorten it by {1} or more characters.",
+      "CommentTooLongUponEntry": "The comment you have typed is too long ({0} chars). Please shorten it by at least {1} characters to ensure it fits in the report's comment box.",
+      "CommentTooShortUponEntry": "The comment you have typed is very short (under 80 characters). Please check that you have followed the \"Positive - Negative - Positive\" format and provided sufficient detail.",
+      "EnglishNameTooLongForReport": "The student's English name is very long and may not fit on the report. Please verify how it looks after generating the report and consider using a shorter version.{NEWLINE2}Report generation will still work.",
+      "EnterValidDateUponEntry": "Please enter a valid date.",
+      "ErrorReadingData": "Could not read class or student data.",
+      "InvalidData": "Invalid value for {0}.{NEWLINE2}Would you like to ignore and continue?",
+      "InvalidScore": "Invalid value entered for {0}'s {1} score.",
+      "InvalidScoreUponEntry": "An invalid score value has been entered. Please enter A+, A, B+, B, C, or a number between 1 and 5.",
+      "KoreanNameInvalidLength": "You entered an invalid name length. Please verify you have typed it correctly and using Hangul.",
+      "KoreanNameUncommonLength": "You entered a Korean name with {0} syllables. These names do exist, but they are uncommon. Please verify you have typed it correctly and using Hangul.{NEWLINE2}Report generation will still work.",
+      "MissingData": "Class information incomplete.{NEWLINE2}Missing: {0}",
+      "NameTooLong": "{0}'s {1} is too long. The maximum supported length is {2} characters. Please shorten it by at least {3} characters.",
+      "NoStudentsFound": "No students were found!",
+      "RecordsIncomplete": "Student information incomplete.{NEWLINE2}Missing data for {0}'s {1}.",
+      "StudentNameIncomplete": "No value has been entered for {0}'s {1} name. Please enter a value and try again.",
+      "StudentNameMissing": "No names have been entered the student on line {0}. Please enter their English and Korean names and try again."
+    },
+    "Workbook": {
+      "LoadedFromTemp": "This file has been loaded from a temporary folder and will not function correctly. Please verify you have correctly extracted this file from the zip file (if applicable) and save it to a permanent location.",
+      "MissingSheets": "One or more essential sheets are missing. Please download a new copy of this file and copy over important data. If you receive an error stating that two workbooks with the same name cannot be open at the same time, then close & rename THIS file and try opening both files again."
+    },
+    "Worksheet": {
+      "InvalidDate": "An invalid date has been found on worksheet {0}.{NEWLINE1}Please enter a valid date."
+    }
+  },
+  "Textbox": {
+    "MacOS": {
+      "CurlCommand": "curl -L -o ~/Library/Application\\ Scripts/com.microsoft.Excel/SpeakingEvals.scpt https://github.com/papercutter0324/SpeakingEvals/raw/main/AppleScript/SpeakingEvals.scpt"
+    }
+  }
+}
