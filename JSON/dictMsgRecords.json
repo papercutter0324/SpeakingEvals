@@ -456,6 +456,24 @@
         "Type": "",
         "Width": "280"
       },
+      "EnglishNameIsOneLetter": {
+        "Message": "{0}'s English name is only one letter long. {NEWLINE1}Is this correct?",
+        "Title": "Uncommon English Name",
+        "Type": "",
+        "Width": "260"
+      },
+      "EnglishNameIsTwoCapitalLetters": {
+        "Message": "{0}'s English name is just two capital letters. {NEWLINE1}Is this correct?",
+        "Title": "Uncommon English Name",
+        "Type": "",
+        "Width": "260"
+      },
+      "EnglishNameIsTwoLetters": {
+        "Message": "{0}'s English name is only two letters long. {NEWLINE1}Is this correct?",
+        "Title": "Uncommon English Name",
+        "Type": "",
+        "Width": "260"
+      },
       "EnglishNameTooLongForReport": {
         "Message": "The student's English name is very long and may not fit on the report. Please verify how it looks after generating the report and consider using a shorter version.{NEWLINE2}Report generation will still work.",
         "Title": "English Name: Exceeds Max Length",
@@ -479,6 +497,24 @@
         "Title": "Error!",
         "Type": "",
         "Width": "250"
+      },
+      "InvalidEnglishNameEntered": {
+        "Message": "Please enter a valid English name for {0}.",
+        "Title": "Error: Invalid Name Detected!",
+        "Type": "",
+        "Width": "300"
+      },
+      "InvalidKoreanName": {
+        "Message": "Please enter their Korean name using Hangeul.",
+        "Title": "Error: Invalid Name Detected!",
+        "Type": "",
+        "Width": "300"
+      },
+      "InvalidKoreanTeacherName": {
+        "Message": "Please enter your KT's name using Hangeul.",
+        "Title": "Error: Invalid Name Detected!",
+        "Type": "",
+        "Width": "300"
       },
       "InvalidScore": {
         "Message": "Invalid value entered for {0}'s {1} score.",
