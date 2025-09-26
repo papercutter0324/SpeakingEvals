@@ -2,6 +2,9 @@
   "EntryTests": {
     "Messages": {
       "Message": "Messages have been set."
+    },
+    "Version": {
+      "Number": "20250925"
     }
   },
   "Debug": {
