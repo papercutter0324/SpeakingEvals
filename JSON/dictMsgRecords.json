@@ -585,7 +585,7 @@
         "Width": "470"
       },
       "LoadedFromTempWindows": {
-        "Message": "This file has been loaded from a temporary folder and will not function correctly. The most common reason for receiving this error is that you downloaded a .zip copy of this file and didn't save the 'Speaking Eval Reports (v#.##.#).xlsm' file to a different directory. Please close this file and do so before continuing.{NEWLINE2}For further help, please see the '01 - Initial Download and Extraction.mp4' instructional video on the dropbox.",
+        "Message": "This file has been loaded from a temporary folder and will not function correctly. The most common reason for receiving this error is that you downloaded a .zip copy of this file and didn't save the 'Speaking Eval Reports (v#.##.#).xlsm' file to a different directory. Please close this file and do so before continuing.{NEWLINE2}For further help, please see the '01 - Initial Download and Extraction' instructional video on the dropbox.",
         "Title": "Warning!",
         "Type": "",
         "Width": "470"
