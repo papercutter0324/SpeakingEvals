@@ -4,7 +4,7 @@
       "Message": "Messages have been set."
     },
     "Version": {
-      "Number": "20250925"
+      "Number": "20250928"
     }
   },
   "Debug": {
@@ -441,6 +441,12 @@
       }
     },
     "StudentRecords": {
+      "CommentEndsWithInvalidPunctuation": {
+        "Message": "The COMMENT you have entered ends with an invalid punctuation. The '{0}' has been replaced with a period.",
+        "Title": "Error!",
+        "Type": "",
+        "Width": "300"
+      },
       "CommentTooLong": {
         "Message": "The COMMENT for {0} is too long. Please shorten it by {1} or more characters.",
         "Title": "Error!",
