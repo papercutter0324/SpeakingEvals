@@ -107,7 +107,7 @@
         "Message": "Error deleting: {0}{NEWLINE1}Error {1}: {2}"
       },
       "DownloadFailed":  {
-        "Message": "{INDENT1}Error {0}: {1}"
+        "Message": "{INDENT1}Download Error {0}: {1}"
       },
       "DownloadFailedCurl":  {
         "Message": "{INDENT1}Curl download failed for {0}"
@@ -115,8 +115,8 @@
       "DownloadFailedCritical":  {
         "Message": "{INDENT2}Download failed. Terminiating file creation."
       },
-      "DownloadFailedDotNet":  {
-        "Message": "HTTP request failed. Status: {0} - {1}"
+      "DownloadFailedHttp":  {
+        "Message": "{INDENT1}HTTP request failed. Status: {0} - {1}"
       },
       "DownloadNewCopy":  {
         "Message": "{INDENT1}Valid {0} not found. Attempting to download."
