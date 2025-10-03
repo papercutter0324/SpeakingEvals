@@ -381,6 +381,12 @@
         "Type": "",
         "Width": "360"
       },
+      "IncompleteWinnersList": {
+        "Message": "Unable to generate winner certificates due to an incomplete winners list. Please select the winners and try again.",
+        "Title": "Error!",
+        "Type": "",
+        "Width": "300"
+      },
       "IncompleteRecords": {
         "Message": "One or more fields for missing. Please complete all fields and try again.",
         "Title": "Missing Data!",
@@ -500,6 +506,12 @@
         "Title": "Error!",
         "Type": "",
         "Width": "220"
+      },
+      "IncompleteWinnersList": {
+        "Message": "The list of the class winners is incomplete. Would you like to auto-populate it?{NEWLINE1}(This may overwrite any names currently selected.)",
+        "Title": "Error!",
+        "Type": "",
+        "Width": "250"
       },
       "InvalidData": {
         "Message": "Invalid value for {0}.{NEWLINE2}Would you like to ignore and continue?",
