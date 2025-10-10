@@ -137,7 +137,7 @@
         "Message": "{INDENT2}File access {0}"
       },
       "FileAccessPermissionStatusDetailed":  {
-        "Message": "{INDENT1}{0}{NEWLINE1}{INDENT2}{Access {1}"
+        "Message": "{INDENT1}{0}{NEWLINE1}{INDENT2}Access {1}"
       },
       "FileCreationSaveComplete":  {
         "Message": "{INDENT1}Save process complete."
