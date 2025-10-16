@@ -2,10 +2,10 @@
   "EntryTests": {
     "Messages": {
       "Message": "Messages have been set."
-    },
-    "Version": {
-      "Number": "20250928"
     }
+  },
+  "Version": {
+    "Number": "20250928"
   },
   "Debug": {
     "AppleScript": {
@@ -78,11 +78,11 @@
       "AttemptToUse":  {
         "Message": "Attempting to display message via Dialog Toolkit Plus.{NEWLINE1}{INDENT1}Message: {0}"
       },
+      "FailedToDisplay":  {
+        "Message": "Dialog Toolkit Plus failed to display the message.{NEWLINE1}{1}"
+      },
       "InstalledStatus":  {
         "Message": "{INDENT1}Installed: {0}"
-      },
-      "NumberOfAttempts":  {
-        "Message": "{INDENT1}Number of attempts: {0}{NEWLINE1}{INDENT1}Final error: {1}"
       },
       "RemoveInstalledFile":  {
         "Message": "Removing Dialog ToolKit Plus from ~/Library/Script Libraries{NEWLINE1}{INDENT1}A local copy will be stored in: {0}"
@@ -340,7 +340,8 @@
       "InstallReminder": {
         "Message": "SpeakingEvals.scpt must be installed for this file to fuction properly and generate reports. Please follow the installation instructions on the MacOS Users sheet and then try again.",
         "Title": "Notice!",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "470"
       }
     },
@@ -348,67 +349,78 @@
       "DownloadFile": {
         "Message": "Error downloading file: {0}",
         "Title": "Download Error!",
-        "Type": "",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
         "Width": "250"
       },
       "ErrorOpeningPowerPoint": {
         "Message": "Error opening PowerPoint.{NEWLINE2}PowerPoint may have encountered a bug preventing it from opening and/or closing properly. Please wait a couple seconds and try again. If this error persists, please try rebooting your computer.",
         "Title": "Error!",
-        "Type": "",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
         "Width": "360"
       },
       "ErrorOpeningTemplate": {
         "Message": "Error opening template.{NEWLINE2}PowerPoint may have encountered a bug preventing it from opening and/or closing properly. Please wait a couple seconds and try again. If this error persists, please try rebooting your computer.",
         "Title": "Error!",
-        "Type": "",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
         "Width": "360"
       },
       "ErrorSavingFile": {
         "Message": "Export failed. Please ensure all data was entered correctly and try saving to a different folder.",
         "Title": "Process failed!",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "230"
       },
       "ErrorZippingFiles": {
         "Message": "The reports were successfully created, but there was an error when trying to add them into a zip file.",
         "Title": "Error!",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "270"
       },
       "FontInstallationFailed": {
         "Message": "There was an error when trying to install the required font. Please try again, and if the error persists, consider installing{NEWLINE2}the font manually. You can find the link on the Instructions sheet.",
         "Title": "Font Error!",
-        "Type": "",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
         "Width": "360"
       },
       "IncompleteWinnersList": {
         "Message": "Unable to generate winner certificates due to an incomplete winners list. Please select the winners and try again.",
         "Title": "Error!",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "300"
       },
       "IncompleteRecords": {
         "Message": "One or more fields for missing. Please complete all fields and try again.",
         "Title": "Missing Data!",
-        "Type": "",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
         "Width": "230"
       },
       "MissingShapes": {
         "Message": "There is a error with the template. Please redownload a copy of the original and try again.",
         "Title": "Error!",
-        "Type": "",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
         "Width": "210"
       },
       "UnableToCreateResourcesFolder": {
         "Message": "Unable to locate or create the Resources folder. Please create this manually in the same location as this spreadsheet and try again.",
         "Title": "Error!",
-        "Type": "",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
         "Width": "330"
       },
       "UnableToDownloadFile": {
         "Message": "No valid means of downloading required files. Please make sure you are using a supported version of Windows or MacOS and that you have installed the latest updates.",
         "Title": "Error!",
-        "Type": "",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
         "Width": "250"
       }
     },
@@ -416,19 +428,22 @@
       "RequestToCloseOpenInstance": {
         "Message": "An open instance of MS PowerPoint has been detected. Please save any open files before continuing.{NEWLINE2}Click OK to automatically close PowerPoint and continue, or click Cancel to finish and save your work.",
         "Title": "Notice!",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkCancel",
         "Width": "310"
       },
       "ErrorLoadingViaAppleScript": {
         "Message": "An error occurred while trying to load Microsoft PowerPoint. This is usually a result of a quirk in MacOS. Try creating the reports again, and it should work fine.{NEWLINE2}If the problem persists, please take a picture of the following error message and ask your team leader to send it to Warren at Bundang.{NEWLINE2}VBA Error {0}: {1}{NEWLINE1}AppleScript Error: {2}",
         "Title": "Error Loading PowerPoint",
-        "Type": "",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
         "Width": "470"
       },
       "WarnAboutClosingDelay": {
         "Message": "There is a uncommon error, where the first time you try to save it fails. If you experience this, wait a couple seconds and try again. It should work fine the second time.{NEWLINE2}Additionally, PowerPoint occasionally takes longer than expected to close. This seems to be mainly an issue with smaller classes and completing all the reports too quickly. It should only take about a minute for PowerPoint to close, so please be patient.{NEWLINE2}Press okay to continue creating the reports.{NEWLINE1}(This message can be disabled via the Options sheet.)",
         "Title": "Notice!",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "250"
       }
     },
@@ -436,13 +451,15 @@
       "InvalidReportButton": {
         "Message": "You have clicked an invalid option for creating the reports. This shouldn't be possible unless this file has been altered in an unintended manner. Please download a new copy of this Excel file, copy over all of the students' records, and try again.",
         "Title": "Invalid Selection!",
-        "Type": "",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
         "Width": "250"
       },
       "Success": {
         "Message": "Export complete!",
         "Title": "Process complete!",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "110"
       }
     },
@@ -450,151 +467,183 @@
       "CommentEndsWithInvalidPunctuation": {
         "Message": "The COMMENT you have entered ends with an invalid punctuation. The '{0}' has been replaced with a period.",
         "Title": "Error!",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "300"
       },
       "CommentTooLong": {
         "Message": "The COMMENT for {0} is too long. Please shorten it by {1} or more characters.",
         "Title": "Error!",
-        "Type": "",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
         "Width": "330"
       },
       "CommentTooLongUponEntry": {
         "Message": "The comment you have typed is too long ({0} chars). Please shorten it by at least {1} characters to ensure it fits in the report's comment box.",
         "Title": "Comment: Exceeds Max Length",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "300"
       },
       "CommentTooShortUponEntry": {
         "Message": "The comment you have typed is very short (under 80 characters). Please check that you have followed the \"Positive - Negative - Positive\" format and provided sufficient detail.",
         "Title": "Comment: Too Short",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "280"
       },
       "EnglishNameIsOneLetter": {
         "Message": "{0}'s English name is only one letter long. {NEWLINE1}Is this correct?",
         "Title": "Uncommon English Name",
-        "Type": "",
+        "Icon": "Question",
+        "Buttons": "YesNo",
         "Width": "260"
       },
       "EnglishNameIsTwoCapitalLetters": {
         "Message": "{0}'s English name is just two capital letters. {NEWLINE1}Is this correct?",
         "Title": "Uncommon English Name",
-        "Type": "",
+        "Icon": "Question",
+        "Buttons": "YesNo",
         "Width": "260"
       },
       "EnglishNameIsTwoLetters": {
         "Message": "{0}'s English name is only two letters long. {NEWLINE1}Is this correct?",
         "Title": "Uncommon English Name",
-        "Type": "",
+        "Icon": "Question",
+        "Buttons": "YesNo",
         "Width": "260"
       },
       "EnglishNameTooLongForReport": {
         "Message": "The student's English name is very long and may not fit on the report. Please verify how it looks after generating the report and consider using a shorter version.{NEWLINE2}Report generation will still work.",
         "Title": "English Name: Exceeds Max Length",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "370"
       },
       "EnterValidDateUponEntry": {
         "Message": "Please enter a valid date.",
         "Title": "Date: Invalid Format",
-        "Type": "",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
         "Width": "200"
       },
       "ErrorReadingData": {
         "Message": "Could not read class or student data.",
         "Title": "Error!",
-        "Type": "",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
         "Width": "220"
       },
       "IncompleteWinnersList": {
         "Message": "The list of the class winners is incomplete. Would you like to auto-populate it?{NEWLINE1}(This may overwrite any names currently selected.)",
         "Title": "Error!",
-        "Type": "",
+        "Icon": "Question",
+        "Buttons": "YesNo",
         "Width": "250"
       },
       "InvalidData": {
         "Message": "Invalid value for {0}.{NEWLINE2}Would you like to ignore and continue?",
         "Title": "Error!",
-        "Type": "",
+        "Icon": "Question",
+        "Buttons": "YesNo",
         "Width": "250"
       },
       "InvalidEnglishNameEntered": {
         "Message": "Please enter a valid English name for {0}.",
         "Title": "Error: Invalid Name Detected!",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "300"
       },
       "InvalidKoreanName": {
         "Message": "Please enter their Korean name using Hangeul.",
         "Title": "Error: Invalid Name Detected!",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "300"
       },
       "InvalidKoreanTeacherName": {
         "Message": "Please enter your KT's name using Hangeul.",
         "Title": "Error: Invalid Name Detected!",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
+        "Width": "300"
+      },
+      "InvalidPunctuationInName": {
+        "Message": "Invalid punctuation was found in {0}'s name. Is this new spelling correct?",
+        "Title": "Error: Invalid Name Detected!",
+        "Icon": "Question",
+        "Buttons": "YesNo",
         "Width": "300"
       },
       "InvalidScore": {
         "Message": "Invalid value entered for {0}'s {1} score.",
         "Title": "Error!",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "300"
       },
       "InvalidScoreUponEntry": {
         "Message": "An invalid score value has been entered. Please enter A+, A, B+, B, C, or a number between 1 and 5.",
         "Title": "Grade: Invalid Score",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "250"
       },
       "KoreanNameInvalidLength": {
         "Message": "You entered an invalid name length. Please verify you have typed it correctly and using Hangul.",
         "Title": "Korean Name: Invalid Length",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "380"
       },
       "KoreanNameUncommonLength": {
         "Message": "You entered a Korean name with {0} syllables. These names do exist, but they are uncommon. Please verify you have typed it correctly and using Hangul.{NEWLINE2}Report generation will still work.",
         "Title": "Korean Name: Uncommon Length",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "380"
       },
       "MissingData": {
         "Message": "Missing: {0}",
         "Title": "Error: Class information incomplete!",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "190"
       },
       "NameTooLong": {
         "Message": "{0}'s {1} is too long. The maximum supported length is {2} characters. Please shorten it by at least {3} characters.",
         "Title": "Error!",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "250"
       },
       "NoStudentsFound": {
         "Message": "No students were found!",
         "Title": "Error!",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "160"
       },
       "RecordsIncomplete": {
         "Message": "Missing data for {0}'s {1} score.",
         "Title": "Error: Student information incomplete!",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "250"
       },
       "StudentNameIncomplete": {
         "Message": "No value has been entered for {0}'s {1} name. Please enter a value and try again.",
         "Title": "Error!",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "250"
       },
       "StudentNameMissing": {
         "Message": "No names have been entered the student on line {0}. Please enter their English and Korean names and try again.",
         "Title": "Error!",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "250"
       }
     },
@@ -602,19 +651,22 @@
       "LoadedFromTempMac": {
         "Message": "This file has been loaded from a temporary folder and will not function correctly. Please verify you have correctly extracted this file from the zip file (if applicable) and save it to a permanent location.",
         "Title": "Warning!",
-        "Type": "",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
         "Width": "470"
       },
       "LoadedFromTempWindows": {
         "Message": "This file has been loaded from a temporary folder and will not function correctly. The most common reason for receiving this error is that you downloaded a .zip copy of this file and didn't save the 'Speaking Eval Reports (v#.##.#).xlsm' file to a different directory. Please close this file and do so before continuing.{NEWLINE2}For further help, please see the '01 - Initial Download and Extraction' instructional video on the dropbox.",
         "Title": "Warning!",
-        "Type": "",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
         "Width": "470"
       },
       "MissingSheets": {
         "Message": "One or more essential sheets are missing. Please download a new copy of this file and copy over important data. If you receive an error stating that two workbooks with the same name cannot be open at the same time, then close & rename THIS file and try opening both files again.",
         "Title": "Critical Error!",
-        "Type": "",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
         "Width": "470"
       }
     },
@@ -622,7 +674,8 @@
       "InvalidDate": {
         "Message": "An invalid date has been found on worksheet {0}.{NEWLINE1}Please enter a valid date.",
         "Title": "Invalid Date!",
-        "Type": "",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "250"
       }
     }
