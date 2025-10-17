@@ -44,22 +44,22 @@
   },
   "7za(x86)": {
     "filename": "7za(x86).exe",
-    "hash": "86D2E800B12CE5DA07F9BD2832870577",
+    "hash": "E96E28B3824ABF6496FD0971B3BA7459",
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/7zip/7za(x86).exe"
   },
   "7za(x64)": {
     "filename": "7za(x64).exe",
-    "hash": "C58A4193BAC738B1A88ACAD9C6A57356",
+    "hash": "CFD95B9816F15EB24C5721814561CEB0",
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/7zip/7za(x64).exe"
   },
   "7za(ARM)": {
     "filename": "7za(ARM).exe",
-    "hash": "3DCEBD415EC47C5EF080C13FAB5E15A2",
+    "hash": "CFD95B9816F15EB24C5721814561CEB0",
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/7zip/7za(ARM).exe"
   },
   "7zz": {
     "filename": "7zz",
-    "hash": "80B9D6E9761AECE7F8AC784491FC3B6A",
+    "hash": "8FE09805E756D3140112A162E5A6FD4D",
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/7zip/7zz"
   },
   "Hurricane-Regular": {
