@@ -440,7 +440,7 @@
         "Width": "470"
       },
       "WarnAboutClosingDelay": {
-        "Message": "There is a uncommon error, where the first time you try to save it fails. If you experience this, wait a couple seconds and try again. It should work fine the second time.{NEWLINE2}Additionally, PowerPoint occasionally takes longer than expected to close. This seems to be mainly an issue with smaller classes and completing all the reports too quickly. It should only take about a minute for PowerPoint to close, so please be patient.{NEWLINE2}Press okay to continue creating the reports.{NEWLINE1}(This message can be disabled via the Options sheet.)",
+        "Message": "There is a uncommon error, where the first time you try to save it fails. If you experience this, wait a couple seconds and try again. It should work fine the second time.{NEWLINE2}Additionally, PowerPoint occasionally takes longer than expected to close. It should only take about a minute for PowerPoint to close, so please be patient.{NEWLINE2}Press okay to continue creating the reports.{NEWLINE1}(This message can be disabled via the Options sheet.)",
         "Title": "Notice!",
         "Icon": "Information",
         "Buttons": "OkOnly",
