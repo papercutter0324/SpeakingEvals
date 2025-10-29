@@ -4,7 +4,7 @@
     "FileHashes": "Hashes have been set.",
     "FileUrls": "URLs have been set.",
     "Version": {
-      "Number": "20250925"
+      "Number": "20251030"
     }
   },
   "SpeakingEvaluationTemplate": {
@@ -95,7 +95,7 @@
   },
   "SpeakingEvals": {
     "filename": "SpeakingEvals.scpt",
-    "hash": "813F1555E39C8F69AC396ACD2E5D5A7D",
+    "hash": "B96A4B9D01B18E37FBFAE2D84F6FE762",
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/AppleScript/SpeakingEvals.scpt"
   }
 }
