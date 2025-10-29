@@ -2,10 +2,10 @@
   "EntryTests": {
     "FileNames": "Filenames have been set.",
     "FileHashes": "Hashes have been set.",
-    "FileUrls": "URLs have been set.",
-    "Version": {
-      "Number": "20251030"
-    }
+    "FileUrls": "URLs have been set."
+  },
+  "Version": {
+    "Number": "20251030"
   },
   "SpeakingEvaluationTemplate": {
     "filename": "SpeakingEvaluationTemplate.pptx",
