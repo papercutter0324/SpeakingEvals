@@ -575,8 +575,8 @@
       "InvalidPunctuation": {
         "Message": "Invalid punctuation detected and updated. Please verify that the new spelling is correct.",
         "Title": "Error: Invalid Punctuation Detected!",
-        "Icon": "Question",
-        "Buttons": "YesNo",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
         "Width": "300"
       },
       "InvalidPunctuationInName": {
