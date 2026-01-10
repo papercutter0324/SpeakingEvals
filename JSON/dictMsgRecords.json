@@ -5,7 +5,7 @@
     }
   },
   "Version": {
-    "Number": "20251017"
+    "Number": "20260110"
   },
   "Debug": {
     "AppleScript": {
@@ -240,6 +240,9 @@
       },
       "InvalidData": {
         "Message": "Invalid value for {0}."
+      },
+      "InvalidPunctuation": {
+        "Message": "Invalid punctuation detected and corrected." 
       },
       "MissingData": {
         "Message": "Class information incomplete.{NEWLINE2}Missing: {0}"
@@ -567,6 +570,13 @@
         "Title": "Error: Invalid Name Detected!",
         "Icon": "Information",
         "Buttons": "OkOnly",
+        "Width": "300"
+      },
+      "InvalidPunctuation": {
+        "Message": "Invalid punctuation detected and updated. Please verify that the new spelling is correct.",
+        "Title": "Error: Invalid Punctuation Detected!",
+        "Icon": "Question",
+        "Buttons": "YesNo",
         "Width": "300"
       },
       "InvalidPunctuationInName": {
