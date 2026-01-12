@@ -1,11 +1,9 @@
 {
   "EntryTests": {
-    "Messages": {
-      "Message": "Messages have been set."
-    }
+    "Message": "Messages have been set."
   },
   "Version": {
-    "Number": "20260110"
+    "Number": "20260112"
   },
   "Debug": {
     "AppleScript": {
