@@ -3,7 +3,7 @@
     "Message": "Messages have been set."
   },
   "Version": {
-    "Number": "20260112"
+    "Number": "20260113"
   },
   "Debug": {
     "AppleScript": {
@@ -479,6 +479,13 @@
         "Buttons": "OkOnly",
         "Width": "330"
       },
+      "CommentTooLongForReport": {
+        "Message": "The comment for {0} is too long. Please shorten it by {1} or more characters.",
+        "Title": "Error!",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
+        "Width": "330"
+      },
       "CommentTooLongUponEntry": {
         "Message": "The comment you have typed is too long ({0} chars). Please shorten it by at least {1} characters to ensure it fits in the report's comment box.",
         "Title": "Comment: Exceeds Max Length",
@@ -515,7 +522,7 @@
         "Width": "260"
       },
       "EnglishNameTooLongForReport": {
-        "Message": "The student's English name is very long and may not fit on the report. Please verify how it looks after generating the report and consider using a shorter version.{NEWLINE2}Report generation will still work.",
+        "Message": "{0}'s English name is too long and will not correctly fit on the report. Please enter a shorter version of their name.",
         "Title": "English Name: Exceeds Max Length",
         "Icon": "Information",
         "Buttons": "OkOnly",
@@ -598,8 +605,15 @@
         "Buttons": "OkOnly",
         "Width": "250"
       },
-      "KoreanNameInvalidLength": {
+      "KoreanNameInvalidLengthUponEntry": {
         "Message": "You entered an invalid name length. Please verify you have typed it correctly and using Hangul.",
+        "Title": "Korean Name: Invalid Length",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
+        "Width": "380"
+      },
+      "KoreanNameInvalidLength": {
+        "Message": "{0}'s Korean name appears to be an invalid length. Please verify you have typed it correctly and using Hangul.",
         "Title": "Korean Name: Invalid Length",
         "Icon": "Information",
         "Buttons": "OkOnly",
