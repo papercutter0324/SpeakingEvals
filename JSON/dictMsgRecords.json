@@ -347,12 +347,26 @@
       }
     },
     "ErrorMessages": {
+      "CreatingNewSignaturePlaceholder": {
+        "Message": "Cannot locate existing signature shape. A new one will be created.",
+        "Title": "Signature Placeholder Error!",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
+        "Width": "250"
+      },
       "DownloadFile": {
         "Message": "Error downloading file: {0}",
         "Title": "Download Error!",
         "Icon": "Exclamation",
         "Buttons": "OkOnly",
         "Width": "250"
+      },
+      "ErrorImportingSignature": {
+        "Message": "Unable to import signature.",
+        "Title": "Import Failed",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
+        "Width": "260"
       },
       "ErrorOpeningPowerPoint": {
         "Message": "Error opening PowerPoint.{NEWLINE2}PowerPoint may have encountered a bug preventing it from opening and/or closing properly. Please wait a couple seconds and try again. If this error persists, please try rebooting your computer.",
@@ -382,12 +396,40 @@
         "Buttons": "OkOnly",
         "Width": "270"
       },
+      "FileNotFound": {
+        "Message": "Selected file does not exist. This is sometimes the result of a file being stored in cloud storage. Please ensure a local (downloaded) copy is present on your computer.",
+        "Title": "File Not Found!",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
+        "Width": "360"
+      },
       "FontInstallationFailed": {
         "Message": "There was an error when trying to install the required font. Please try again, and if the error persists, consider installing{NEWLINE2}the font manually. You can find the link on the Instructions sheet.",
         "Title": "Font Error!",
         "Icon": "Exclamation",
         "Buttons": "OkOnly",
         "Width": "360"
+      },
+      "ImportCancelled": {
+        "Message": "{0} import cancelled.",
+        "Title": "Import Cancelled",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
+        "Width": "230"
+      },
+      "ImportError": {
+        "Message": "Unable to import data. Please try again or copy the data manually.",
+        "Title": "Import Failed",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
+        "Width": "230"
+      },
+      "ImportFromSelf": {
+        "Message": "You cannot import from the current workbook.",
+        "Title": "Import Error",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
+        "Width": "230"
       },
       "IncompleteWinnersList": {
         "Message": "Unable to generate winner certificates due to an incomplete winners list. Please select the winners and try again.",
