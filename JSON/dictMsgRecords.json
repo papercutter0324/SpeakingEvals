@@ -3,12 +3,12 @@
     "Message": "Messages have been set."
   },
   "Version": {
-    "Number": "20260117"
+    "Number": "20260118"
   },
   "Debug": {
     "AppleScript": {
       "AttemptToLocate": {
-        "Message":  "Locating {0}{NEWLINE1}{INDENT1}Searching: {1}"
+        "Message": "Locating {0}{NEWLINE1}{INDENT1}Searching: {1}"
       },
       "CheckForUpdate":  {
         "Message": "Checking if an update is available for SpeakingEvals.scpt."
@@ -752,4 +752,3 @@
     }
   }
 }
-
