@@ -5,7 +5,7 @@
     "FileUrls": "URLs have been set."
   },
   "Version": {
-    "Number": "20251209"
+    "Number": "20260118"
   },
   "SpeakingEvaluationTemplate": {
     "filename": "SpeakingEvaluationTemplate.pptx",
@@ -41,6 +41,11 @@
     "filename": "mySignature.png",
     "hash": "D3803794383425C34A11673C00033E85",
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/mySignature.png"
+  },
+  "mySignature-template": {
+    "filename": "mySignature-template.png",
+    "hash": "D3803794383425C34A11673C00033E85",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/mySignature-template.png"
   },
   "7za(x86)": {
     "filename": "7za(x86).exe",
@@ -99,8 +104,3 @@
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/AppleScript/SpeakingEvals.scpt"
   }
 }
-
-
-
-
-
