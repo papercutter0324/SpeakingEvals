@@ -1,5 +1,5 @@
-# Features
-To be added soon.
+# Note
+This was written for a older version and much is incorrect. This will be revised at a later date.
 
 # Understanding the Code
 Some users may be a little nervous about what is happening, especially after being asked to enable Macros and (for MacOS users) getting a bunch of file & folder permission pop-ups and a password request. To help assuage any worries, I have uploaded the source code here for anyone to see.
