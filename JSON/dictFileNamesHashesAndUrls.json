@@ -5,7 +5,7 @@
     "FileUrls": "URLs have been set."
   },
   "Version": {
-    "Number": "20260120"
+    "Number": "20260121"
   },
   "SpeakingEvaluationTemplate": {
     "filename": "SpeakingEvaluationTemplate.pptx",
@@ -109,3 +109,4 @@
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/AppleScript/SpeakingEvals.scpt"
   }
 }
+
