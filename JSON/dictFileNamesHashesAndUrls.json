@@ -47,6 +47,11 @@
     "hash": "D3803794383425C34A11673C00033E85",
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/mySignature-template.png"
   },
+  "mySignature-new": {
+    "filename": "mySignature-new.png",
+    "hash": "BDDEB9E8B2A8B76DCC65028123F1A04B",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/mySignature-new.png"
+  },
   "7za(x86)": {
     "filename": "7za(x86).exe",
     "hash": "E96E28B3824ABF6496FD0971B3BA7459",
@@ -104,5 +109,3 @@
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/AppleScript/SpeakingEvals.scpt"
   }
 }
-
-
