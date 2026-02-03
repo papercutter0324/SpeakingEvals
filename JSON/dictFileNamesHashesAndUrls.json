@@ -33,13 +33,13 @@
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/SpeakingEvaluationTemplate_Basic-Full.pptx"
   },
   "SpeakingEvaluationTemplate_Advanced-Lite": {
-    "filename": "SpeakingEvaluationTemplate_Basic-Lite.pptx",
-    "hash": "9558AFCACDFF8641D7C855C488CDBEAF",
+    "filename": "SpeakingEvaluationTemplate_Advanced-Lite.pptx",
+    "hash": "23AFCD43BE9D7A98ABDFEFBE4D87D0EB",
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/SpeakingEvaluationTemplate_Advanced-Lite.pptx"
   },
   "SpeakingEvaluationTemplate_Advanced-Full": {
-    "filename": "SpeakingEvaluationTemplate_Basic-Full.pptx",
-    "hash": "28A9D686F14FB53A7E7BD8EB566D0A5B",
+    "filename": "SpeakingEvaluationTemplate_Advanced-Full.pptx",
+    "hash": "0B1929BEB8D1A2B1D677170642389451",
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/SpeakingEvaluationTemplate_Advanced-Full.pptx"
   },
   "CertificateTemplate": {
@@ -129,3 +129,4 @@
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/AppleScript/SpeakingEvals.scpt"
   }
 }
+
