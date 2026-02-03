@@ -5,7 +5,7 @@
     "FileUrls": "URLs have been set."
   },
   "Version": {
-    "Number": "20260121"
+    "Number": "20260203"
   },
   "SpeakingEvaluationTemplate": {
     "filename": "SpeakingEvaluationTemplate.pptx",
@@ -21,6 +21,26 @@
     "filename": "SpeakingEvaluationTemplate-Full.pptx",
     "hash": "A722F2CF4DF193835EC7C864D54BD786",
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/SpeakingEvaluationTemplate-Full.pptx"
+  },
+  "SpeakingEvaluationTemplate_Basic-Lite": {
+    "filename": "SpeakingEvaluationTemplate_Basic-Lite.pptx",
+    "hash": "2EB6E0B35C493764041E2DCF88F4CA01",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/SpeakingEvaluationTemplate_Basic-Lite.pptx"
+  },
+  "SpeakingEvaluationTemplate_Basic-Full": {
+    "filename": "SpeakingEvaluationTemplate_Basic-Full.pptx",
+    "hash": "A722F2CF4DF193835EC7C864D54BD786",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/SpeakingEvaluationTemplate_Basic-Full.pptx"
+  },
+  "SpeakingEvaluationTemplate_Advanced-Lite": {
+    "filename": "SpeakingEvaluationTemplate_Basic-Lite.pptx",
+    "hash": "9558AFCACDFF8641D7C855C488CDBEAF",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/SpeakingEvaluationTemplate_Advanced-Lite.pptx"
+  },
+  "SpeakingEvaluationTemplate_Advanced-Full": {
+    "filename": "SpeakingEvaluationTemplate_Basic-Full.pptx",
+    "hash": "28A9D686F14FB53A7E7BD8EB566D0A5B",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/SpeakingEvaluationTemplate_Advanced-Full.pptx"
   },
   "CertificateTemplate": {
     "filename": "CertificateTemplate.pptx",
@@ -109,4 +129,3 @@
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/AppleScript/SpeakingEvals.scpt"
   }
 }
-
