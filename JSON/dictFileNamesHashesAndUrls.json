@@ -24,12 +24,12 @@
   },
   "SpeakingEvaluationTemplate_Basic-Lite": {
     "filename": "SpeakingEvaluationTemplate_Basic-Lite.pptx",
-    "hash": "2EB6E0B35C493764041E2DCF88F4CA01",
+    "hash": "CD63E0BAAFECC8D03B362337F0D07516",
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/SpeakingEvaluationTemplate_Basic-Lite.pptx"
   },
   "SpeakingEvaluationTemplate_Basic-Full": {
     "filename": "SpeakingEvaluationTemplate_Basic-Full.pptx",
-    "hash": "A722F2CF4DF193835EC7C864D54BD786",
+    "hash": "A52879711E8898B6B4F86B9A740E84BA",
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/SpeakingEvaluationTemplate_Basic-Full.pptx"
   },
   "SpeakingEvaluationTemplate_Advanced-Lite": {
@@ -129,6 +129,7 @@
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/AppleScript/SpeakingEvals.scpt"
   }
 }
+
 
 
 
