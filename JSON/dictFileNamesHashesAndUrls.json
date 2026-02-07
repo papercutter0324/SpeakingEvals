@@ -49,12 +49,12 @@
   },
   "CertificateTemplate-Lite": {
     "filename": "CertificateTemplate-Lite.pptx",
-    "hash": "7FCF4EDCE44A4957BCE1D34C3CEB8581",
+    "hash": "E5DF751675B52202A22BC6F9E7B62234",
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/CertificateTemplate-Lite.pptx"
   },
   "CertificateTemplate-Full": {
     "filename": "CertificateTemplate-Full.pptx",
-    "hash": "F0F0C2EC570714C6B3F159CAA82EBB3F",
+    "hash": "F218DFD93E8B5F5926AA04998E3D7A8B",
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/CertificateTemplate-Full.pptx"
   },
   "mySignature": {
@@ -129,6 +129,7 @@
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/AppleScript/SpeakingEvals.scpt"
   }
 }
+
 
 
 
