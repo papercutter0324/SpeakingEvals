@@ -3,7 +3,7 @@
     "Message": "Messages have been set."
   },
   "Version": {
-    "Number": "20260118"
+    "Number": "20260213"
   },
   "Debug": {
     "AppleScript": {
@@ -404,7 +404,7 @@
         "Width": "315"
       },
       "FontInstallationFailed": {
-        "Message": "There was an error when trying to install the required font. Please try again, and if the error persists, consider installing{NEWLINE2}the font manually. You can find the link on the Instructions sheet.",
+        "Message": "There was an error when trying to install the required font. Please try again, and if the error persists, consider installing the font manually. You can find the link on the Instructions sheet.",
         "Title": "Font Error!",
         "Icon": "Exclamation",
         "Buttons": "OkOnly",
@@ -416,6 +416,13 @@
         "Icon": "Information",
         "Buttons": "OkOnly",
         "Width": "180"
+      },
+      "InvalidLevelDetectedDuringImport": {
+        "Message": "An invalid class level ({0}) was detected while importing the data and has been replaced with a blank value.{NEWLINE2}Please select the approriate level on sheet {1}.",
+        "Title": "Import Failed",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
+        "Width": "200"
       },
       "ImportError": {
         "Message": "Unable to import data. Please try again or copy the data manually.",
@@ -562,6 +569,13 @@
         "Icon": "Question",
         "Buttons": "YesNo",
         "Width": "270"
+      },
+      "EnglishNameExceedsMaxLength": {
+        "Message": "{0}'s English name exceeds the max supported length and has been trimmed to {1}.",
+        "Title": "English Name: Exceeds Max Length",
+        "Icon": "Information",
+        "Buttons": "OkOnly",
+        "Width": "320"
       },
       "EnglishNameTooLongForReport": {
         "Message": "{0}'s English name is too long and will not correctly fit on the report.{NEWLINE2}Please enter a shorter version of their name.",
@@ -712,6 +726,13 @@
       }
     },
     "Workbook": {
+      "ImportTeacherNotesInquiry": {
+        "Message": "Would you like to import your teacher notes as well?",
+        "Title": "Import Inquiry",
+        "Icon": "Question",
+        "Buttons": "YesNo",
+        "Width": "220"
+      },
       "LoadedFromTempMac": {
         "Message": "This file has been loaded from a temporary folder and will not function correctly.{NEWLINE2}Please verify you have correctly extracted this file from the zip file (if applicable) and saved it to a permanent location.",
         "Title": "Warning!",
@@ -732,6 +753,13 @@
         "Icon": "Exclamation",
         "Buttons": "OkOnly",
         "Width": "400"
+      },
+      "RemoveEmptySheets": {
+        "Message": "Would you like to remove any empty class sheets?",
+        "Title": "Remove Empty Sheets?",
+        "Icon": "Question",
+        "Buttons": "YesNo",
+        "Width": "180"
       }
     },
     "Worksheet": {
