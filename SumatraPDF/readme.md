@@ -7,4 +7,5 @@ AUTHORS).
 More Information:
 * [Website](https://www.sumatrapdfreader.org/free-pdf-reader)
 * [Manual](https://www.sumatrapdfreader.org/manual)
+* [Source Code](https://github.com/sumatrapdfreader/sumatrapdf)
 * [Developer Information](https://www.sumatrapdfreader.org/docs/Contribute-to-SumatraPDF)
