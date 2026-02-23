@@ -34,7 +34,3 @@ Next, open a Terminal window (using one of the methods mentioned in the "Automat
 `mv ~/Downloads/SpeakingEvals.scpt ~/Library/Application\ Scripts/com.microsoft.Excel`
 
 As you can see, this is not nearly as simple of the automated method, so it is highly recommended to use it instead.
-
-# 7-Zip License Information
-To be added soon.
-https://www.7-zip.org
