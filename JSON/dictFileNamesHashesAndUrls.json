@@ -5,7 +5,7 @@
     "FileUrls": "URLs have been set."
   },
   "Version": {
-    "Number": "20260208"
+    "Number": "20260224"
   },
   "SpeakingEvaluationTemplate": {
     "filename": "SpeakingEvaluationTemplate.pptx",
@@ -72,6 +72,21 @@
     "hash": "BDDEB9E8B2A8B76DCC65028123F1A04B",
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/mySignature-new.png"
   },
+  "SumatraPDF(x86)": {
+    "filename": "SumatraPDF-3.5.2-32.exe",
+    "hash": "317DA0951E2E27B65F90B7AC42733F49",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/SumatraPDF/SumatraPDF-3.5.2-32.exe"
+  },
+  "SumatraPDF(x64)": {
+    "filename": "SumatraPDF-3.5.2-64.exe",
+    "hash": "C02DC2CA96FE9841963883C0FE177399",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/SumatraPDF/SumatraPDF-3.5.2-64.exe"
+  },
+  "SumatraPDF(ARM)": {
+    "filename": "SumatraPDF-3.5.2-arm64.exe",
+    "hash": "ACD4F0F3E14725B0EDD8BA6BE3F22ACB",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/SumatraPDF/SumatraPDF-3.5.2-arm64.exe"
+  },
   "7za(x86)": {
     "filename": "7za(x86).exe",
     "hash": "E96E28B3824ABF6496FD0971B3BA7459",
@@ -129,8 +144,3 @@
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/AppleScript/SpeakingEvals.scpt"
   }
 }
-
-
-
-
-
