@@ -1,4 +1,4 @@
-# 7-Zip on GitHub
+# 7-Zip
 
 The provided binaries have not been modified in any way, and they may be found using the following link.
 
