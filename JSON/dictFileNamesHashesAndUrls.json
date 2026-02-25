@@ -1,833 +1,151 @@
 {
   "EntryTests": {
-    "Message": "Messages have been set."
+    "FileNames": "Filenames have been set.",
+    "FileHashes": "Hashes have been set.",
+    "FileUrls": "URLs have been set."
   },
   "Version": {
-    "Number": "20260226"
+    "Number": "20260225"
   },
-  "Debug": {
-    "AppleScript": {
-      "AttemptToLocate": {
-        "Message": "Locating {0}{NEWLINE1}{INDENT1}Searching: {1}"
-      },
-      "CheckForUpdate":  {
-        "Message": "Checking if an update is available for SpeakingEvals.scpt."
-      },
-      "InstalledStatus":  {
-        "Message": "{INDENT1}Found: {0}"
-      },
-      "LatestVersionInstalled":  {
-        "Message": "{INDENT1}Installed version is up-to-date."
-      },
-      "ReminderToInstall":  {
-        "Message": "{INDENT1}Remindering user to install.{NEWLINE1}{INDENT1}Activating sheet: MacOS Users"
-      },
-      "StartupInstallCheck":  {
-        "Message": "SpeakingEvals.scpt{NEWLINE1}{INDENT1}Status: {0}"
-      },
-      "UnableToDownloadUpdate":  {
-        "Message": "Unable to download new {0}"
-      },
-      "UpdateComplete":  {
-        "Message": "{INDENT1}Update complete."
-      },
-      "VersionNumbers":  {
-        "Message": "{INDENT1}Installed Version: {0}{NEWLINE1}{INDENT1}Online Version:    {1}"
-      }
-    },
-    "CodeExecution": {
-      "BeginningCleanup":  {
-        "Message": "Beginning final cleanup checks."
-      },
-      "BeginningTasks":  {
-        "Message": "Beginning Tasks{NEWLINE1}{INDENT1}Start Time: {0}{NEWLINE1}{INDENT1}Active Worksheet: {1}{NEWLINE1}{INDENT1}Button Pressed: {2}"
-      },
-      "EntryPoint":  {
-        "Message": "Entry Point: {NEWLINE1}{INDENT1}{0}"
-      },
-      "EntryPointButton":  {
-        "Message": "Entry Point: {NEWLINE1}{INDENT1}{0} - {1}"
-      },
-      "EntryPointOnActivation":  {
-        "Message": "Entry Point: {NEWLINE1}{INDENT1}{0} Activation"
-      },
-      "ExectutionTimeStats":  {
-        "Message": "Finished Tasks{NEWLINE1}{INDENT1}Start Time:   {0}{NEWLINE1}{INDENT1}End Time:     {1}{NEWLINE1}{INDENT1}Elapsed time: {2} seconds"
-      },
-      "Result":  {
-        "Message": "{0}Result: {1}"
-      },
-      "Status":  {
-        "Message": "{0}Status: {1}"
-      }
-    },
-    "DialogDisplayScript": {
-      "AttemptToLocate":  {
-        "Message": "Checking for presence of DialogDisplay.scpt."
-      }
-    },
-    "DialogToolKitPlus": {
-      "AttemptToInstall":  {
-        "Message": "Attempting to install DialogDisplay.scpt{NEWLINE1}{INDENT1}Installed: {0}"
-      },
-      "AttemptToLocate":  {
-        "Message": "Locating Dialog Toolkit Plus.scptd{NEWLINE1}{INDENT1}Searching: {0}"
-      },
-      "AttemptToUse":  {
-        "Message": "Attempting to display message via Dialog Toolkit Plus.{NEWLINE1}{INDENT1}Message: {0}"
-      },
-      "FailedToDisplay":  {
-        "Message": "Dialog Toolkit Plus failed to display the message.{NEWLINE1}{1}"
-      },
-      "InstalledStatus":  {
-        "Message": "{INDENT1}Installed: {0}"
-      },
-      "RemoveInstalledFile":  {
-        "Message": "Removing Dialog ToolKit Plus from ~/Library/Script Libraries{NEWLINE1}{INDENT1}A local copy will be stored in: {0}"
-      }
-    },
-    "ErrorMessages": {
-      "ErrorCheckFor":  {
-        "Message": "{INDENT1}Error while checking for {0}{NEWLINE1}Error {1}: {2}"
-      },
-      "ErrorDuringUpdateProcess":  {
-        "Message": "Error during the update process.{NEWLINE1}{INDENT1}Error {0}: {1}"
-      }
-    },
-    "FileManagement": {
-      "BeginCleanUp":  {
-        "Message": "{INDENT1}Beginning clean up process."
-      },
-      "DeletingFile":  {
-        "Message": "{INDENT1}Deleting: {0}"
-      },
-      "DeletingFileFailed":  {
-        "Message": "Error deleting: {0}{NEWLINE1}Error {1}: {2}"
-      },
-      "DownloadFailed":  {
-        "Message": "{INDENT1}Download Error {0}: {1}"
-      },
-      "DownloadFailedCurl":  {
-        "Message": "{INDENT1}Curl download failed for {0}"
-      },
-      "DownloadFailedCritical":  {
-        "Message": "{INDENT2}Download failed. Terminiating file creation."
-      },
-      "DownloadFailedHttp":  {
-        "Message": "{INDENT1}HTTP request failed. Status: {0} - {1}"
-      },
-      "DownloadNewCopy":  {
-        "Message": "{INDENT1}Valid {0} not found. Attempting to download."
-      },
-      "DownloadSuccessful":  {
-        "Message": "{0}Download successful."
-      },
-      "ErrorCreatingFolder":  {
-        "Message": "Error creating folder:{NEWLINE1}{INDENT1}Error {0}: {1}"
-      },
-      "ErrorCreatingTemporaryCopy":  {
-        "Message": "{INDENT1}Failed to make a temporary copy. Using resources copy directly."
-      },
-      "FileAccessPermissionRequest":  {
-        "Message": "Requesting access to:"
-      },
-      "FileAccessPermissionStatus":  {
-        "Message": "{INDENT2}File access {0}"
-      },
-      "FileAccessPermissionStatusDetailed":  {
-        "Message": "{INDENT1}{0}{NEWLINE1}{INDENT2}Access {1}"
-      },
-      "FileCreationSaveComplete":  {
-        "Message": "{INDENT1}Save process complete."
-      },
-      "FileCreationStart":  {
-        "Message": "Beginning File Creation{NEWLINE1}{INDENT1}File Types: {0}"
-      },
-      "FileMoveFailed":  {
-        "Message": "{INDENT1}Failed to move template to {0}"
-      },
-      "FinishedCleanUp":  {
-        "Message": "{INDENT1}Finished clean up."
-      },
-      "HashCheckError":  {
-        "Message": "Hash check failed.{NEWLINE1}{INDENT1}Error {0}: {1}"
-      },
-      "LoadTemporaryCopy":  {
-        "Message": "{INDENT1}Loading temporary copy"
-      },
-      "MarkAsExecutable":  {
-        "Message": "{INDENT1}Marking {0} as executable."
-      },
-      "OpenDestinationFolder":  {
-        "Message": "Attempting to open destination folder.{NEWLINE1}{INDENT1}Path: {0}"
-      },
-      "RemoveOldVersion":  {
-        "Message": "{INDENT1}Removing old version: {0}"
-      },
-      "RemoveTemporaryFile":  {
-        "Message": "{INDENT1}Removing temporary file: {0}"
-      },
-      "ValidFileFound":  {
-        "Message": "{INDENT1}Valid copy found."
-      }
-    },
-    "PowerPoint": {
-      "AttemptingToClose": {
-        "Message": "Attempting to close PowerPoint."
-      },
-      "AttemptingToCloseExtraMacStep": {
-        "Message": "{INDENT1}Attempting extra step required to completely close MS PowerPoint on MacOS."
-      },
-      "CheckingForOpenInstances": {
-        "Message": "Checking for Existing PowerPoint Instances"
-      },
-      "ClosingOpenInstance": {
-        "Message": "Closing Open PowerPoint Instances"
-      },
-      "ClosingOpenTemplate": {
-        "Message": "{INDENT1}Attempting to close the template.{NEWLINE1}{INDENT1}Status: {0}"
-      },
-      "DisableAutoSave": {
-        "Message": "{INDENT1}Disabling AutoSave"
-      },
-      "LoadedStatus": {
-        "Message": "{INDENT1}PowerPoint Loaded: {0}"
-      },
-      "Opening": {
-        "Message": "Opening PowerPoint"
-      },
-      "OpenInstanceClosed": {
-        "Message": "{INDENT1}Open instance has been closed."
-      },
-      "OpenInstanceFound": {
-        "Message": "{INDENT1}PowerPoint instance found.{NEWLINE1}{INDENT1}Checking if template is already open."
-      },
-      "OpenInstanceStatus": {
-        "Message": "{INDENT1}Open instances: {0}"
-      },
-      "RequestToCloseOpenInstance": {
-        "Message": "{INDENT1}Open instance found{NEWLINE1}{INDENT1}Asking if user wishes to automatically close and continue."
-      },
-      "TemplateLoadedStatus": {
-        "Message": "{INDENT1}Template loaded: {0}"
-      }
-    },
-    "Reports": {
-      "ErrorInsertingSignature": {
-        "Message": "Error inserting signature."
-      },
-      "ErrorSaving": {
-        "Message": "{INDENT2}Failed to save.{NEWLINE1}{INDENT2}Error Number: {0}{NEWLINE1}{INDENT2}Error Description: {1}"
-      },
-      "Filename": {
-        "Message": "{INDENT2}Filename: {0}"
-      },
-      "GeneratingFile": {
-        "Message": "{INDENT1}Generating Report {0} of {1}"
-      },
-      "PreparingData": {
-        "Message": "{INDENT2}Preparing Report Data"
-      },
-      "Saved": {
-        "Message": "Report saved."
-      }
-    },
-    "StudentRecords": {
-      "FinalEntry": {
-        "Message": "{INDENT1}Final student record entry: {0}{NEWLINE1}{INDENT1}Validating entered records"
-      },
-      "InvalidData": {
-        "Message": "Invalid value for {0}."
-      },
-      "InvalidPunctuation": {
-        "Message": "Invalid punctuation detected and corrected." 
-      },
-      "MissingData": {
-        "Message": "Class information incomplete.{NEWLINE2}Missing: {0}"
-      },
-      "NoStudentsFound": {
-        "Message": "{INDENT1}No students were found."
-      },
-      "VerifyingIfComplete": {
-        "Message": "Verifying Student Records Are Complete"
-      }
-    },
-    "SystemRequirements": {
-      "CurlCheck": {
-        "Message": "Checking if curl.exe is installed."
-      },
-      "DotNetCheck": {
-        "Message": "Checking if Microsoft DotNet 3.5 is installed."
-      },
-      "FontsCheck": {
-        "Message": "Checking if required fonts are installed."
-      },
-      "FontsInstallationFailed": {
-        "Message": "{INDENT1}Unable to automatically install fonts. Please install manually.{NEWLINE1}{INDENT2}Just Another Hand (Regular): {0}{NEWLINE1}{INDENT2}Hurricane (Regular): {1}{NEWLINE1}{INDENT2}Kakao Big Sans (Regular): {2}"
-      },
-      "FontsInstallationSuccessful": {
-        "Message": "{INDENT1}All fonts are successfully installed"
-      }
-    },
-    "Workbook": {
-      "BeginStartupSelfChecks": {
-        "Message": "Beginning start-up self-checks{NEWLINE1}{INDENT1}Start Time: {0}"
-      },
-      "LoadedFromTempFolderCheck": {
-        "Message": "Checking if loaded from a temp folder.{NEWLINE1}{INDENT1}Current Path: {0}{NEWLINE1}{INDENT1}Temp Folder: {1}"
-      },
-      "ToggleApplicationUpdates": {
-        "Message": "Toggling Application Updates{NEWLINE1}{INDENT1}Calculation: {0}{NEWLINE1}{INDENT1}EnableEvents: {1}{NEWLINE1}{INDENT1}ScreenUpdating: {2}"
-      },
-      "UpdatingPersistantSetting": {
-        "Message": "{INDENT1}Updating persistant status value."
-      },
-      "UpdatingPersistantSettingValue": {
-        "Message": "{INDENT2}Value: {0}"
-      },
-      "ValidateLayouts": {
-        "Message": "Validating Layouts"
-      }
-    },
-    "Worksheet": {
-      "MissingShape": {
-        "Message": "{INDENT2}Warning: Shape '{0}' not found."
-      },
-      "PrintWorksheetName": {
-        "Message": "{0}Sheet: {1}"
-      },
-      "RepairLayout": {
-        "Message": "Repairing Layout{NEWLINE1}{INDENT1}Sheet: {0}"
-      },
-      "RepairLayoutComplete": {
-        "Message": "{INDENT1}Repair Complete"
-      },
-      "UpdatingCertificateOptions": {
-        "Message": "Updating Valid Certicate Options{NEWLINE1}{INDENT1}{0} {1}"
-      },
-      "ValidateAllShapesArePresent": {
-        "Message": "{INDENT2}Verifying all standard shapes are present."
-      },
-      "ValidateLayout": {
-        "Message": "Validating Layout{NEWLINE1}{INDENT1}Sheet: {0}"
-      },
-      "ValidateShapeDimensions": {
-        "Message": "{INDENT2}{0} found.{NEWLINE1}{INDENT3}Verifying signature dimensions."
-      },
-      "ValidateShapePlacement": {
-        "Message": "{INDENT2}Setting layout for {0}."
-      },
-      "WorksheetChangeError": {
-        "Message": "Error in Worksheet_Change{NEWLINE1}{INDENT1}Error {0}: {1}"
-      },
-      "WorksheetError": {
-        "Message": "Error occurred in {0}{NEWLINE1}{INDENT1}Error {1}: {2}"
-      }
-    },
-    "Zip": {
-      "Failed": {
-        "Message": "{INDENT1}Zip failed{NEWLINE1}{INDENT2}Error {0}: {1}"
-      },
-      "Successful": {
-        "Message": "{INDENT1}Zip successful"
-      },
-      "ZippingReport": {
-        "Message": "Zipping Reports{NEWLINE1}{INDENT1}Zip Filename: {0}{NEWLINE1}{INDENT1}Destination:  {1}"
-      }
-    }
+  "SpeakingEvaluationTemplate": {
+    "filename": "SpeakingEvaluationTemplate.pptx",
+    "hash": "8590B1CF15698117E02B303D547E584F",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/SpeakingEvaluationTemplate.pptx"
   },
-  "Display": {
-    "AppleScript": {
-      "InstallReminder": {
-        "Message": "SpeakingEvals.scpt must be installed for this file to fuction properly and generate reports. Please follow the installation instructions on the MacOS Users sheet and then try again.",
-        "Title": "Notice!",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "300"
-      }
-    },
-    "ErrorMessages": {
-      "CreatingNewSignaturePlaceholder": {
-        "Message": "Cannot locate existing signature shape. A new one will be created.",
-        "Title": "Signature Placeholder Error!",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "250"
-      },
-      "DownloadFile": {
-        "Message": "Error downloading file:{NEWLINE1}{INDENT1}{0}",
-        "Title": "Download Error!",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "250"
-      },
-      "ErrorImportingSignature": {
-        "Message": "Unable to import signature.",
-        "Title": "Import Failed",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "180"
-      },
-      "ErrorOpeningPowerPoint": {
-        "Message": "Error opening PowerPoint.{NEWLINE2}PowerPoint may have encountered a bug preventing it from opening and/or closing properly. Please wait a couple seconds and try again. If this error persists, please try rebooting your computer.",
-        "Title": "Error!",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "320"
-      },
-      "ErrorOpeningTemplate": {
-        "Message": "Error opening template.{NEWLINE2}PowerPoint may have encountered a bug preventing it from opening and/or closing properly. Please wait a couple seconds and try again. If this error persists, please try rebooting your computer.",
-        "Title": "Error!",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "320"
-      },
-      "ErrorSavingFile": {
-        "Message": "Export failed. Please ensure all data was entered correctly and try saving to a different folder.",
-        "Title": "Process failed!",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "230"
-      },
-      "ErrorZippingFiles": {
-        "Message": "The reports were successfully created, but there was an error when trying to add them into a zip file.",
-        "Title": "Error!",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "270"
-      },
-      "FileNotFound": {
-        "Message": "Selected file does not exist.{NEWLINE2}This is sometimes the result of a file being stored in cloud storage. Please ensure a local (downloaded) copy is present on your computer.",
-        "Title": "File Not Found!",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "315"
-      },
-      "FontInstallationFailed": {
-        "Message": "There was an error when trying to install the required font. Please try again, and if the error persists, consider installing the font manually. You can find the link on the Instructions sheet.",
-        "Title": "Font Error!",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "250"
-      },
-      "ImportCancelled": {
-        "Message": "{0} import cancelled.",
-        "Title": "Import Cancelled",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "180"
-      },
-      "InvalidLevelDetectedDuringImport": {
-        "Message": "An invalid class level ({0}) was detected while importing the data and has been replaced with a blank value.{NEWLINE2}Please select the approriate level on sheet {1}.",
-        "Title": "Import Failed",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "200"
-      },
-      "ImportError": {
-        "Message": "Unable to import data. Please try again or copy the data manually.",
-        "Title": "Import Failed",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "200"
-      },
-      "ImportFromSelf": {
-        "Message": "You cannot import from the current workbook.",
-        "Title": "Import Error",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "150"
-      },
-      "IncompleteWinnersList": {
-        "Message": "Unable to generate winner certificates due to an incomplete winners list. Please select the winners and try again.",
-        "Title": "Error!",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "270"
-      },
-      "IncompleteRecords": {
-        "Message": "One or more fields for missing. Please complete all fields and try again.",
-        "Title": "Missing Data!",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "190"
-      },
-      "MissingShapes": {
-        "Message": "There is a error with the template. Please redownload a copy of the original and try again.",
-        "Title": "Error!",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "210"
-      },
-      "UnableToCreateResourcesFolder": {
-        "Message": "Unable to locate or create the Resources folder. Please create this manually in the same location as this spreadsheet and try again.",
-        "Title": "Error!",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "300"
-      },
-      "UnableToDownloadFile": {
-        "Message": "No valid means of downloading required files. Please make sure you are using a supported version of Windows or MacOS and that you have installed the latest updates.",
-        "Title": "Error!",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "280"
-      }
-    },
-    "PowerPoint": {
-      "RequestToCloseOpenInstance": {
-        "Message": "An open instance of MS PowerPoint has been detected. Please save any open files before continuing.{NEWLINE2}Click OK to automatically close PowerPoint and continue, or click Cancel to finish and save your work.",
-        "Title": "Notice!",
-        "Icon": "Information",
-        "Buttons": "OkCancel",
-        "Width": "275"
-      },
-      "ErrorLoadingViaAppleScript": {
-        "Message": "An error occurred while trying to load Microsoft PowerPoint. This is usually a result of a quirk in MacOS. Try creating the reports again, and it should work fine.{NEWLINE2}If the problem persists, please take a picture of the following error message and ask your team leader to send it to Warren at Bundang.{NEWLINE2}VBA Error {0}: {1}{NEWLINE1}AppleScript Error: {2}",
-        "Title": "Error Loading PowerPoint",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "410"
-      },
-      "WarnAboutClosingDelay": {
-        "Message": "There is a uncommon error, where the first time you try to save it fails. If you experience this, wait a couple seconds and try again. It should work fine the second time.{NEWLINE2}Additionally, PowerPoint occasionally takes longer than expected to close. It should only take about a minute for PowerPoint to close, so please be patient.{NEWLINE2}Press okay to continue creating the reports.{NEWLINE1}(This message can be disabled via the Options sheet.)",
-        "Title": "Notice!",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "395"
-      }
-    },
-    "Printing": {
-      "GenerateFreshCertificatesRequest": {
-        "Message": "An existing set of certificates has been found. Would you like to generate fresh versions before printing?{NEWLINE2}This is generally recommended in case you have made any changes who the winners are since the certificates were last created.{NEWLINE2}Yes: Create new versions.{NEWLINE1}No: Print current versions.{NEWLINE1}Cancel: Stop print process.",
-        "Title": "Existing Files Found",
-        "Icon": "Question",
-        "Buttons": "YesNoCancel",
-        "Width": "260"
-      },
-      "GenerateFreshReportsRequest": {
-        "Message": "An existing set of reports has been found. Would you like generate fresh versions before printing?{NEWLINE2}This is generally recommended in case you have made any edits or changes to the class data since the reports were last created.{NEWLINE2}Yes: Create new versions.{NEWLINE1}No: Print current versions.{NEWLINE1}Cancel: Stop print process.",
-        "Title": "Existing Files Found",
-        "Icon": "Question",
-        "Buttons": "YesNoCancel",
-        "Width": "260"
-      },
-      "IncorrectPrinterSelected": {
-        "Message": "Selected printer is not supported. Please verify you have selected the correct printer on the Options slide.",
-        "Title": "Invalid Print!",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "260"
-      },
-      "NoFilesFound": {
-        "Message": "The {1} were not found in the intended location. Pleaser ensure the files exist and try again.",
-        "Title": "{0} Missing!",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "260"
-      },
-      "PdfPrintingNotSupported": {
-        "Message": "Printing is not currently supported. Please verify that {0} is present in the Resources folder or that you are connected to the internet and try again.",
-        "Title": "Printing Error!",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "260"
-      },
-      "PrintingFailed": {
-        "Message": "An error occurred while trying to print the files. Please check if the files were correctly sent to the printer.",
-        "Title": "Printing Error!",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "260"
-      },
-      "UnableToCreateTemporaryFolder": {
-        "Message": "An error occurred while trying to create a required folder for printing the reports. The print process has been terminated.",
-        "Title": "Folder Error!",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "260"
-      }
-    },
-    "Reports": {
-      "InvalidReportButton": {
-        "Message": "You have clicked an invalid option for creating the reports.{NEWLINE2}This shouldn't be possible unless this file has been altered in an unintended manner. Please download a new copy of this Excel file, copy over all of the students' records, and try again.",
-        "Title": "Invalid Selection!",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "260"
-      },
-      "Success": {
-        "Message": "Export complete!",
-        "Title": "Process complete!",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "110"
-      }
-    },
-    "StudentRecords": {
-      "CommentEndsWithInvalidPunctuation": {
-        "Message": "The COMMENT you have entered ends with an invalid punctuation. The '{0}' has been replaced with a period.",
-        "Title": "Error!",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "300"
-      },
-      "CommentTooLong": {
-        "Message": "The COMMENT for {0} is too long.{NEWLINE2}Please shorten it by {1} or more characters.",
-        "Title": "Error!",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "290"
-      },
-      "CommentTooLongForReport": {
-        "Message": "The comment for {0} is too long.{NEWLINE2}Please shorten it by {1} or more characters.",
-        "Title": "Error!",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "290"
-      },
-      "CommentTooLongUponEntry": {
-        "Message": "The comment you have typed is too long.{NEWLINE2}Please shorten it by at least {0} characters to ensure it fits in the report's comment box.",
-        "Title": "Comment: Exceeds Max Length",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "280"
-      },
-      "CommentTooShortUponEntry": {
-        "Message": "The comment you have typed is very short (under 80 characters).{NEWLINE2}Please check that you have followed the \"Positive - Negative - Positive\" format and provided sufficient detail.",
-        "Title": "Comment: Too Short",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "260"
-      },
-      "EnglishNameIsOneLetter": {
-        "Message": "{0}'s English name is only one letter long.{NEWLINE2}Is this correct?",
-        "Title": "Uncommon English Name",
-        "Icon": "Question",
-        "Buttons": "YesNo",
-        "Width": "260"
-      },
-      "EnglishNameIsTwoCapitalLetters": {
-        "Message": "{0}'s English name is just two capital letters.{NEWLINE2}Is this correct?",
-        "Title": "Uncommon English Name",
-        "Icon": "Question",
-        "Buttons": "YesNo",
-        "Width": "270"
-      },
-      "EnglishNameIsTwoLetters": {
-        "Message": "{0}'s English name is only two letters long.{NEWLINE2}Is this correct?",
-        "Title": "Uncommon English Name",
-        "Icon": "Question",
-        "Buttons": "YesNo",
-        "Width": "270"
-      },
-      "EnglishNameExceedsMaxLength": {
-        "Message": "{0}'s English name exceeds the max supported length and has been trimmed to {1}.",
-        "Title": "English Name: Exceeds Max Length",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "320"
-      },
-      "EnglishNameTooLongForReport": {
-        "Message": "{0}'s English name is too long and will not correctly fit on the report.{NEWLINE2}Please enter a shorter version of their name.",
-        "Title": "English Name: Exceeds Max Length",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "370"
-      },
-      "EnterValidDateUponEntry": {
-        "Message": "Please enter a valid date.",
-        "Title": "Date: Invalid Format",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "160"
-      },
-      "ErrorReadingData": {
-        "Message": "Could not read class or student data.",
-        "Title": "Error!",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "230"
-      },
-      "IncompleteWinnersList": {
-        "Message": "The list of the class winners is incomplete.{NEWLINE2}Would you like to auto-populate it?{NEWLINE1}(This may overwrite any names currently selected.)",
-        "Title": "Error!",
-        "Icon": "Question",
-        "Buttons": "YesNo",
-        "Width": "310"
-      },
-      "InvalidData": {
-        "Message": "Invalid value for {0}.{NEWLINE2}Would you like to ignore and continue?",
-        "Title": "Error!",
-        "Icon": "Question",
-        "Buttons": "YesNo",
-        "Width": "250"
-      },
-      "InvalidEnglishNameEntered": {
-        "Message": "Please enter a valid English name for {0}.",
-        "Title": "Error: Invalid Name Detected!",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "300"
-      },
-      "InvalidKoreanName": {
-        "Message": "Please enter their Korean name using Hangeul.",
-        "Title": "Error: Invalid Name Detected!",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "300"
-      },
-      "InvalidKoreanTeacherName": {
-        "Message": "Please enter your KT's name using Hangeul.",
-        "Title": "Error: Invalid Name Detected!",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "270"
-      },
-      "InvalidPunctuation": {
-        "Message": "Invalid punctuation detected and updated.{NEWLINE2}Please verify that the new version is correct.",
-        "Title": "Error: Invalid Punctuation Detected!",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "280"
-      },
-      "InvalidPunctuationInName": {
-        "Message": "Invalid punctuation was found in {0}'s name.{NEWLINE2}Is this new spelling correct?",
-        "Title": "Error: Invalid Name Detected!",
-        "Icon": "Question",
-        "Buttons": "YesNo",
-        "Width": "210"
-      },
-      "InvalidScore": {
-        "Message": "Invalid value entered for {0}'s {1} score.",
-        "Title": "Error!",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "300"
-      },
-      "InvalidScoreUponEntry": {
-        "Message": "An invalid score value has been entered.{NEWLINE2}Please enter A+, A, B+, B, C, or a number between 1 and 5.",
-        "Title": "Grade: Invalid Score",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "245"
-      },
-      "KoreanNameInvalidLengthUponEntry": {
-        "Message": "You entered an invalid name length.{NEWLINE2}Please verify you have typed it correctly and using Hangeul.",
-        "Title": "Korean Name: Invalid Length",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "380"
-      },
-      "KoreanNameInvalidLength": {
-        "Message": "{0}'s Korean name appears to be an invalid length.{NEWLINE2}Please verify you have typed it correctly and using Hangul.",
-        "Title": "Korean Name: Invalid Length",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "380"
-      },
-      "KoreanNameUncommonLength": {
-        "Message": "You entered a Korean name with {0} syllables. While these names do exist, they are uncommon.{NEWLINE2}Please verify you have typed it correctly and using Hangul.{NEWLINE1}(Report generation will still work.)",
-        "Title": "Korean Name: Uncommon Length",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "380"
-      },
-      "MissingData": {
-        "Message": "Missing: {0}",
-        "Title": "Incomplete Class information!",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "200"
-      },
-      "NameTooLong": {
-        "Message": "{0}'s {1} is too long.{NEWLINE2}The maximum supported length is {2} characters. Please shorten it by at least {3} characters.",
-        "Title": "Error!",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "300"
-      },
-      "NoStudentsFound": {
-        "Message": "No students were found!",
-        "Title": "Error!",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "160"
-      },
-      "RecordsIncomplete": {
-        "Message": "Missing data for {0}'s {1} score.",
-        "Title": "Error: Student information incomplete!",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "270"
-      },
-      "StudentNameIncomplete": {
-        "Message": "No value has been entered for {0}'s {1} name.{NEWLINE2}Please enter a value and try again.",
-        "Title": "Error!",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "280"
-      },
-      "StudentNameMissing": {
-        "Message": "No names have been entered the student on line {0}.{NEWLINE2}Please enter their English and Korean names and try again.",
-        "Title": "Error!",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "270"
-      }
-    },
-    "Workbook": {
-      "ImportTeacherNotesInquiry": {
-        "Message": "Would you like to import your teacher notes as well?",
-        "Title": "Import Inquiry",
-        "Icon": "Question",
-        "Buttons": "YesNo",
-        "Width": "220"
-      },
-      "LoadedFromTempMac": {
-        "Message": "This file has been loaded from a temporary folder and will not function correctly.{NEWLINE2}Please verify you have correctly extracted this file from the zip file (if applicable) and saved it to a permanent location.",
-        "Title": "Warning!",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "310"
-      },
-      "LoadedFromTempWindows": {
-        "Message": "This file has been loaded from a temporary folder and will not function correctly.{NEWLINE2}The most common reason for receiving this error is that you downloaded a .zip copy of this file and didn't extract 'Speaking Eval Reports (v#.##.#).xlsm' to a different directory. Please close this file and do so before continuing.{NEWLINE2}For further help, please see the '01 - Initial Download and Extraction' instructional video on the dropbox.",
-        "Title": "Warning!",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "500"
-      },
-      "MissingSheets": {
-        "Message": "One or more essential sheets are missing. Please download a new copy of this file and import any class data from this file.{NEWLINE2}If you receive an error stating that two workbooks with the same name cannot be open at the same time, close & rename THIS file and try opening both files again.",
-        "Title": "Critical Error!",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "400"
-      },
-      "RemoveEmptySheets": {
-        "Message": "Would you like to remove any empty class sheets?",
-        "Title": "Remove Empty Sheets?",
-        "Icon": "Question",
-        "Buttons": "YesNo",
-        "Width": "180"
-      }
-    },
-    "Worksheet": {
-      "InvalidDate": {
-        "Message": "An invalid date has been found on worksheet {0}.{NEWLINE2}Please enter a valid date.",
-        "Title": "Invalid Date!",
-        "Icon": "Information",
-        "Buttons": "OkOnly",
-        "Width": "210"
-      }
-    }
+  "SpeakingEvaluationTemplate-Lite": {
+    "filename": "SpeakingEvaluationTemplate-Lite.pptx",
+    "hash": "2EB6E0B35C493764041E2DCF88F4CA01",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/SpeakingEvaluationTemplate-Lite.pptx"
   },
-  "Textbox": {
-    "MacOS": {
-      "CurlCommand": {
-        "Text": "curl -L -o ~/Library/Application\\ Scripts/com.microsoft.Excel/SpeakingEvals.scpt https://github.com/papercutter0324/SpeakingEvals/raw/main/AppleScript/SpeakingEvals.scpt"
-      }
-    }
+  "SpeakingEvaluationTemplate-Full": {
+    "filename": "SpeakingEvaluationTemplate-Full.pptx",
+    "hash": "A722F2CF4DF193835EC7C864D54BD786",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/SpeakingEvaluationTemplate-Full.pptx"
+  },
+  "SpeakingEvaluationTemplate_Basic-Lite": {
+    "filename": "SpeakingEvaluationTemplate_Basic-Lite.pptx",
+    "hash": "CD63E0BAAFECC8D03B362337F0D07516",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/SpeakingEvaluationTemplate_Basic-Lite.pptx"
+  },
+  "SpeakingEvaluationTemplate_Basic-Full": {
+    "filename": "SpeakingEvaluationTemplate_Basic-Full.pptx",
+    "hash": "A52879711E8898B6B4F86B9A740E84BA",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/SpeakingEvaluationTemplate_Basic-Full.pptx"
+  },
+  "SpeakingEvaluationTemplate_Advanced-Lite": {
+    "filename": "SpeakingEvaluationTemplate_Advanced-Lite.pptx",
+    "hash": "90DE245D68CB76306BB94367735C7AB3",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/SpeakingEvaluationTemplate_Advanced-Lite.pptx"
+  },
+  "SpeakingEvaluationTemplate_Advanced-Full": {
+    "filename": "SpeakingEvaluationTemplate_Advanced-Full.pptx",
+    "hash": "1417EE1504D11EAEA3885FBF7C1BA427",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/SpeakingEvaluationTemplate_Advanced-Full.pptx"
+  },
+  "CertificateTemplate": {
+    "filename": "CertificateTemplate.pptx",
+    "hash": "7397FEE16FC131663A71866876FADF40",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/CertificateTemplate.pptx"
+  },
+  "CertificateTemplate-Lite": {
+    "filename": "CertificateTemplate-Lite.pptx",
+    "hash": "E5DF751675B52202A22BC6F9E7B62234",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/CertificateTemplate-Lite.pptx"
+  },
+  "CertificateTemplate-Full": {
+    "filename": "CertificateTemplate-Full.pptx",
+    "hash": "F218DFD93E8B5F5926AA04998E3D7A8B",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/CertificateTemplate-Full.pptx"
+  },
+  "mySignature": {
+    "filename": "mySignature.png",
+    "hash": "D3803794383425C34A11673C00033E85",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/mySignature.png"
+  },
+  "mySignature-template": {
+    "filename": "mySignature-template.png",
+    "hash": "D3803794383425C34A11673C00033E85",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/mySignature-template.png"
+  },
+  "mySignature-new": {
+    "filename": "mySignature-new.png",
+    "hash": "BDDEB9E8B2A8B76DCC65028123F1A04B",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/mySignature-new.png"
+  },
+  "PDFPrintTool": {
+    "filename": "PDFPrintTool",
+    "hash": "62B859DD83D61A25DF757FB6DF124F14",
+    "url": "https://github.com/papercutter0324/PDFPrintTool/releases/latest/download/PDFPrintTool"
+  },
+  "SumatraPDF(x86)": {
+    "filename": "SumatraPDF-3.5.2-32.exe",
+    "hash": "317DA0951E2E27B65F90B7AC42733F49",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/SumatraPDF/SumatraPDF-3.5.2-32.exe"
+  },
+  "SumatraPDF(x64)": {
+    "filename": "SumatraPDF-3.5.2-64.exe",
+    "hash": "C02DC2CA96FE9841963883C0FE177399",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/SumatraPDF/SumatraPDF-3.5.2-64.exe"
+  },
+  "SumatraPDF(ARM)": {
+    "filename": "SumatraPDF-3.5.2-arm64.exe",
+    "hash": "ACD4F0F3E14725B0EDD8BA6BE3F22ACB",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/SumatraPDF/SumatraPDF-3.5.2-arm64.exe"
+  },
+  "7za(x86)": {
+    "filename": "7za(x86).exe",
+    "hash": "E96E28B3824ABF6496FD0971B3BA7459",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/7zip/7za(x86).exe"
+  },
+  "7za(x64)": {
+    "filename": "7za(x64).exe",
+    "hash": "CFD95B9816F15EB24C5721814561CEB0",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/7zip/7za(x64).exe"
+  },
+  "7za(ARM)": {
+    "filename": "7za(ARM).exe",
+    "hash": "CFD95B9816F15EB24C5721814561CEB0",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/7zip/7za(ARM).exe"
+  },
+  "7zz": {
+    "filename": "7zz",
+    "hash": "8FE09805E756D3140112A162E5A6FD4D",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/7zip/7zz"
+  },
+  "Hurricane-Regular": {
+    "englishdisplayname": "Hurricane",
+    "koreandisplayname": "Hurricane",
+    "filename": "Hurricane-Regular.ttf",
+    "hash": "64805C084EF848D3E41501A22A7882ED",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Fonts/Hurricane-Regular.ttf"
+  },
+  "just-another-hand": {
+    "englishdisplayname": "Just Another Hand",
+    "koreandisplayname": "Just Another Hand",
+    "filename": "just-another-hand.regular.ttf",
+    "hash": "2FBCF17635776DDB2692BF320838386C",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Fonts/just-another-hand.regular.ttf"
+  },
+  "KakaoBigSans-Regular": {
+    "englishdisplayname": "Kakao Big Sans",
+    "koreandisplayname": "카카오 큰글씨",
+    "filename": "KakaoBigSans-Regular.ttf",
+    "hash": "01E7D95AE15377CB6747F824F1F6E9DB",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Fonts/KakaoBigSans-Regular.ttf"
+  },
+  "DialogDisplay": {
+    "filename": "DialogDisplay.scpt",
+    "hash": "33E05023335053FADC87B50900935E5E",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/AppleScript/DialogDisplay.scpt"
+  },
+  "Dialog_Toolkit": {
+    "filename": "Dialog_Toolkit.zip",
+    "hash": "DB64101A9F28BA7C4D708FAAB760415C",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/AppleScript/Dialog_Toolkit.zip"
+  },
+  "SpeakingEvals": {
+    "filename": "SpeakingEvals.scpt",
+    "hash": "8E24CAC6FB8E55829C7A1E4F6D160425",
+    "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/AppleScript/SpeakingEvals.scpt"
   }
 }
