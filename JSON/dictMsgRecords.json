@@ -497,6 +497,50 @@
         "Width": "395"
       }
     },
+    "Printing": {
+      "PdfPrintingNotSupported": {
+        "Message": "Printing is not currently supported. Please verify that {0} is present in the Resources folder or that you are connected to the internet and try again.",
+        "Title": "Printing Error!",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
+        "Width": "260"
+      },
+      "IncorrectPrinterSelected": {
+        "Message": "Selected printer is not supported. Please verify you have selected the correct printer on the Options slide.",
+        "Title": "Invalid Print!",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
+        "Width": "260"
+      },
+      "GenerateFreshReportsRequest": {
+        "Message": "An existing set of reports has been found. Would you like generate fresh versions before printing?{NEWLINE2}This is generally recommended in case you have made any edits or changes to the class data since the reports were last created.{NEWLINE2}Yes: Create new versions.{NEWLINE1}No: Print current versions.{NEWLINE1}Cancel: Stop print process.",
+        "Title": "Existing Files Found",
+        "Icon": "Question",
+        "Buttons": "YesNoCancel",
+        "Width": "260"
+      },
+      "GenerateFreshCertificatesRequest": {
+        "Message": "An existing set of certificates has been found. Would you like to generate fresh versions before printing?{NEWLINE2}This is generally recommended in case you have made any changes who the winners are since the certificates were last created.{NEWLINE2}Yes: Create new versions.{NEWLINE1}No: Print current versions.{NEWLINE1}Cancel: Stop print process.",
+        "Title": "Existing Files Found",
+        "Icon": "Question",
+        "Buttons": "YesNoCancel",
+        "Width": "260"
+      },
+      "NoFilesFound": {
+        "Message": "The {1} were not found in the intended location. Pleaser ensure the files exist and try again.",
+        "Title": "{0} Missing!",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
+        "Width": "260"
+      },
+      "UnableToCreateTemporaryFolder": {
+        "Message": "An error occurred while trying to create a required folder for printing the reports. The print process has been terminated.",
+        "Title": "Folder Error!",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
+        "Width": "260"
+      }
+    },
     "Reports": {
       "InvalidReportButton": {
         "Message": "You have clicked an invalid option for creating the reports.{NEWLINE2}This shouldn't be possible unless this file has been altered in an unintended manner. Please download a new copy of this Excel file, copy over all of the students' records, and try again.",
