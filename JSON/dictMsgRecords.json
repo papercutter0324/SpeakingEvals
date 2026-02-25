@@ -3,7 +3,7 @@
     "Message": "Messages have been set."
   },
   "Version": {
-    "Number": "20260225"
+    "Number": "20260226"
   },
   "Debug": {
     "AppleScript": {
@@ -498,18 +498,11 @@
       }
     },
     "Printing": {
-      "PdfPrintingNotSupported": {
-        "Message": "Printing is not currently supported. Please verify that {0} is present in the Resources folder or that you are connected to the internet and try again.",
-        "Title": "Printing Error!",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
-        "Width": "260"
-      },
-      "IncorrectPrinterSelected": {
-        "Message": "Selected printer is not supported. Please verify you have selected the correct printer on the Options slide.",
-        "Title": "Invalid Print!",
-        "Icon": "Exclamation",
-        "Buttons": "OkOnly",
+      "GenerateFreshCertificatesRequest": {
+        "Message": "An existing set of certificates has been found. Would you like to generate fresh versions before printing?{NEWLINE2}This is generally recommended in case you have made any changes who the winners are since the certificates were last created.{NEWLINE2}Yes: Create new versions.{NEWLINE1}No: Print current versions.{NEWLINE1}Cancel: Stop print process.",
+        "Title": "Existing Files Found",
+        "Icon": "Question",
+        "Buttons": "YesNoCancel",
         "Width": "260"
       },
       "GenerateFreshReportsRequest": {
@@ -519,16 +512,30 @@
         "Buttons": "YesNoCancel",
         "Width": "260"
       },
-      "GenerateFreshCertificatesRequest": {
-        "Message": "An existing set of certificates has been found. Would you like to generate fresh versions before printing?{NEWLINE2}This is generally recommended in case you have made any changes who the winners are since the certificates were last created.{NEWLINE2}Yes: Create new versions.{NEWLINE1}No: Print current versions.{NEWLINE1}Cancel: Stop print process.",
-        "Title": "Existing Files Found",
-        "Icon": "Question",
-        "Buttons": "YesNoCancel",
+      "IncorrectPrinterSelected": {
+        "Message": "Selected printer is not supported. Please verify you have selected the correct printer on the Options slide.",
+        "Title": "Invalid Print!",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
         "Width": "260"
       },
       "NoFilesFound": {
         "Message": "The {1} were not found in the intended location. Pleaser ensure the files exist and try again.",
         "Title": "{0} Missing!",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
+        "Width": "260"
+      },
+      "PdfPrintingNotSupported": {
+        "Message": "Printing is not currently supported. Please verify that {0} is present in the Resources folder or that you are connected to the internet and try again.",
+        "Title": "Printing Error!",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
+        "Width": "260"
+      },
+      "PrintingFailed": {
+        "Message": "An error occurred while trying to print the files. Please check if the files were correctly sent to the printer.",
+        "Title": "Printing Error!",
         "Icon": "Exclamation",
         "Buttons": "OkOnly",
         "Width": "260"
@@ -824,4 +831,3 @@
     }
   }
 }
-
