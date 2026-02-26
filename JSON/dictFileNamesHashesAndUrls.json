@@ -74,7 +74,7 @@
   },
   "PDFPrintTool": {
     "filename": "PDFPrintTool",
-    "hash": "62B859DD83D61A25DF757FB6DF124F14",
+    "hash": "7D14FB6CB666F50A66414784A7F510FA",
     "url": "https://github.com/papercutter0324/PDFPrintTool/releases/latest/download/PDFPrintTool"
   },
   "SumatraPDF(x86)": {
@@ -149,3 +149,4 @@
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/AppleScript/SpeakingEvals.scpt"
   }
 }
+
