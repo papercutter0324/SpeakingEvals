@@ -3,7 +3,7 @@
     "Message": "Messages have been set."
   },
   "Version": {
-    "Number": "20260226"
+    "Number": "20260309"
   },
   "Debug": {
     "AppleScript": {
@@ -347,6 +347,13 @@
       }
     },
     "ErrorMessages": {
+      "CannotSelectThisWorkbook": {
+        "Message": "You cannot import from the current workbook. Please try again and select a different file.",
+        "Title": "Invalid Selection!",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
+        "Width": "250"
+      },
       "CreatingNewSignaturePlaceholder": {
         "Message": "Cannot locate existing signature shape. A new one will be created.",
         "Title": "Signature Placeholder Error!",
@@ -367,6 +374,13 @@
         "Icon": "Exclamation",
         "Buttons": "OkOnly",
         "Width": "180"
+      },
+      "MovingFilesToSaveDestinationFailed": {
+        "Message": "An error occurred while trying to move the files to the destination folder.{NEWLINE2}Verify that the folder for this class was successfully created and try again.",
+        "Title": "Move Failed",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
+        "Width": "240"
       },
       "ErrorOpeningPowerPoint": {
         "Message": "Error opening PowerPoint.{NEWLINE2}PowerPoint may have encountered a bug preventing it from opening and/or closing properly. Please wait a couple seconds and try again. If this error persists, please try rebooting your computer.",
@@ -469,6 +483,20 @@
       "UnableToDownloadFile": {
         "Message": "No valid means of downloading required files. Please make sure you are using a supported version of Windows or MacOS and that you have installed the latest updates.",
         "Title": "Error!",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
+        "Width": "280"
+      },
+      "ZipAndMoveFailed": {
+        "Message": "The files were successfully created, but they were unable to be zipped and moved to the save folder.{NEWLINE2}Please trying re-opening this file and generating the files again.",
+        "Title": "Error!",
+        "Icon": "Exclamation",
+        "Buttons": "OkOnly",
+        "Width": "280"
+      },
+      "ZipFailedMoveSuccessful": {
+        "Message": "The files were successfully saved to the destination folder, but they were unable to be zipped.{NEWLINE2}If you would like them to be automatically added to a zip file, enure you are connected to the internet, close and reopen this file, and try generating the files again.",
+        "Title": "Warning!",
         "Icon": "Exclamation",
         "Buttons": "OkOnly",
         "Width": "280"
