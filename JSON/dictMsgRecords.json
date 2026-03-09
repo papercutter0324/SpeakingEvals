@@ -348,7 +348,7 @@
     },
     "ErrorMessages": {
       "CannotSelectThisWorkbook": {
-        "Message": "You cannot import from the current workbook. Please try again and select a different file.",
+        "Message": "You cannot import from the current workbook.{NEWLINE2}Please try again and select a different file.",
         "Title": "Invalid Selection!",
         "Icon": "Exclamation",
         "Buttons": "OkOnly",
