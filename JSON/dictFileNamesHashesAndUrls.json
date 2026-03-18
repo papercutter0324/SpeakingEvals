@@ -72,10 +72,10 @@
     "hash": "BDDEB9E8B2A8B76DCC65028123F1A04B",
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/mySignature-new.png"
   },
-  "PDFPrintTool": {
-    "filename": "PDFPrintTool",
-    "hash": "C065C4CD2CC267D002F8FC813A83A53D",
-    "url": "https://github.com/papercutter0324/PDFPrintTool/releases/latest/download/PDFPrintTool"
+  "PdfrintTool": {
+    "filename": "PdfrintTool",
+    "hash": "742AF2205108925498616C8B7835A2F5",
+    "url": "https://github.com/papercutter0324/PdfrintTool/releases/latest/download/PdfrintTool"
   },
   "SumatraPDF(x86)": {
     "filename": "SumatraPDF-3.5.2-32.exe",
