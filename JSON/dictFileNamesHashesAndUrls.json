@@ -5,7 +5,7 @@
     "FileUrls": "URLs have been set."
   },
   "Version": {
-    "Number": "20260317"
+    "Number": "20260318"
   },
   "SpeakingEvaluationTemplate": {
     "filename": "SpeakingEvaluationTemplate.pptx",
@@ -72,10 +72,15 @@
     "hash": "BDDEB9E8B2A8B76DCC65028123F1A04B",
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/mySignature-new.png"
   },
-  "PdfrintTool": {
-    "filename": "PdfrintTool",
+  "PdfPrintTool": {
+    "filename": "PdfPrintTool",
     "hash": "742AF2205108925498616C8B7835A2F5",
-    "url": "https://github.com/papercutter0324/PdfrintTool/releases/latest/download/PdfrintTool"
+    "url": "https://github.com/papercutter0324/PdfPrintTool/releases/latest/download/PdfPrintTool"
+  },
+  "PDFPrintTool": {
+    "filename": "PDFPrintTool",
+    "hash": "742AF2205108925498616C8B7835A2F5",
+    "url": "https://github.com/papercutter0324/PdfPrintTool/releases/latest/download/PdfPrintTool"
   },
   "SumatraPDF(x86)": {
     "filename": "SumatraPDF-3.5.2-32.exe",
