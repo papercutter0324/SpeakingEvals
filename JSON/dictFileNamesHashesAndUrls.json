@@ -5,7 +5,7 @@
     "FileUrls": "URLs have been set."
   },
   "Version": {
-    "Number": "20260318"
+    "Number": "20260323"
   },
   "SpeakingEvaluationTemplate": {
     "filename": "SpeakingEvaluationTemplate.pptx",
@@ -74,12 +74,12 @@
   },
   "PdfPrintTool": {
     "filename": "PdfPrintTool",
-    "hash": "742AF2205108925498616C8B7835A2F5",
+    "hash": "F3099000D677BC202D0ACA9962D48630",
     "url": "https://github.com/papercutter0324/PdfPrintTool/releases/latest/download/PdfPrintTool"
   },
   "PDFPrintTool": {
     "filename": "PDFPrintTool",
-    "hash": "742AF2205108925498616C8B7835A2F5",
+    "hash": "F3099000D677BC202D0ACA9962D48630",
     "url": "https://github.com/papercutter0324/PdfPrintTool/releases/latest/download/PdfPrintTool"
   },
   "SumatraPDF(x86)": {
