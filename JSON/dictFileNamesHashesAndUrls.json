@@ -72,6 +72,11 @@
     "hash": "BDDEB9E8B2A8B76DCC65028123F1A04B",
     "url": "https://raw.githubusercontent.com/papercutter0324/SpeakingEvals/main/Templates/mySignature-new.png"
   },
+  "msgDialogDisplay": {
+    "filename": "msgDialogDisplay",
+    "hash": "29DA5C9418958AF6398A20804C11EBF7",
+    "url": "https://github.com/papercutter0324/msgDialogDisplay/releases/latest/download/msgDialogDisplay"
+  },
   "PdfPrintTool": {
     "filename": "PdfPrintTool",
     "hash": "F3099000D677BC202D0ACA9962D48630",
